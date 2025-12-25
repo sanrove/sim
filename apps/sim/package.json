@@ -87,6 +87,7 @@
     "entities": "6.0.1",
     "framer-motion": "^12.5.0",
     "fuse.js": "7.1.0",
+    "google-auth-library": "10.5.0",
     "gray-matter": "^4.0.3",
     "groq-sdk": "^0.15.0",
     "html-to-image": "1.11.13",

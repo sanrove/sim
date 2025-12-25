@@ -2,15 +2,16 @@
 title: Python
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout'
-import { Card, Cards } from 'fumadocs-ui/components/card'
-import { Step, Steps } from 'fumadocs-ui/components/steps'
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
+import { Callout } from "fumadocs-ui/components/callout";
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 官方的 Python SDK 允许您通过 Python 应用程序以编程方式执行工作流。
 
 <Callout type="info">
-  Python SDK 支持 Python 3.8+，具备异步执行支持、自动速率限制（带指数退避）以及使用情况跟踪功能。
+  Python SDK 支持 Python
+  3.8+，具备异步执行支持、自动速率限制（带指数退避）以及使用情况跟踪功能。
 </Callout>
 
 ## 安装
@@ -53,6 +54,7 @@ SimStudioClient(api_key: str, base_url: str = "https://sim.ai")
 ```
 
 **参数：**
+
 - `api_key` (str): 您的 Sim API 密钥
 - `base_url` (str, 可选): Sim API 的基础 URL
 
@@ -71,6 +73,7 @@ result = client.execute_workflow(
 ```
 
 **参数：**
+
 - `workflow_id` (str): 要执行的工作流 ID
 - `input_data` (dict, optional): 传递给工作流的输入数据
 - `timeout` (float, optional): 超时时间（以秒为单位，默认值：30.0）
@@ -92,6 +95,7 @@ print("Is deployed:", status.is_deployed)
 ```
 
 **参数：**
+
 - `workflow_id` (str): 工作流的 ID
 
 **返回值：** `WorkflowStatus`
@@ -108,6 +112,7 @@ if is_ready:
 ```
 
 **参数：**
+
 - `workflow_id` (str): 工作流的 ID
 
 **返回值：** `bool`
@@ -124,11 +129,13 @@ if status["status"] == "completed":
 ```
 
 **参数：**
+
 - `task_id` (str): 异步执行返回的任务 ID
 
 **返回值：** `Dict[str, Any]`
 
 **响应字段：**
+
 - `success` (bool): 请求是否成功
 - `taskId` (str): 任务 ID
 - `status` (str): 可能的值包括 `'queued'`, `'processing'`, `'completed'`, `'failed'`, `'cancelled'`
@@ -154,6 +161,7 @@ result = client.execute_with_retry(
 ```
 
 **参数：**
+
 - `workflow_id` (str): 要执行的工作流 ID
 - `input_data` (dict, optional): 传递给工作流的输入数据
 - `timeout` (float, optional): 超时时间（以秒为单位）
@@ -319,6 +327,7 @@ class SimStudioError(Exception):
 ```
 
 **常见错误代码：**
+
 - `UNAUTHORIZED`: 无效的 API 密钥
 - `TIMEOUT`: 请求超时
 - `RATE_LIMIT_EXCEEDED`: 超出速率限制
@@ -330,25 +339,17 @@ class SimStudioError(Exception):
 ### 基本工作流执行
 
 <Steps>
-  <Step title="初始化客户端">
-    使用您的 API 密钥设置 SimStudioClient。
-  </Step>
-  <Step title="验证工作流">
-    检查工作流是否已部署并准备好执行。
-  </Step>
-  <Step title="执行工作流">
-    使用您的输入数据运行工作流。
-  </Step>
-  <Step title="处理结果">
-    处理执行结果并处理任何错误。
-  </Step>
+  <Step title="初始化客户端">使用您的 API 密钥设置 SimStudioClient。</Step>
+  <Step title="验证工作流">检查工作流是否已部署并准备好执行。</Step>
+  <Step title="执行工作流">使用您的输入数据运行工作流。</Step>
+  <Step title="处理结果">处理执行结果并处理任何错误。</Step>
 </Steps>
 
 ```python
 import os
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def run_workflow():
     try:
@@ -371,7 +372,7 @@ def run_workflow():
             print("Duration:", result.metadata.get("duration") if result.metadata else None)
         else:
             print("Workflow failed:", result.error)
-            
+
     except Exception as error:
         print("Error:", error)
 
@@ -386,7 +387,7 @@ run_workflow()
 from simstudio import SimStudioClient, SimStudioError
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_error_handling():
     try:
@@ -418,7 +419,7 @@ from simstudio import SimStudioClient
 import os
 
 # Using context manager to automatically close the session
-with SimStudioClient(api_key=os.getenv("SIM_API_KEY")) as client:
+with SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")) as client:
     result = client.execute_workflow("workflow-id")
     print("Result:", result)
 # Session is automatically closed here
@@ -432,19 +433,19 @@ with SimStudioClient(api_key=os.getenv("SIM_API_KEY")) as client:
 from simstudio import SimStudioClient
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_workflows_batch(workflow_data_pairs):
     """Execute multiple workflows with different input data."""
     results = []
-    
+
     for workflow_id, input_data in workflow_data_pairs:
         try:
             # Validate workflow before execution
             if not client.validate_workflow(workflow_id):
                 print(f"Skipping {workflow_id}: not deployed")
                 continue
-                
+
             result = client.execute_workflow(workflow_id, input_data)
             results.append({
                 "workflow_id": workflow_id,
@@ -452,14 +453,14 @@ def execute_workflows_batch(workflow_data_pairs):
                 "output": result.output,
                 "error": result.error
             })
-            
+
         except Exception as error:
             results.append({
                 "workflow_id": workflow_id,
                 "success": False,
                 "error": str(error)
             })
-    
+
     return results
 
 # Example usage
@@ -482,7 +483,7 @@ import os
 import time
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_async():
     try:
@@ -527,7 +528,7 @@ execute_async()
 import os
 from simstudio import SimStudioClient, SimStudioError
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_retry_handling():
     try:
@@ -564,7 +565,7 @@ execute_with_retry_handling()
 import os
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def check_usage():
     try:
@@ -608,7 +609,7 @@ check_usage()
 from simstudio import SimStudioClient
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_streaming():
     """Execute workflow with streaming enabled."""
@@ -659,7 +660,7 @@ def stream_workflow():
             'https://sim.ai/api/workflows/WORKFLOW_ID/execute',
             headers={
                 'Content-Type': 'application/json',
-                'X-API-Key': os.getenv('SIM_API_KEY')   
+                'X-API-Key': os.getenv('ETHANA_AGENT_BUILDER_KEY')
             },
             json={
                 'message': 'Generate a story',
@@ -710,7 +711,7 @@ if __name__ == '__main__':
 
     # Development configuration
     client = SimStudioClient(
-        api_key=os.getenv("SIM_API_KEY")
+        api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")
         base_url=os.getenv("SIM_BASE_URL", "https://sim.ai")
     )
     ```
@@ -723,9 +724,9 @@ if __name__ == '__main__':
     from simstudio import SimStudioClient
 
     # Production configuration with error handling
-    api_key = os.getenv("SIM_API_KEY")
+    api_key = os.getenv("ETHANA_AGENT_BUILDER_KEY")
     if not api_key:
-        raise ValueError("SIM_API_KEY environment variable is required")
+        raise ValueError("ETHANA_AGENT_BUILDER_KEY environment variable is required")
 
     client = SimStudioClient(
         api_key=api_key,
@@ -739,12 +740,8 @@ if __name__ == '__main__':
 ## 获取您的 API 密钥
 
 <Steps>
-  <Step title="登录 Sim">
-    前往 [Sim](https://sim.ai) 并登录您的账户。
-  </Step>
-  <Step title="打开您的工作流">
-    前往您想要以编程方式执行的工作流。
-  </Step>
+  <Step title="登录 Sim">前往 [Sim](https://sim.ai) 并登录您的账户。</Step>
+  <Step title="打开您的工作流">前往您想要以编程方式执行的工作流。</Step>
   <Step title="部署您的工作流">
     如果尚未部署，请点击“部署”以部署您的工作流。
   </Step>

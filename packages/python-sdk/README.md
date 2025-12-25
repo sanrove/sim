@@ -16,7 +16,7 @@ from simstudio import SimStudioClient
 
 # Initialize the client
 client = SimStudioClient(
-    api_key=os.getenv("SIM_API_KEY", "your-api-key-here"),
+    api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY", "your-api-key-here"),
     base_url="https://sim.ai"  # optional, defaults to https://sim.ai
 )
 
@@ -56,6 +56,7 @@ result = client.execute_workflow(
 ```
 
 **Parameters:**
+
 - `workflow_id` (str): The ID of the workflow to execute
 - `input_data` (dict, optional): Input data to pass to the workflow. File objects are automatically converted to base64.
 - `timeout` (float): Timeout in seconds (default: 30.0)
@@ -72,6 +73,7 @@ print("Is deployed:", status.is_deployed)
 ```
 
 **Parameters:**
+
 - `workflow_id` (str): The ID of the workflow
 
 **Returns:** `WorkflowStatus`
@@ -88,6 +90,7 @@ if is_ready:
 ```
 
 **Parameters:**
+
 - `workflow_id` (str): The ID of the workflow
 
 **Returns:** `bool`
@@ -105,6 +108,7 @@ result = client.execute_workflow_sync(
 ```
 
 **Parameters:**
+
 - `workflow_id` (str): The ID of the workflow to execute
 - `input_data` (dict, optional): Input data to pass to the workflow
 - `timeout` (float): Timeout for the initial request in seconds
@@ -179,7 +183,7 @@ class SimStudioError(Exception):
 import os
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def run_workflow():
     try:
@@ -202,7 +206,7 @@ def run_workflow():
             print("Duration:", result.metadata.get("duration") if result.metadata else None)
         else:
             print("Workflow failed:", result.error)
-            
+
     except Exception as error:
         print("Error:", error)
 
@@ -215,7 +219,7 @@ run_workflow()
 from simstudio import SimStudioClient, SimStudioError
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_error_handling():
     try:
@@ -245,7 +249,7 @@ from simstudio import SimStudioClient
 import os
 
 # Using context manager to automatically close the session
-with SimStudioClient(api_key=os.getenv("SIM_API_KEY")) as client:
+with SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")) as client:
     result = client.execute_workflow("workflow-id")
     print("Result:", result)
 # Session is automatically closed here
@@ -259,7 +263,7 @@ from simstudio import SimStudioClient
 
 # Using environment variables
 client = SimStudioClient(
-    api_key=os.getenv("SIM_API_KEY"),
+    api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"),
     base_url=os.getenv("SIM_BASE_URL", "https://sim.ai")
 )
 ```
@@ -269,6 +273,7 @@ client = SimStudioClient(
 File objects are automatically detected and converted to base64 format. Include them in your input under the field name matching your workflow's API trigger input format:
 
 The SDK converts file objects to this format:
+
 ```python
 {
   'type': 'file',
@@ -279,6 +284,7 @@ The SDK converts file objects to this format:
 ```
 
 Alternatively, you can manually provide files using the URL format:
+
 ```python
 {
   'type': 'url',
@@ -292,7 +298,7 @@ Alternatively, you can manually provide files using the URL format:
 from simstudio import SimStudioClient
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 # Upload a single file - include it under the field name from your API trigger
 with open('document.pdf', 'rb') as f:
@@ -321,7 +327,7 @@ with open('doc1.pdf', 'rb') as f1, open('doc2.pdf', 'rb') as f2:
 from simstudio import SimStudioClient
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_workflows_batch(workflow_data_pairs):
     """Execute multiple workflows with different input data."""
@@ -377,17 +383,20 @@ for result in results:
 To run the tests locally:
 
 1. Clone the repository and navigate to the Python SDK directory:
+
    ```bash
    cd packages/python-sdk
    ```
 
 2. Create and activate a virtual environment:
+
    ```bash
    python3 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. Install the package in development mode with test dependencies:
+
    ```bash
    pip install -e ".[dev]"
    ```
@@ -422,4 +431,4 @@ isort simstudio/
 
 ## License
 
-Apache-2.0 
+Apache-2.0

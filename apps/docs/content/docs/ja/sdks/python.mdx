@@ -2,20 +2,21 @@
 title: Python
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout'
-import { Card, Cards } from 'fumadocs-ui/components/card'
-import { Step, Steps } from 'fumadocs-ui/components/steps'
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
+import { Callout } from "fumadocs-ui/components/callout";
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
-Simの公式Python SDKを使用すると、公式Python SDKを使用してPythonアプリケーションからプログラムでワークフローを実行できます。
+Sim の公式 Python SDK を使用すると、公式 Python SDK を使用して Python アプリケーションからプログラムでワークフローを実行できます。
 
 <Callout type="info">
-  Python SDKはPython 3.8以上をサポートし、非同期実行、指数バックオフによる自動レート制限、使用状況追跡機能を提供します。
+  Python SDKはPython
+  3.8以上をサポートし、非同期実行、指数バックオフによる自動レート制限、使用状況追跡機能を提供します。
 </Callout>
 
 ## インストール
 
-pipを使用してSDKをインストールします：
+pip を使用して SDK をインストールします：
 
 ```bash
 pip install simstudio-sdk
@@ -42,7 +43,7 @@ except Exception as error:
     print("Workflow execution failed:", error)
 ```
 
-## APIリファレンス
+## API リファレンス
 
 ### SimStudioClient
 
@@ -53,8 +54,9 @@ SimStudioClient(api_key: str, base_url: str = "https://sim.ai")
 ```
 
 **パラメータ：**
-- `api_key` (str): SimのAPIキー
-- `base_url` (str, オプション): Sim APIのベースURL
+
+- `api_key` (str): Sim の API キー
+- `base_url` (str, オプション): Sim API のベース URL
 
 #### メソッド
 
@@ -71,7 +73,8 @@ result = client.execute_workflow(
 ```
 
 **パラメータ:**
-- `workflow_id` (str): 実行するワークフローのID
+
+- `workflow_id` (str): 実行するワークフローの ID
 - `input_data` (dict, オプション): ワークフローに渡す入力データ
 - `timeout` (float, オプション): タイムアウト（秒）（デフォルト: 30.0）
 - `stream` (bool, オプション): ストリーミングレスポンスを有効にする（デフォルト: False）
@@ -80,7 +83,7 @@ result = client.execute_workflow(
 
 **戻り値:** `WorkflowExecutionResult | AsyncExecutionResult`
 
-`async_execution=True`の場合、ポーリング用のタスクIDをすぐに返します。それ以外の場合は、完了を待ちます。
+`async_execution=True`の場合、ポーリング用のタスク ID をすぐに返します。それ以外の場合は、完了を待ちます。
 
 ##### get_workflow_status()
 
@@ -92,7 +95,8 @@ print("Is deployed:", status.is_deployed)
 ```
 
 **パラメータ:**
-- `workflow_id` (str): ワークフローのID
+
+- `workflow_id` (str): ワークフローの ID
 
 **戻り値:** `WorkflowStatus`
 
@@ -108,7 +112,8 @@ if is_ready:
 ```
 
 **パラメータ:**
-- `workflow_id` (str): ワークフローのID
+
+- `workflow_id` (str): ワークフローの ID
 
 **戻り値:** `bool`
 
@@ -124,13 +129,15 @@ if status["status"] == "completed":
 ```
 
 **パラメータ:**
-- `task_id` (str): 非同期実行から返されたタスクID
+
+- `task_id` (str): 非同期実行から返されたタスク ID
 
 **戻り値:** `Dict[str, Any]`
 
 **レスポンスフィールド:**
+
 - `success` (bool): リクエストが成功したかどうか
-- `taskId` (str): タスクID
+- `taskId` (str): タスク ID
 - `status` (str): 次のいずれか: `'queued'`, `'processing'`, `'completed'`, `'failed'`, `'cancelled'`
 - `metadata` (dict): `startedAt`, `completedAt`, `duration`を含む
 - `output` (any, オプション): ワークフロー出力（完了時）
@@ -154,7 +161,8 @@ result = client.execute_with_retry(
 ```
 
 **パラメータ:**
-- `workflow_id` (str): 実行するワークフローのID
+
+- `workflow_id` (str): 実行するワークフローの ID
 - `input_data` (dict, オプション): ワークフローに渡す入力データ
 - `timeout` (float, オプション): タイムアウト（秒）
 - `stream` (bool, オプション): ストリーミングレスポンスを有効にする
@@ -167,11 +175,11 @@ result = client.execute_with_retry(
 
 **戻り値:** `WorkflowExecutionResult | AsyncExecutionResult`
 
-リトライロジックは、サンダリングハード問題を防ぐために±25%のジッターを伴う指数バックオフ（1秒→2秒→4秒→8秒...）を使用します。APIが `retry-after` ヘッダーを提供する場合、代わりにそれが使用されます。
+リトライロジックは、サンダリングハード問題を防ぐために ±25%のジッターを伴う指数バックオフ（1 秒 →2 秒 →4 秒 →8 秒...）を使用します。API が `retry-after` ヘッダーを提供する場合、代わりにそれが使用されます。
 
 ##### get_rate_limit_info()
 
-最後のAPIレスポンスから現在のレート制限情報を取得します。
+最後の API レスポンスから現在のレート制限情報を取得します。
 
 ```python
 rate_limit_info = client.get_rate_limit_info()
@@ -227,7 +235,7 @@ print("Plan:", limits.usage["plan"])
 
 ##### set_api_key()
 
-APIキーを更新します。
+API キーを更新します。
 
 ```python
 client.set_api_key("new-api-key")
@@ -235,7 +243,7 @@ client.set_api_key("new-api-key")
 
 ##### set_base_url()
 
-ベースURLを更新します。
+ベース URL を更新します。
 
 ```python
 client.set_base_url("https://my-custom-domain.com")
@@ -243,7 +251,7 @@ client.set_base_url("https://my-custom-domain.com")
 
 ##### close()
 
-基盤となるHTTPセッションを閉じます。
+基盤となる HTTP セッションを閉じます。
 
 ```python
 client.close()
@@ -319,7 +327,8 @@ class SimStudioError(Exception):
 ```
 
 **一般的なエラーコード:**
-- `UNAUTHORIZED`: 無効なAPIキー
+
+- `UNAUTHORIZED`: 無効な API キー
 - `TIMEOUT`: リクエストがタイムアウトしました
 - `RATE_LIMIT_EXCEEDED`: レート制限を超えました
 - `USAGE_LIMIT_EXCEEDED`: 使用制限を超えました
@@ -336,19 +345,15 @@ class SimStudioError(Exception):
   <Step title="ワークフローの検証">
     ワークフローがデプロイされ、実行準備ができているか確認します。
   </Step>
-  <Step title="ワークフローの実行">
-    入力データでワークフローを実行します。
-  </Step>
-  <Step title="結果の処理">
-    実行結果を処理し、エラーがあれば対処します。
-  </Step>
+  <Step title="ワークフローの実行">入力データでワークフローを実行します。</Step>
+  <Step title="結果の処理">実行結果を処理し、エラーがあれば対処します。</Step>
 </Steps>
 
 ```python
 import os
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def run_workflow():
     try:
@@ -371,7 +376,7 @@ def run_workflow():
             print("Duration:", result.metadata.get("duration") if result.metadata else None)
         else:
             print("Workflow failed:", result.error)
-            
+
     except Exception as error:
         print("Error:", error)
 
@@ -386,7 +391,7 @@ run_workflow()
 from simstudio import SimStudioClient, SimStudioError
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_error_handling():
     try:
@@ -418,7 +423,7 @@ from simstudio import SimStudioClient
 import os
 
 # Using context manager to automatically close the session
-with SimStudioClient(api_key=os.getenv("SIM_API_KEY")) as client:
+with SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")) as client:
     result = client.execute_workflow("workflow-id")
     print("Result:", result)
 # Session is automatically closed here
@@ -432,19 +437,19 @@ with SimStudioClient(api_key=os.getenv("SIM_API_KEY")) as client:
 from simstudio import SimStudioClient
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_workflows_batch(workflow_data_pairs):
     """Execute multiple workflows with different input data."""
     results = []
-    
+
     for workflow_id, input_data in workflow_data_pairs:
         try:
             # Validate workflow before execution
             if not client.validate_workflow(workflow_id):
                 print(f"Skipping {workflow_id}: not deployed")
                 continue
-                
+
             result = client.execute_workflow(workflow_id, input_data)
             results.append({
                 "workflow_id": workflow_id,
@@ -452,14 +457,14 @@ def execute_workflows_batch(workflow_data_pairs):
                 "output": result.output,
                 "error": result.error
             })
-            
+
         except Exception as error:
             results.append({
                 "workflow_id": workflow_id,
                 "success": False,
                 "error": str(error)
             })
-    
+
     return results
 
 # Example usage
@@ -482,7 +487,7 @@ import os
 import time
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_async():
     try:
@@ -527,7 +532,7 @@ execute_async()
 import os
 from simstudio import SimStudioClient, SimStudioError
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_retry_handling():
     try:
@@ -564,7 +569,7 @@ execute_with_retry_handling()
 import os
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def check_usage():
     try:
@@ -608,7 +613,7 @@ check_usage()
 from simstudio import SimStudioClient
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_streaming():
     """Execute workflow with streaming enabled."""
@@ -628,7 +633,7 @@ def execute_with_streaming():
 execute_with_streaming()
 ```
 
-ストリーミングレスポンスはServer-Sent Events（SSE）形式に従います：
+ストリーミングレスポンスは Server-Sent Events（SSE）形式に従います：
 
 ```
 data: {"blockId":"7b7735b9-19e5-4bd6-818b-46aae2596e9f","chunk":"One"}
@@ -640,7 +645,7 @@ data: {"event":"done","success":true,"output":{},"metadata":{"duration":610}}
 data: [DONE]
 ```
 
-**Flaskストリーミングの例：**
+**Flask ストリーミングの例：**
 
 ```python
 from flask import Flask, Response, stream_with_context
@@ -659,7 +664,7 @@ def stream_workflow():
             'https://sim.ai/api/workflows/WORKFLOW_ID/execute',
             headers={
                 'Content-Type': 'application/json',
-                'X-API-Key': os.getenv('SIM_API_KEY')   
+                'X-API-Key': os.getenv('ETHANA_AGENT_BUILDER_KEY')
             },
             json={
                 'message': 'Generate a story',
@@ -710,7 +715,7 @@ if __name__ == '__main__':
 
     # Development configuration
     client = SimStudioClient(
-        api_key=os.getenv("SIM_API_KEY")
+        api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")
         base_url=os.getenv("SIM_BASE_URL", "https://sim.ai")
     )
     ```
@@ -723,9 +728,9 @@ if __name__ == '__main__':
     from simstudio import SimStudioClient
 
     # Production configuration with error handling
-    api_key = os.getenv("SIM_API_KEY")
+    api_key = os.getenv("ETHANA_AGENT_BUILDER_KEY")
     if not api_key:
-        raise ValueError("SIM_API_KEY environment variable is required")
+        raise ValueError("ETHANA_AGENT_BUILDER_KEY environment variable is required")
 
     client = SimStudioClient(
         api_key=api_key,
@@ -736,7 +741,7 @@ if __name__ == '__main__':
   </Tab>
 </Tabs>
 
-## APIキーの取得方法
+## API キーの取得方法
 
 <Steps>
   <Step title="Simにログイン">

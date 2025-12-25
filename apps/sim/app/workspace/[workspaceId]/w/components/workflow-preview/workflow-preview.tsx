@@ -1,7 +1,9 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from "react";
 import ReactFlow, {
+  Background,
+  BackgroundVariant,
   ConnectionLineType,
   type Edge,
   type EdgeTypes,
@@ -9,37 +11,40 @@ import ReactFlow, {
   type NodeTypes,
   ReactFlowProvider,
   useReactFlow,
-} from 'reactflow'
-import 'reactflow/dist/style.css'
+} from "reactflow";
+import "reactflow/dist/style.css";
 
-import { cn } from '@/lib/core/utils/cn'
-import { createLogger } from '@/lib/logs/console/logger'
-import { NoteBlock } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/note-block/note-block'
-import { SubflowNodeComponent } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/subflows/subflow-node'
-import { WorkflowBlock } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/workflow-block'
-import { WorkflowEdge } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-edge/workflow-edge'
-import { WorkflowPreviewBlock } from '@/app/workspace/[workspaceId]/w/components/workflow-preview/workflow-preview-block'
-import { WorkflowPreviewSubflow } from '@/app/workspace/[workspaceId]/w/components/workflow-preview/workflow-preview-subflow'
-import { getBlock } from '@/blocks'
-import type { WorkflowState } from '@/stores/workflows/workflow/types'
+import { cn } from "@/lib/core/utils/cn";
+import { createLogger } from "@/lib/logs/console/logger";
+import { NoteBlock } from "@/app/workspace/[workspaceId]/w/[workflowId]/components/note-block/note-block";
+import { SubflowNodeComponent } from "@/app/workspace/[workspaceId]/w/[workflowId]/components/subflows/subflow-node";
+import { WorkflowBlock } from "@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/workflow-block";
+import { WorkflowEdge } from "@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-edge/workflow-edge";
+import { WorkflowPreviewBlock } from "@/app/workspace/[workspaceId]/w/components/workflow-preview/workflow-preview-block";
+import { WorkflowPreviewSubflow } from "@/app/workspace/[workspaceId]/w/components/workflow-preview/workflow-preview-subflow";
+import { getBlock } from "@/blocks";
+import type { WorkflowState } from "@/stores/workflows/workflow/types";
 
-const logger = createLogger('WorkflowPreview')
+const logger = createLogger("WorkflowPreview");
 
 interface WorkflowPreviewProps {
-  workflowState: WorkflowState
-  showSubBlocks?: boolean
-  className?: string
-  height?: string | number
-  width?: string | number
-  isPannable?: boolean
-  defaultPosition?: { x: number; y: number }
-  defaultZoom?: number
-  fitPadding?: number
-  onNodeClick?: (blockId: string, mousePosition: { x: number; y: number }) => void
+  workflowState: WorkflowState;
+  showSubBlocks?: boolean;
+  className?: string;
+  height?: string | number;
+  width?: string | number;
+  isPannable?: boolean;
+  defaultPosition?: { x: number; y: number };
+  defaultZoom?: number;
+  fitPadding?: number;
+  onNodeClick?: (
+    blockId: string,
+    mousePosition: { x: number; y: number }
+  ) => void;
   /** Use lightweight blocks for better performance in template cards */
-  lightweight?: boolean
+  lightweight?: boolean;
   /** Cursor style to show when hovering the canvas */
-  cursorStyle?: 'default' | 'pointer' | 'grab'
+  cursorStyle?: "default" | "pointer" | "grab";
 }
 
 /**
@@ -49,7 +54,7 @@ const fullNodeTypes: NodeTypes = {
   workflowBlock: WorkflowBlock,
   noteBlock: NoteBlock,
   subflowNode: SubflowNodeComponent,
-}
+};
 
 /**
  * Lightweight node types for template cards and other high-volume previews.
@@ -59,17 +64,17 @@ const lightweightNodeTypes: NodeTypes = {
   workflowBlock: WorkflowPreviewBlock,
   noteBlock: WorkflowPreviewBlock,
   subflowNode: WorkflowPreviewSubflow,
-}
+};
 
 // Define edge types
 const edgeTypes: EdgeTypes = {
   default: WorkflowEdge,
   workflowEdge: WorkflowEdge, // Keep for backward compatibility
-}
+};
 
 interface FitViewOnChangeProps {
-  nodes: Node[]
-  fitPadding: number
+  nodes: Node[];
+  fitPadding: number;
 }
 
 /**
@@ -77,130 +82,136 @@ interface FitViewOnChangeProps {
  * Must be rendered inside ReactFlowProvider.
  */
 function FitViewOnChange({ nodes, fitPadding }: FitViewOnChangeProps) {
-  const { fitView } = useReactFlow()
+  const { fitView } = useReactFlow();
 
   useEffect(() => {
     if (nodes.length > 0) {
       // Small delay to ensure nodes are rendered before fitting
       const timeoutId = setTimeout(() => {
-        fitView({ padding: fitPadding, duration: 200 })
-      }, 50)
-      return () => clearTimeout(timeoutId)
+        fitView({ padding: fitPadding, duration: 200 });
+      }, 50);
+      return () => clearTimeout(timeoutId);
     }
-  }, [nodes, fitPadding, fitView])
+  }, [nodes, fitPadding, fitView]);
 
-  return null
+  return null;
 }
 
 export function WorkflowPreview({
   workflowState,
   showSubBlocks = true,
   className,
-  height = '100%',
-  width = '100%',
+  height = "100%",
+  width = "100%",
   isPannable = false,
   defaultPosition,
   defaultZoom = 0.8,
   fitPadding = 0.25,
   onNodeClick,
   lightweight = false,
-  cursorStyle = 'grab',
+  cursorStyle = "grab",
 }: WorkflowPreviewProps) {
   // Use lightweight node types for better performance in template cards
-  const nodeTypes = lightweight ? lightweightNodeTypes : fullNodeTypes
+  const nodeTypes = lightweight ? lightweightNodeTypes : fullNodeTypes;
   // Check if the workflow state is valid
-  const isValidWorkflowState = workflowState?.blocks && workflowState.edges
+  const isValidWorkflowState = workflowState?.blocks && workflowState.edges;
 
   const blocksStructure = useMemo(() => {
-    if (!isValidWorkflowState) return { count: 0, ids: '' }
+    if (!isValidWorkflowState) return { count: 0, ids: "" };
     return {
       count: Object.keys(workflowState.blocks || {}).length,
-      ids: Object.keys(workflowState.blocks || {}).join(','),
-    }
-  }, [workflowState.blocks, isValidWorkflowState])
+      ids: Object.keys(workflowState.blocks || {}).join(","),
+    };
+  }, [workflowState.blocks, isValidWorkflowState]);
 
   const loopsStructure = useMemo(() => {
-    if (!isValidWorkflowState) return { count: 0, ids: '' }
+    if (!isValidWorkflowState) return { count: 0, ids: "" };
     return {
       count: Object.keys(workflowState.loops || {}).length,
-      ids: Object.keys(workflowState.loops || {}).join(','),
-    }
-  }, [workflowState.loops, isValidWorkflowState])
+      ids: Object.keys(workflowState.loops || {}).join(","),
+    };
+  }, [workflowState.loops, isValidWorkflowState]);
 
   const parallelsStructure = useMemo(() => {
-    if (!isValidWorkflowState) return { count: 0, ids: '' }
+    if (!isValidWorkflowState) return { count: 0, ids: "" };
     return {
       count: Object.keys(workflowState.parallels || {}).length,
-      ids: Object.keys(workflowState.parallels || {}).join(','),
-    }
-  }, [workflowState.parallels, isValidWorkflowState])
+      ids: Object.keys(workflowState.parallels || {}).join(","),
+    };
+  }, [workflowState.parallels, isValidWorkflowState]);
 
   const edgesStructure = useMemo(() => {
-    if (!isValidWorkflowState) return { count: 0, ids: '' }
+    if (!isValidWorkflowState) return { count: 0, ids: "" };
     return {
       count: workflowState.edges?.length || 0,
-      ids: workflowState.edges?.map((e) => e.id).join(',') || '',
-    }
-  }, [workflowState.edges, isValidWorkflowState])
+      ids: workflowState.edges?.map((e) => e.id).join(",") || "",
+    };
+  }, [workflowState.edges, isValidWorkflowState]);
 
   const calculateAbsolutePosition = (
     block: any,
     blocks: Record<string, any>
   ): { x: number; y: number } => {
     if (!block.data?.parentId) {
-      return block.position
+      return block.position;
     }
 
-    const parentBlock = blocks[block.data.parentId]
+    const parentBlock = blocks[block.data.parentId];
     if (!parentBlock) {
-      logger.warn(`Parent block not found for child block: ${block.id}`)
-      return block.position
+      logger.warn(`Parent block not found for child block: ${block.id}`);
+      return block.position;
     }
 
-    const parentAbsolutePosition = calculateAbsolutePosition(parentBlock, blocks)
+    const parentAbsolutePosition = calculateAbsolutePosition(
+      parentBlock,
+      blocks
+    );
 
     return {
       x: parentAbsolutePosition.x + block.position.x,
       y: parentAbsolutePosition.y + block.position.y,
-    }
-  }
+    };
+  };
 
   const nodes: Node[] = useMemo(() => {
-    if (!isValidWorkflowState) return []
+    if (!isValidWorkflowState) return [];
 
-    const nodeArray: Node[] = []
+    const nodeArray: Node[] = [];
 
     Object.entries(workflowState.blocks || {}).forEach(([blockId, block]) => {
       if (!block || !block.type) {
-        logger.warn(`Skipping invalid block: ${blockId}`)
-        return
+        logger.warn(`Skipping invalid block: ${blockId}`);
+        return;
       }
 
-      const absolutePosition = calculateAbsolutePosition(block, workflowState.blocks)
+      const absolutePosition = calculateAbsolutePosition(
+        block,
+        workflowState.blocks
+      );
 
       // Lightweight mode: create minimal node data for performance
       if (lightweight) {
         // Handle loops and parallels as subflow nodes
-        if (block.type === 'loop' || block.type === 'parallel') {
+        if (block.type === "loop" || block.type === "parallel") {
           nodeArray.push({
             id: blockId,
-            type: 'subflowNode',
+            type: "subflowNode",
             position: absolutePosition,
             draggable: false,
             data: {
               name: block.name,
               width: block.data?.width || 500,
               height: block.data?.height || 300,
-              kind: block.type as 'loop' | 'parallel',
+              kind: block.type as "loop" | "parallel",
             },
-          })
-          return
+          });
+          return;
         }
 
         // Regular blocks
         nodeArray.push({
           id: blockId,
-          type: 'workflowBlock',
+          type: "workflowBlock",
           position: absolutePosition,
           draggable: false,
           data: {
@@ -210,15 +221,15 @@ export function WorkflowPreview({
             horizontalHandles: block.horizontalHandles ?? false,
             enabled: block.enabled ?? true,
           },
-        })
-        return
+        });
+        return;
       }
 
       // Full mode: create detailed node data for interactive previews
-      if (block.type === 'loop') {
+      if (block.type === "loop") {
         nodeArray.push({
           id: block.id,
-          type: 'subflowNode',
+          type: "subflowNode",
           position: absolutePosition,
           parentId: block.data?.parentId,
           extent: block.data?.extent || undefined,
@@ -228,18 +239,18 @@ export function WorkflowPreview({
             name: block.name,
             width: block.data?.width || 500,
             height: block.data?.height || 300,
-            state: 'valid',
+            state: "valid",
             isPreview: true,
-            kind: 'loop',
+            kind: "loop",
           },
-        })
-        return
+        });
+        return;
       }
 
-      if (block.type === 'parallel') {
+      if (block.type === "parallel") {
         nodeArray.push({
           id: block.id,
-          type: 'subflowNode',
+          type: "subflowNode",
           position: absolutePosition,
           parentId: block.data?.parentId,
           extent: block.data?.extent || undefined,
@@ -249,21 +260,23 @@ export function WorkflowPreview({
             name: block.name,
             width: block.data?.width || 500,
             height: block.data?.height || 300,
-            state: 'valid',
+            state: "valid",
             isPreview: true,
-            kind: 'parallel',
+            kind: "parallel",
           },
-        })
-        return
+        });
+        return;
       }
 
-      const blockConfig = getBlock(block.type)
+      const blockConfig = getBlock(block.type);
       if (!blockConfig) {
-        logger.error(`No configuration found for block type: ${block.type}`, { blockId })
-        return
+        logger.error(`No configuration found for block type: ${block.type}`, {
+          blockId,
+        });
+        return;
       }
 
-      const nodeType = block.type === 'note' ? 'noteBlock' : 'workflowBlock'
+      const nodeType = block.type === "note" ? "noteBlock" : "workflowBlock";
 
       nodeArray.push({
         id: blockId,
@@ -279,18 +292,19 @@ export function WorkflowPreview({
           isPreview: true,
           subBlockValues: block.subBlocks ?? {},
         },
-      })
+      });
 
-      if (block.type === 'loop') {
+      if (block.type === "loop") {
         const childBlocks = Object.entries(workflowState.blocks || {}).filter(
           ([_, childBlock]) => childBlock.data?.parentId === blockId
-        )
+        );
 
         childBlocks.forEach(([childId, childBlock]) => {
-          const childConfig = getBlock(childBlock.type)
+          const childConfig = getBlock(childBlock.type);
 
           if (childConfig) {
-            const childNodeType = childBlock.type === 'note' ? 'noteBlock' : 'workflowBlock'
+            const childNodeType =
+              childBlock.type === "note" ? "noteBlock" : "workflowBlock";
 
             nodeArray.push({
               id: childId,
@@ -311,13 +325,13 @@ export function WorkflowPreview({
                 isPreview: true,
               },
               draggable: false,
-            })
+            });
           }
-        })
+        });
       }
-    })
+    });
 
-    return nodeArray
+    return nodeArray;
   }, [
     blocksStructure,
     loopsStructure,
@@ -326,10 +340,10 @@ export function WorkflowPreview({
     workflowState.blocks,
     isValidWorkflowState,
     lightweight,
-  ])
+  ]);
 
   const edges: Edge[] = useMemo(() => {
-    if (!isValidWorkflowState) return []
+    if (!isValidWorkflowState) return [];
 
     return (workflowState.edges || []).map((edge) => ({
       id: edge.id,
@@ -337,31 +351,34 @@ export function WorkflowPreview({
       target: edge.target,
       sourceHandle: edge.sourceHandle,
       targetHandle: edge.targetHandle,
-    }))
-  }, [edgesStructure, workflowState.edges, isValidWorkflowState])
+    }));
+  }, [edgesStructure, workflowState.edges, isValidWorkflowState]);
 
   // Handle migrated logs that don't have complete workflow state
   if (!isValidWorkflowState) {
     return (
       <div
         style={{ height, width }}
-        className='flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
+        className="flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900"
       >
-        <div className='text-center text-gray-500 dark:text-gray-400'>
-          <div className='mb-2 font-medium text-lg'>⚠️ Logged State Not Found</div>
-          <div className='text-sm'>
-            This log was migrated from the old system and doesn't contain workflow state data.
+        <div className="text-center text-gray-500 dark:text-gray-400">
+          <div className="mb-2 font-medium text-lg">
+            ⚠️ Logged State Not Found
+          </div>
+          <div className="text-sm">
+            This log was migrated from the old system and doesn't contain
+            workflow state data.
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <ReactFlowProvider>
       <div
-        style={{ height, width, backgroundColor: 'var(--bg)' }}
-        className={cn('preview-mode', className)}
+        style={{ height, width, backgroundColor: "var(--bg)" }}
+        className={cn("preview-mode", className)}
       >
         {cursorStyle && (
           <style>{`
@@ -396,14 +413,16 @@ export function WorkflowPreview({
           onNodeClick={
             onNodeClick
               ? (event, node) => {
-                  logger.debug('Node clicked:', { nodeId: node.id, event })
-                  onNodeClick(node.id, { x: event.clientX, y: event.clientY })
+                  logger.debug("Node clicked:", { nodeId: node.id, event });
+                  onNodeClick(node.id, { x: event.clientX, y: event.clientY });
                 }
               : undefined
           }
-        />
+        >
+          <Background color="#454444" variant={BackgroundVariant.Dots} />
+        </ReactFlow>
         <FitViewOnChange nodes={nodes} fitPadding={fitPadding} />
       </div>
     </ReactFlowProvider>
-  )
+  );
 }

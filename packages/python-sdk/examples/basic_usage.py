@@ -9,7 +9,7 @@ from simstudio import SimStudioClient, SimStudioError
 
 def basic_example():
     """Example 1: Basic workflow execution"""
-    client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+    client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
     try:
         # Execute a workflow without input
@@ -31,7 +31,7 @@ def basic_example():
 
 def with_input_example():
     """Example 2: Workflow execution with input data"""
-    client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+    client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
     try:
         result = client.execute_workflow(
@@ -66,7 +66,7 @@ def with_input_example():
 
 def status_example():
     """Example 3: Workflow validation and status checking"""
-    client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+    client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
     try:
         # Check if workflow is ready
@@ -92,7 +92,7 @@ def status_example():
 
 def context_manager_example():
     """Example 4: Using context manager"""
-    with SimStudioClient(api_key=os.getenv("SIM_API_KEY")) as client:
+    with SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")) as client:
         try:
             result = client.execute_workflow("your-workflow-id")
             print(f"Result: {result}")
@@ -103,7 +103,7 @@ def context_manager_example():
 
 def batch_execution_example():
     """Example 5: Batch workflow execution"""
-    client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+    client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
     
     workflows = [
         ("workflow-1", {"type": "analysis", "data": "sample1"}),
@@ -156,7 +156,7 @@ def batch_execution_example():
 
 def streaming_example():
     """Example 6: Workflow execution with streaming"""
-    client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+    client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
     try:
         result = client.execute_workflow(
@@ -183,7 +183,7 @@ def streaming_example():
 
 def error_handling_example():
     """Example 7: Comprehensive error handling"""
-    client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+    client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
     try:
         result = client.execute_workflow("your-workflow-id")
@@ -220,8 +220,8 @@ if __name__ == "__main__":
     print("🚀 Running Sim Python SDK Examples\n")
     
     # Check if API key is set
-    if not os.getenv("SIM_API_KEY"):
-        print("❌ Please set SIM_API_KEY environment variable")
+    if not os.getenv("ETHANA_AGENT_BUILDER_KEY"):
+        print("❌ Please set ETHANA_AGENT_BUILDER_KEY environment variable")
         exit(1)
     
     try:

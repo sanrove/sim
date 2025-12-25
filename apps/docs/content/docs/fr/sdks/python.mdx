@@ -2,15 +2,17 @@
 title: Python
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout'
-import { Card, Cards } from 'fumadocs-ui/components/card'
-import { Step, Steps } from 'fumadocs-ui/components/steps'
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
+import { Callout } from "fumadocs-ui/components/callout";
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 Le SDK Python officiel pour Sim vous permet d'exécuter des workflows de manière programmatique à partir de vos applications Python en utilisant le SDK Python officiel.
 
 <Callout type="info">
-  Le SDK Python prend en charge Python 3.8+ avec support d'exécution asynchrone, limitation automatique du débit avec backoff exponentiel, et suivi d'utilisation.
+  Le SDK Python prend en charge Python 3.8+ avec support d'exécution asynchrone,
+  limitation automatique du débit avec backoff exponentiel, et suivi
+  d'utilisation.
 </Callout>
 
 ## Installation
@@ -53,6 +55,7 @@ SimStudioClient(api_key: str, base_url: str = "https://sim.ai")
 ```
 
 **Paramètres :**
+
 - `api_key` (str) : Votre clé API Sim
 - `base_url` (str, facultatif) : URL de base pour l'API Sim
 
@@ -71,6 +74,7 @@ result = client.execute_workflow(
 ```
 
 **Paramètres :**
+
 - `workflow_id` (str) : L'identifiant du workflow à exécuter
 - `input_data` (dict, facultatif) : Données d'entrée à transmettre au workflow
 - `timeout` (float, facultatif) : Délai d'expiration en secondes (par défaut : 30.0)
@@ -92,6 +96,7 @@ print("Is deployed:", status.is_deployed)
 ```
 
 **Paramètres :**
+
 - `workflow_id` (str) : L'identifiant du workflow
 
 **Retourne :** `WorkflowStatus`
@@ -108,6 +113,7 @@ if is_ready:
 ```
 
 **Paramètres :**
+
 - `workflow_id` (str) : L'identifiant du workflow
 
 **Retourne :** `bool`
@@ -124,11 +130,13 @@ if status["status"] == "completed":
 ```
 
 **Paramètres :**
+
 - `task_id` (str) : L'identifiant de tâche retourné par l'exécution asynchrone
 
 **Retourne :** `Dict[str, Any]`
 
 **Champs de réponse :**
+
 - `success` (bool) : Si la requête a réussi
 - `taskId` (str) : L'identifiant de la tâche
 - `status` (str) : L'un des états suivants : `'queued'`, `'processing'`, `'completed'`, `'failed'`, `'cancelled'`
@@ -154,6 +162,7 @@ result = client.execute_with_retry(
 ```
 
 **Paramètres :**
+
 - `workflow_id` (str) : L'identifiant du workflow à exécuter
 - `input_data` (dict, facultatif) : Données d'entrée à transmettre au workflow
 - `timeout` (float, facultatif) : Délai d'expiration en secondes
@@ -319,6 +328,7 @@ class SimStudioError(Exception):
 ```
 
 **Codes d'erreur courants :**
+
 - `UNAUTHORIZED` : Clé API invalide
 - `TIMEOUT` : Délai d'attente de la requête dépassé
 - `RATE_LIMIT_EXCEEDED` : Limite de débit dépassée
@@ -348,7 +358,7 @@ class SimStudioError(Exception):
 import os
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def run_workflow():
     try:
@@ -371,7 +381,7 @@ def run_workflow():
             print("Duration:", result.metadata.get("duration") if result.metadata else None)
         else:
             print("Workflow failed:", result.error)
-            
+
     except Exception as error:
         print("Error:", error)
 
@@ -386,7 +396,7 @@ Gérez différents types d'erreurs qui peuvent survenir pendant l'exécution du 
 from simstudio import SimStudioClient, SimStudioError
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))   
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_error_handling():
     try:
@@ -418,7 +428,7 @@ from simstudio import SimStudioClient
 import os
 
 # Using context manager to automatically close the session
-with SimStudioClient(api_key=os.getenv("SIM_API_KEY")) as client:
+with SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")) as client:
     result = client.execute_workflow("workflow-id")
     print("Result:", result)
 # Session is automatically closed here
@@ -432,19 +442,19 @@ Exécutez plusieurs workflows efficacement :
 from simstudio import SimStudioClient
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_workflows_batch(workflow_data_pairs):
     """Execute multiple workflows with different input data."""
     results = []
-    
+
     for workflow_id, input_data in workflow_data_pairs:
         try:
             # Validate workflow before execution
             if not client.validate_workflow(workflow_id):
                 print(f"Skipping {workflow_id}: not deployed")
                 continue
-                
+
             result = client.execute_workflow(workflow_id, input_data)
             results.append({
                 "workflow_id": workflow_id,
@@ -452,14 +462,14 @@ def execute_workflows_batch(workflow_data_pairs):
                 "output": result.output,
                 "error": result.error
             })
-            
+
         except Exception as error:
             results.append({
                 "workflow_id": workflow_id,
                 "success": False,
                 "error": str(error)
             })
-    
+
     return results
 
 # Example usage
@@ -482,7 +492,7 @@ import os
 import time
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_async():
     try:
@@ -527,7 +537,7 @@ Gérez les limites de débit automatiquement avec un retrait exponentiel :
 import os
 from simstudio import SimStudioClient, SimStudioError
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_retry_handling():
     try:
@@ -564,7 +574,7 @@ Surveillez l'utilisation et les limites de votre compte :
 import os
 from simstudio import SimStudioClient
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def check_usage():
     try:
@@ -608,7 +618,7 @@ Exécutez des workflows avec des réponses en streaming en temps réel :
 from simstudio import SimStudioClient
 import os
 
-client = SimStudioClient(api_key=os.getenv("SIM_API_KEY"))   
+client = SimStudioClient(api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"))
 
 def execute_with_streaming():
     """Execute workflow with streaming enabled."""
@@ -659,7 +669,7 @@ def stream_workflow():
             'https://sim.ai/api/workflows/WORKFLOW_ID/execute',
             headers={
                 'Content-Type': 'application/json',
-                'X-API-Key': os.getenv('SIM_API_KEY')
+                'X-API-Key': os.getenv('ETHANA_AGENT_BUILDER_KEY')
             },
             json={
                 'message': 'Generate a story',
@@ -710,7 +720,7 @@ Configurez le client en utilisant des variables d'environnement :
 
     # Development configuration
     client = SimStudioClient(
-        api_key=os.getenv("SIM_API_KEY")
+        api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")
         base_url=os.getenv("SIM_BASE_URL", "https://sim.ai")
     )
     ```
@@ -723,9 +733,9 @@ Configurez le client en utilisant des variables d'environnement :
     from simstudio import SimStudioClient
 
     # Production configuration with error handling
-    api_key = os.getenv("SIM_API_KEY")
+    api_key = os.getenv("ETHANA_AGENT_BUILDER_KEY")
     if not api_key:
-        raise ValueError("SIM_API_KEY environment variable is required")
+        raise ValueError("ETHANA_AGENT_BUILDER_KEY environment variable is required")
 
     client = SimStudioClient(
         api_key=api_key,
@@ -746,7 +756,8 @@ Configurez le client en utilisant des variables d'environnement :
     Accédez au workflow que vous souhaitez exécuter par programmation.
   </Step>
   <Step title="Déployez votre workflow">
-    Cliquez sur "Déployer" pour déployer votre workflow s'il n'a pas encore été déployé.
+    Cliquez sur "Déployer" pour déployer votre workflow s'il n'a pas encore été
+    déployé.
   </Step>
   <Step title="Créez ou sélectionnez une clé API">
     Pendant le processus de déploiement, sélectionnez ou créez une clé API.

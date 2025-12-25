@@ -11,9 +11,9 @@ import os
 
 def main():
     # Initialize the client
-    api_key = os.getenv('SIM_API_KEY')
+    api_key = os.getenv('ETHANA_AGENT_BUILDER_KEY')
     if not api_key:
-        raise ValueError('SIM_API_KEY environment variable is required')
+        raise ValueError('ETHANA_AGENT_BUILDER_KEY environment variable is required')
 
     client = SimStudioClient(api_key=api_key)
 
