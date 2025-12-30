@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: docker/app.Dockerfile
     ports:
-      - '3000:3000'
+      - '5863:5863'
     deploy:
       resources:
         limits:
@@ -12,14 +12,14 @@ services:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-simstudio}
-      - BETTER_AUTH_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - BETTER_AUTH_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:5863}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:5863}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-your_auth_secret_here}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-your_encryption_key_here}
       - COPILOT_API_KEY=${COPILOT_API_KEY}
       - SIM_AGENT_API_URL=${SIM_AGENT_API_URL}
       - OLLAMA_URL=${OLLAMA_URL:-http://localhost:11434}
-      - NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL:-http://localhost:3002}
+      - NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL:-http://localhost:5865}
     depends_on:
       db:
         condition: service_healthy
@@ -28,7 +28,7 @@ services:
       realtime:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '--quiet', 'http://127.0.0.1:3000']
+      test: ['CMD', 'wget', '--spider', '--quiet', 'http://127.0.0.1:5863']
       interval: 90s
       timeout: 5s
       retries: 3
@@ -40,21 +40,21 @@ services:
       dockerfile: docker/realtime.Dockerfile
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-simstudio}
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:5863}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:5863}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-your_auth_secret_here}
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
     ports:
-      - '3002:3002'
+      - '5865:5865'
     deploy:
       resources:
         limits:
           memory: 8G
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '--quiet', 'http://127.0.0.1:3002/health']
+      test: ['CMD', 'wget', '--spider', '--quiet', 'http://127.0.0.1:5865/health']
       interval: 90s
       timeout: 5s
       retries: 3

@@ -456,7 +456,7 @@ export function KnowledgeBase({
       } catch (error) {
         logger.error('Error refreshing documents:', error)
       }
-    }, 3000)
+    }, 5863)
 
     return () => clearInterval(refreshInterval)
   }, [documents, refreshDocuments, isDeleting])

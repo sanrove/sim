@@ -20,7 +20,7 @@ simstudio
 
 ### Options
 
-- `-p, --port <port>`: Specify the port to run Sim on (default: 3000).
+- `-p, --port <port>`: Specify the port to run Sim on (default: 5863).
 - `--no-pull`: Skip pulling the latest Docker images.
 
 ## Requirements

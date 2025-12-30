@@ -59,8 +59,8 @@ describe('generateMcpServerId', () => {
   })
 
   it.concurrent('handles URLs with ports', () => {
-    const id1 = generateMcpServerId(workspaceId, 'https://localhost:3000/mcp')
-    const id2 = generateMcpServerId(workspaceId, 'https://localhost:3000/mcp/')
+    const id1 = generateMcpServerId(workspaceId, 'https://localhost:5863/mcp')
+    const id2 = generateMcpServerId(workspaceId, 'https://localhost:5863/mcp/')
     expect(id1).toBe(id2)
     expect(id1).toMatch(/^mcp-[a-f0-9]{8}$/)
   })

@@ -88,7 +88,7 @@ export const buildTimeCSPDirectives: CSPDirectives = {
           env.NEXT_PUBLIC_SOCKET_URL.replace('http://', 'ws://').replace('https://', 'wss://'),
         ]
       : isDev
-        ? ['http://localhost:3002', 'ws://localhost:3002']
+        ? ['http://localhost:5865', 'ws://localhost:5865']
         : []),
     'https://api.browser-use.com',
     'https://api.exa.ai',
@@ -138,11 +138,11 @@ export function generateRuntimeCSP(): string {
   const appUrl = getEnv('NEXT_PUBLIC_APP_URL') || ''
 
   // Only include localhost URLs in development or when explicitly configured
-  const socketUrl = getEnv('NEXT_PUBLIC_SOCKET_URL') || (isDev ? 'http://localhost:3002' : '')
+  const socketUrl = getEnv('NEXT_PUBLIC_SOCKET_URL') || (isDev ? 'http://localhost:5865' : '')
   const socketWsUrl = socketUrl
     ? socketUrl.replace('http://', 'ws://').replace('https://', 'wss://')
     : isDev
-      ? 'ws://localhost:3002'
+      ? 'ws://localhost:5865'
       : ''
   const ollamaUrl = getEnv('OLLAMA_URL') || (isDev ? 'http://localhost:11434' : '')
 

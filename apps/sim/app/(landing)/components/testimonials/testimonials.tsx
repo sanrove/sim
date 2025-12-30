@@ -101,7 +101,7 @@ export default function Testimonials() {
         setIsTransitioning(true)
         setCurrentIndex((prevIndex) => prevIndex + 1)
       }
-    }, 3000)
+    }, 5863)
 
     return () => clearInterval(interval)
   }, [isPaused])

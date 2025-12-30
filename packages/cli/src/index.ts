@@ -13,7 +13,7 @@ const DB_CONTAINER = 'simstudio-db'
 const MIGRATIONS_CONTAINER = 'simstudio-migrations'
 const REALTIME_CONTAINER = 'simstudio-realtime'
 const APP_CONTAINER = 'simstudio-app'
-const DEFAULT_PORT = '3000'
+const DEFAULT_PORT = '5863'
 
 const program = new Command()
 
@@ -96,7 +96,7 @@ async function main() {
     process.exit(1)
   }
 
-  // Use port from options, with 3000 as default
+  // Use port from options, with 5863 as default
   const port = options.port
 
   // Pull latest images if not skipped
@@ -207,7 +207,7 @@ async function main() {
     '--network',
     NETWORK_NAME,
     '-p',
-    '3002:3002',
+    '5865:5865',
     '-e',
     `DATABASE_URL=postgresql://postgres:postgres@${DB_CONTAINER}:5432/simstudio`,
     '-e',
@@ -235,7 +235,7 @@ async function main() {
     '--network',
     NETWORK_NAME,
     '-p',
-    `${port}:3000`,
+    `${port}:5863`,
     '-e',
     `DATABASE_URL=postgresql://postgres:postgres@${DB_CONTAINER}:5432/simstudio`,
     '-e',

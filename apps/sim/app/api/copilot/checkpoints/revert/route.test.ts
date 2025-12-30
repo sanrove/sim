@@ -25,9 +25,9 @@ describe('Copilot Checkpoints Revert API Route', () => {
 
     // Mock getBaseUrl to return localhost for tests
     vi.doMock('@/lib/core/utils/urls', () => ({
-      getBaseUrl: vi.fn(() => 'http://localhost:3000'),
-      getBaseDomain: vi.fn(() => 'localhost:3000'),
-      getEmailDomain: vi.fn(() => 'localhost:3000'),
+      getBaseUrl: vi.fn(() => 'http://localhost:5863'),
+      getBaseDomain: vi.fn(() => 'localhost:5863'),
+      getEmailDomain: vi.fn(() => 'localhost:5863'),
     }))
 
     mockSelect.mockReturnValue({ from: mockFrom })
@@ -263,7 +263,7 @@ describe('Copilot Checkpoints Revert API Route', () => {
         json: () => Promise.resolve({ success: true }),
       })
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/checkpoints/revert', {
+      const req = new NextRequest('http://localhost:5863/api/copilot/checkpoints/revert', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -300,7 +300,7 @@ describe('Copilot Checkpoints Revert API Route', () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/workflows/c3d4e5f6-a7b8-4c09-a1e2-f3a4b5c6d7e8/state',
+        'http://localhost:5863/api/workflows/c3d4e5f6-a7b8-4c09-a1e2-f3a4b5c6d7e8/state',
         {
           method: 'PUT',
           headers: {
@@ -579,7 +579,7 @@ describe('Copilot Checkpoints Revert API Route', () => {
       authMocks.setAuthenticated()
 
       // Create a request with invalid JSON
-      const req = new NextRequest('http://localhost:3000/api/copilot/checkpoints/revert', {
+      const req = new NextRequest('http://localhost:5863/api/copilot/checkpoints/revert', {
         method: 'POST',
         body: '{invalid-json',
         headers: {
@@ -618,7 +618,7 @@ describe('Copilot Checkpoints Revert API Route', () => {
         json: () => Promise.resolve({ success: true }),
       })
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/checkpoints/revert', {
+      const req = new NextRequest('http://localhost:5863/api/copilot/checkpoints/revert', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -633,7 +633,7 @@ describe('Copilot Checkpoints Revert API Route', () => {
       await POST(req)
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/workflows/d0e1f2a3-b4c5-4d67-a8f9-a0b1c2d3e4f5/state',
+        'http://localhost:5863/api/workflows/d0e1f2a3-b4c5-4d67-a8f9-a0b1c2d3e4f5/state',
         {
           method: 'PUT',
           headers: {
@@ -668,7 +668,7 @@ describe('Copilot Checkpoints Revert API Route', () => {
         json: () => Promise.resolve({ success: true }),
       })
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/checkpoints/revert', {
+      const req = new NextRequest('http://localhost:5863/api/copilot/checkpoints/revert', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -684,7 +684,7 @@ describe('Copilot Checkpoints Revert API Route', () => {
 
       expect(response.status).toBe(200)
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/workflows/e1f2a3b4-c5d6-4e78-a9a0-b1c2d3e4f5a6/state',
+        'http://localhost:5863/api/workflows/e1f2a3b4-c5d6-4e78-a9a0-b1c2d3e4f5a6/state',
         {
           method: 'PUT',
           headers: {

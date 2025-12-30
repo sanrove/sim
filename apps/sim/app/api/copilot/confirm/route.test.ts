@@ -323,7 +323,7 @@ describe('Copilot Confirm API Route', () => {
       const authMocks = mockAuth()
       authMocks.setAuthenticated()
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/confirm', {
+      const req = new NextRequest('http://localhost:5863/api/copilot/confirm', {
         method: 'POST',
         body: '{invalid-json',
         headers: {

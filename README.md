@@ -45,7 +45,7 @@ Upload documents to a vector store and let agents answer questions grounded in y
 ```bash
 npx simstudio
 ```
-→ http://localhost:3000
+→ http://localhost:5863
 
 #### Note
 Docker must be installed and running on your machine.
@@ -54,7 +54,7 @@ Docker must be installed and running on your machine.
 
 | Flag | Description |
 |------|-------------|
-| `-p, --port <port>` | Port to run Sim on (default `3000`) |
+| `-p, --port <port>` | Port to run Sim on (default `5863`) |
 | `--no-pull` | Skip pulling latest Docker images |
 
 ### Self-hosted: Docker Compose
@@ -70,7 +70,7 @@ cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Access the application at [http://localhost:3000/](http://localhost:3000/)
+Access the application at [http://localhost:5863/](http://localhost:5863/)
 
 #### Using Local Models with Ollama
 
@@ -84,7 +84,7 @@ docker compose -f docker-compose.ollama.yml --profile setup up -d
 docker compose -f docker-compose.ollama.yml --profile cpu --profile setup up -d
 ```
 
-Wait for the model to download, then visit [http://localhost:3000](http://localhost:3000). Add more models with:
+Wait for the model to download, then visit [http://localhost:5863](http://localhost:5863). Add more models with:
 ```bash
 docker compose -f docker-compose.ollama.yml exec ollama ollama pull llama3.1:8b
 ```
@@ -230,7 +230,7 @@ Key environment variables for self-hosted deployments (see `apps/sim/.env.exampl
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string with pgvector |
 | `BETTER_AUTH_SECRET` | Yes | Auth secret (`openssl rand -hex 32`) |
-| `BETTER_AUTH_URL` | Yes | Your app URL (e.g., `http://localhost:3000`) |
+| `BETTER_AUTH_URL` | Yes | Your app URL (e.g., `http://localhost:5863`) |
 | `NEXT_PUBLIC_APP_URL` | Yes | Public app URL (same as above) |
 | `ENCRYPTION_KEY` | Yes | Encryption key (`openssl rand -hex 32`) |
 | `OLLAMA_URL` | No | Ollama server URL (default: `http://localhost:11434`) |
@@ -255,7 +255,7 @@ Ensure PostgreSQL has the pgvector extension installed. When using Docker, wait 
 
 ### Port conflicts
 
-If ports 3000, 3002, or 5432 are in use, configure alternatives:
+If ports 5863, 5865, or 5432 are in use, configure alternatives:
 
 ```bash
 # Custom ports

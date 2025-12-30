@@ -21,7 +21,7 @@ describe('WorkflowBlockHandler', () => {
     // Mock window.location.origin for getBaseUrl()
     ;(global as any).window = {
       location: {
-        origin: 'http://localhost:3000',
+        origin: 'http://localhost:5863',
       },
     }
     handler = new WorkflowBlockHandler()

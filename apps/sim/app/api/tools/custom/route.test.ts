@@ -254,7 +254,7 @@ describe('Custom Tools API Routes', () => {
     it('should return tools for authenticated user with workspaceId', async () => {
       // Create mock request with workspaceId
       const req = new NextRequest(
-        'http://localhost:3000/api/tools/custom?workspaceId=workspace-123'
+        'http://localhost:5863/api/tools/custom?workspaceId=workspace-123'
       )
 
       // Simulate DB returning tools with orderBy chain
@@ -284,7 +284,7 @@ describe('Custom Tools API Routes', () => {
     it('should handle unauthorized access', async () => {
       // Create mock request
       const req = new NextRequest(
-        'http://localhost:3000/api/tools/custom?workspaceId=workspace-123'
+        'http://localhost:5863/api/tools/custom?workspaceId=workspace-123'
       )
 
       // Mock hybrid auth to return unauthorized
@@ -309,7 +309,7 @@ describe('Custom Tools API Routes', () => {
 
     it('should handle workflowId parameter', async () => {
       // Create mock request with workflowId parameter
-      const req = new NextRequest('http://localhost:3000/api/tools/custom?workflowId=workflow-123')
+      const req = new NextRequest('http://localhost:5863/api/tools/custom?workflowId=workflow-123')
 
       // Mock workflow lookup to return workspaceId (for limit(1) call)
       mockLimit.mockResolvedValueOnce([{ workspaceId: 'workspace-123' }])
@@ -405,7 +405,7 @@ describe('Custom Tools API Routes', () => {
 
       // Create mock request with ID and workspaceId parameters
       const req = new NextRequest(
-        'http://localhost:3000/api/tools/custom?id=tool-1&workspaceId=workspace-123'
+        'http://localhost:5863/api/tools/custom?id=tool-1&workspaceId=workspace-123'
       )
 
       // Import handler after mocks are set up
@@ -445,7 +445,7 @@ describe('Custom Tools API Routes', () => {
       mockLimit.mockResolvedValueOnce([])
 
       // Create mock request with non-existent ID
-      const req = new NextRequest('http://localhost:3000/api/tools/custom?id=non-existent')
+      const req = new NextRequest('http://localhost:5863/api/tools/custom?id=non-existent')
 
       // Import handler after mocks are set up
       const { DELETE } = await import('@/app/api/tools/custom/route')
@@ -474,7 +474,7 @@ describe('Custom Tools API Routes', () => {
       mockLimit.mockResolvedValueOnce([userScopedTool])
 
       // Create mock request (no workspaceId for user-scoped tool)
-      const req = new NextRequest('http://localhost:3000/api/tools/custom?id=tool-1')
+      const req = new NextRequest('http://localhost:5863/api/tools/custom?id=tool-1')
 
       // Import handler after mocks are set up
       const { DELETE } = await import('@/app/api/tools/custom/route')
@@ -498,7 +498,7 @@ describe('Custom Tools API Routes', () => {
       }))
 
       // Create mock request
-      const req = new NextRequest('http://localhost:3000/api/tools/custom?id=tool-1')
+      const req = new NextRequest('http://localhost:5863/api/tools/custom?id=tool-1')
 
       // Import handler after mocks are set up
       const { DELETE } = await import('@/app/api/tools/custom/route')

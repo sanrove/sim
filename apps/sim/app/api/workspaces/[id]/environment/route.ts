@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { environment, workspace, workspaceEnvironment } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -10,6 +10,21 @@ import { createLogger } from '@/lib/logs/console/logger'
 import { getUserEntityPermissions } from '@/lib/workspaces/permissions/utils'
 
 const logger = createLogger('WorkspaceEnvironmentAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const UpsertSchema = z.object({
   variables: z.record(z.string()),
@@ -32,20 +47,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const userId = session.user.id
 
-    // Validate workspace exists
-    const ws = await db.select().from(workspace).where(eq(workspace.id, workspaceId)).limit(1)
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
+    // Validate workspace exists in tenant DB
+    const ws = await tenantDb.select().from(workspace).where(eq(workspace.id, workspaceId)).limit(1)
     if (!ws.length) {
       return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
     }
 
     // Require any permission to read
-    const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId)
+    const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId, tenantDb)
     if (!permission) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Workspace env (encrypted)
-    const wsEnvRow = await db
+    // Workspace env (encrypted) from tenant DB
+    const wsEnvRow = await tenantDb
       .select()
       .from(workspaceEnvironment)
       .where(eq(workspaceEnvironment.workspaceId, workspaceId))
@@ -53,8 +74,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const wsEncrypted: Record<string, string> = (wsEnvRow[0]?.variables as any) || {}
 
-    // Personal env (encrypted)
-    const personalRow = await db
+    // Personal env (encrypted) from tenant DB
+    const personalRow = await tenantDb
       .select()
       .from(environment)
       .where(eq(environment.userId, userId))
@@ -114,7 +135,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const userId = session.user.id
-    const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId)
+
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
+    const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId, tenantDb)
     if (!permission || (permission !== 'admin' && permission !== 'write')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -122,8 +150,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = await request.json()
     const { variables } = UpsertSchema.parse(body)
 
-    // Read existing encrypted ws vars
-    const existingRows = await db
+    // Read existing encrypted ws vars from tenant DB
+    const existingRows = await tenantDb
       .select()
       .from(workspaceEnvironment)
       .where(eq(workspaceEnvironment.workspaceId, workspaceId))
@@ -141,8 +169,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const merged = { ...existingEncrypted, ...encryptedIncoming }
 
-    // Upsert by unique workspace_id
-    await db
+    // Upsert by unique workspace_id in tenant DB
+    await tenantDb
       .insert(workspaceEnvironment)
       .values({
         id: crypto.randomUUID(),
@@ -181,7 +209,14 @@ export async function DELETE(
     }
 
     const userId = session.user.id
-    const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId)
+
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
+    const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId, tenantDb)
     if (!permission || (permission !== 'admin' && permission !== 'write')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -189,7 +224,7 @@ export async function DELETE(
     const body = await request.json()
     const { keys } = DeleteSchema.parse(body)
 
-    const wsRows = await db
+    const wsRows = await tenantDb
       .select()
       .from(workspaceEnvironment)
       .where(eq(workspaceEnvironment.workspaceId, workspaceId))
@@ -208,7 +243,7 @@ export async function DELETE(
       return NextResponse.json({ success: true })
     }
 
-    await db
+    await tenantDb
       .insert(workspaceEnvironment)
       .values({
         id: wsRows[0]?.id || crypto.randomUUID(),

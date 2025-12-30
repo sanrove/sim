@@ -40,7 +40,7 @@ describe('Workflow Variables API Route', () => {
     it('should return 401 when user is not authenticated', async () => {
       authMocks.setUnauthenticated()
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123/variables')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123/variables')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const { GET } = await import('@/app/api/workflows/[id]/variables/route')
@@ -55,7 +55,7 @@ describe('Workflow Variables API Route', () => {
       authMocks.setAuthenticated({ id: 'user-123', email: 'test@example.com' })
       mockGetWorkflowAccessContext.mockResolvedValueOnce(null)
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/nonexistent/variables')
+      const req = new NextRequest('http://localhost:5863/api/workflows/nonexistent/variables')
       const params = Promise.resolve({ id: 'nonexistent' })
 
       const { GET } = await import('@/app/api/workflows/[id]/variables/route')
@@ -85,7 +85,7 @@ describe('Workflow Variables API Route', () => {
         isWorkspaceOwner: false,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123/variables')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123/variables')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const { GET } = await import('@/app/api/workflows/[id]/variables/route')
@@ -115,7 +115,7 @@ describe('Workflow Variables API Route', () => {
         isWorkspaceOwner: false,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123/variables')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123/variables')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const { GET } = await import('@/app/api/workflows/[id]/variables/route')
@@ -143,7 +143,7 @@ describe('Workflow Variables API Route', () => {
         isWorkspaceOwner: false,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123/variables')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123/variables')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const { GET } = await import('@/app/api/workflows/[id]/variables/route')
@@ -173,7 +173,7 @@ describe('Workflow Variables API Route', () => {
         isWorkspaceOwner: false,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123/variables')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123/variables')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const { GET } = await import('@/app/api/workflows/[id]/variables/route')
@@ -211,7 +211,7 @@ describe('Workflow Variables API Route', () => {
         { id: 'var-1', workflowId: 'workflow-123', name: 'test', type: 'string', value: 'hello' },
       ]
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123/variables', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123/variables', {
         method: 'POST',
         body: JSON.stringify({ variables }),
       })
@@ -246,7 +246,7 @@ describe('Workflow Variables API Route', () => {
         { id: 'var-1', workflowId: 'workflow-123', name: 'test', type: 'string', value: 'hello' },
       ]
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123/variables', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123/variables', {
         method: 'POST',
         body: JSON.stringify({ variables }),
       })
@@ -280,7 +280,7 @@ describe('Workflow Variables API Route', () => {
       // Invalid data - missing required fields
       const invalidData = { variables: [{ name: 'test' }] }
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123/variables', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123/variables', {
         method: 'POST',
         body: JSON.stringify(invalidData),
       })
@@ -300,7 +300,7 @@ describe('Workflow Variables API Route', () => {
       authMocks.setAuthenticated({ id: 'user-123', email: 'test@example.com' })
       mockGetWorkflowAccessContext.mockRejectedValueOnce(new Error('Database connection failed'))
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123/variables')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123/variables')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const { GET } = await import('@/app/api/workflows/[id]/variables/route')

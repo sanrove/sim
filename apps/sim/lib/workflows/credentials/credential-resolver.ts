@@ -134,7 +134,7 @@ async function resolveCredentialForSubBlock(
 
     // Fetch credentials from the API
     // Note: This assumes we're running in a server context with access to fetch
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:5863'
     const credentialsUrl = `${baseUrl}/api/auth/oauth/credentials?provider=${effectiveProviderId}`
 
     logger.debug('Fetching credentials', { url: credentialsUrl })

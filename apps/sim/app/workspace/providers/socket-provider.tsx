@@ -162,7 +162,7 @@ export function SocketProvider({ children, user }: SocketProviderProps) {
 
     const initializeSocket = () => {
       try {
-        const socketUrl = getEnv('NEXT_PUBLIC_SOCKET_URL') || 'http://localhost:3002'
+        const socketUrl = getEnv('NEXT_PUBLIC_SOCKET_URL') || 'http://localhost:5865'
 
         logger.info('Attempting to connect to Socket.IO server', {
           url: socketUrl,

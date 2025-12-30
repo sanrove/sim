@@ -362,7 +362,7 @@ describe('Individual Folder API Route', () => {
       vi.doMock('@sim/db', () => dbMock)
 
       // Create a request with invalid JSON
-      const req = new Request('http://localhost:3000/api/folders/folder-1', {
+      const req = new Request('http://localhost:5863/api/folders/folder-1', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

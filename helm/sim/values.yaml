@@ -50,11 +50,11 @@ app:
   # Environment variables
   env:
     # Application URLs
-    NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-    BETTER_AUTH_URL: "http://localhost:3000"
+    NEXT_PUBLIC_APP_URL: "http://localhost:5863"
+    BETTER_AUTH_URL: "http://localhost:5863"
     # SOCKET_SERVER_URL: Auto-detected when realtime.enabled=true (uses internal service)
     # Only set this if using an external WebSocket service with realtime.enabled=false
-    NEXT_PUBLIC_SOCKET_URL: "http://localhost:3002"  # Public WebSocket URL for browsers
+    NEXT_PUBLIC_SOCKET_URL: "http://localhost:5865"  # Public WebSocket URL for browsers
     
     # Node environment
     NODE_ENV: "production"
@@ -152,14 +152,14 @@ app:
   # Service configuration
   service:
     type: ClusterIP
-    port: 3000
-    targetPort: 3000
+    port: 5863
+    targetPort: 5863
   
   # Health checks
   livenessProbe:
     httpGet:
       path: /
-      port: 3000
+      port: 5863
     initialDelaySeconds: 10
     periodSeconds: 90
     timeoutSeconds: 5
@@ -168,7 +168,7 @@ app:
   readinessProbe:
     httpGet:
       path: /
-      port: 3000
+      port: 5863
     initialDelaySeconds: 10
     periodSeconds: 90
     timeoutSeconds: 5
@@ -212,16 +212,16 @@ realtime:
   # Environment variables
   env:
     # Application URLs
-    NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-    BETTER_AUTH_URL: "http://localhost:3000"
-    NEXT_PUBLIC_SOCKET_URL: "http://localhost:3002"
+    NEXT_PUBLIC_APP_URL: "http://localhost:5863"
+    BETTER_AUTH_URL: "http://localhost:5863"
+    NEXT_PUBLIC_SOCKET_URL: "http://localhost:5865"
     
     # Authentication secret (REQUIRED for production)
     # Must match the BETTER_AUTH_SECRET value from the main app configuration
     BETTER_AUTH_SECRET: ""  # REQUIRED - set via --set flag or external secret manager
     
     # Cross-Origin Resource Sharing (CORS) allowed origins
-    ALLOWED_ORIGINS: "http://localhost:3000"
+    ALLOWED_ORIGINS: "http://localhost:5863"
     
     # Node environment
     NODE_ENV: "production"
@@ -229,14 +229,14 @@ realtime:
   # Service configuration
   service:
     type: ClusterIP
-    port: 3002
-    targetPort: 3002
+    port: 5865
+    targetPort: 5865
   
   # Health checks
   livenessProbe:
     httpGet:
       path: /health
-      port: 3002
+      port: 5865
     initialDelaySeconds: 10
     periodSeconds: 90
     timeoutSeconds: 5
@@ -245,7 +245,7 @@ realtime:
   readinessProbe:
     httpGet:
       path: /health
-      port: 3002
+      port: 5865
     initialDelaySeconds: 10
     periodSeconds: 90
     timeoutSeconds: 5

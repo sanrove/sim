@@ -199,7 +199,7 @@ describe('File Parse API Route', () => {
       hasCloudStorage: vi.fn().mockReturnValue(true),
     }))
 
-    const req = new NextRequest('http://localhost:3000/api/files/parse', {
+    const req = new NextRequest('http://localhost:5863/api/files/parse', {
       method: 'POST',
       body: JSON.stringify({
         filePath: '/api/files/serve/s3/test-file.txt',
@@ -261,7 +261,7 @@ describe('Files Parse API - Path Traversal Security', () => {
       ]
 
       for (const maliciousPath of maliciousRequests) {
-        const request = new NextRequest('http://localhost:3000/api/files/parse', {
+        const request = new NextRequest('http://localhost:5863/api/files/parse', {
           method: 'POST',
           body: JSON.stringify({
             filePath: maliciousPath,
@@ -287,7 +287,7 @@ describe('Files Parse API - Path Traversal Security', () => {
       ]
 
       for (const maliciousPath of maliciousPaths) {
-        const request = new NextRequest('http://localhost:3000/api/files/parse', {
+        const request = new NextRequest('http://localhost:5863/api/files/parse', {
           method: 'POST',
           body: JSON.stringify({
             filePath: maliciousPath,
@@ -313,7 +313,7 @@ describe('Files Parse API - Path Traversal Security', () => {
       ]
 
       for (const maliciousPath of maliciousPaths) {
-        const request = new NextRequest('http://localhost:3000/api/files/parse', {
+        const request = new NextRequest('http://localhost:5863/api/files/parse', {
           method: 'POST',
           body: JSON.stringify({
             filePath: maliciousPath,
@@ -337,7 +337,7 @@ describe('Files Parse API - Path Traversal Security', () => {
       ]
 
       for (const validPath of validPaths) {
-        const request = new NextRequest('http://localhost:3000/api/files/parse', {
+        const request = new NextRequest('http://localhost:5863/api/files/parse', {
           method: 'POST',
           body: JSON.stringify({
             filePath: validPath,
@@ -364,7 +364,7 @@ describe('Files Parse API - Path Traversal Security', () => {
       ]
 
       for (const maliciousPath of encodedMaliciousPaths) {
-        const request = new NextRequest('http://localhost:3000/api/files/parse', {
+        const request = new NextRequest('http://localhost:5863/api/files/parse', {
           method: 'POST',
           body: JSON.stringify({
             filePath: decodeURIComponent(maliciousPath),
@@ -390,7 +390,7 @@ describe('Files Parse API - Path Traversal Security', () => {
       ]
 
       for (const maliciousPath of nullBytePaths) {
-        const request = new NextRequest('http://localhost:3000/api/files/parse', {
+        const request = new NextRequest('http://localhost:5863/api/files/parse', {
           method: 'POST',
           body: JSON.stringify({
             filePath: maliciousPath,
@@ -408,7 +408,7 @@ describe('Files Parse API - Path Traversal Security', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty file paths', async () => {
-      const request = new NextRequest('http://localhost:3000/api/files/parse', {
+      const request = new NextRequest('http://localhost:5863/api/files/parse', {
         method: 'POST',
         body: JSON.stringify({
           filePath: '',
@@ -424,7 +424,7 @@ describe('Files Parse API - Path Traversal Security', () => {
     })
 
     it('should handle missing filePath parameter', async () => {
-      const request = new NextRequest('http://localhost:3000/api/files/parse', {
+      const request = new NextRequest('http://localhost:5863/api/files/parse', {
         method: 'POST',
         body: JSON.stringify({}),
       })

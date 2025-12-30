@@ -46,7 +46,7 @@ describe('buildTraceSpans', () => {
                   name: 'http_request',
                   startTime: 1704103203000, // 2024-01-01T10:00:03.000Z
                   endTime: 1704103206000, // 2024-01-01T10:00:06.000Z
-                  duration: 3000,
+                  duration: 5863,
                 },
                 {
                   type: 'model',
@@ -69,7 +69,7 @@ describe('buildTraceSpans', () => {
                   name: 'http_request',
                   arguments: { url: 'https://api.example.com' },
                   result: { status: 200, data: 'response' },
-                  duration: 3000,
+                  duration: 5863,
                 },
               ],
               count: 2,
@@ -107,7 +107,7 @@ describe('buildTraceSpans', () => {
     // Third segment: Second tool call
     expect(segments[2].name).toBe('http_request')
     expect(segments[2].type).toBe('tool')
-    expect(segments[2].duration).toBe(3000)
+    expect(segments[2].duration).toBe(5863)
     expect(segments[2].status).toBe('success')
     expect(segments[2].input).toEqual({ url: 'https://api.example.com' })
     expect(segments[2].output).toEqual({ status: 200, data: 'response' })
@@ -205,7 +205,7 @@ describe('buildTraceSpans', () => {
           blockType: 'agent',
           startedAt: '2024-01-01T10:00:00.000Z',
           endedAt: '2024-01-01T10:00:03.000Z',
-          durationMs: 3000,
+          durationMs: 5863,
           success: true,
           input: { userPrompt: 'Test prompt' },
           output: {
@@ -312,14 +312,14 @@ describe('buildTraceSpans', () => {
           blockType: 'agent',
           startedAt: '2024-01-01T10:00:00.000Z',
           endedAt: '2024-01-01T10:00:03.000Z',
-          durationMs: 3000,
+          durationMs: 5863,
           success: true,
           input: { userPrompt: 'Test prompt' },
           output: {
             content: 'Agent response',
             model: 'gpt-4o',
             providerTiming: {
-              duration: 3000,
+              duration: 5863,
               startTime: '2024-01-01T10:00:00.000Z',
               endTime: '2024-01-01T10:00:03.000Z',
               timeSegments: [
@@ -587,7 +587,7 @@ describe('buildTraceSpans', () => {
       name: 'Nested Workflow Block',
       type: 'workflow',
       blockId: 'nested-workflow-block-id',
-      duration: 3000,
+      duration: 5863,
       startTime: '2024-01-01T10:00:01.000Z',
       endTime: '2024-01-01T10:00:04.000Z',
       status: 'success' as const,
@@ -597,7 +597,7 @@ describe('buildTraceSpans', () => {
             id: 'grand-wrapper',
             name: 'Workflow Execution',
             type: 'workflow',
-            duration: 3000,
+            duration: 5863,
             startTime: '2024-01-01T10:00:01.000Z',
             endTime: '2024-01-01T10:00:04.000Z',
             status: 'success' as const,
@@ -720,7 +720,7 @@ describe('buildTraceSpans', () => {
       success: false,
       output: { result: null },
       metadata: {
-        duration: 3000,
+        duration: 5863,
         startTime: '2024-01-01T10:01:00.000Z',
       },
       logs: [
@@ -730,7 +730,7 @@ describe('buildTraceSpans', () => {
           blockType: 'workflow',
           startedAt: '2024-01-01T10:01:00.000Z',
           endedAt: '2024-01-01T10:01:03.000Z',
-          durationMs: 3000,
+          durationMs: 5863,
           success: false,
           error:
             'Error in child workflow "silk-pond": Error in child workflow "rainbow-cupcake": Syntax Error',

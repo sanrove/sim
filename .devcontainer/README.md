@@ -29,8 +29,8 @@ sim-start  # Runs both app and socket server using concurrently
 ```
 
 **Option 2: Run services separately (useful for debugging individual services)**
-- In the **app** container terminal: `sim-app` (starts Next.js app on port 3000)
-- In the **realtime** container terminal: `sim-sockets` (starts socket server on port 3002)
+- In the **app** container terminal: `sim-app` (starts Next.js app on port 5863)
+- In the **realtime** container terminal: `sim-sockets` (starts socket server on port 5865)
 
 ### Other Commands
 
@@ -43,7 +43,7 @@ sim-start  # Runs both app and socket server using concurrently
 
 **Build errors**: Rebuild the container with `F1` → "Dev Containers: Rebuild Container"
 
-**Port conflicts**: Ensure ports 3000, 3002, and 5432 are available
+**Port conflicts**: Ensure ports 5863, 5865, and 5432 are available
 
 **Container runtime issues**: Verify Docker Desktop or Podman Desktop is running
 

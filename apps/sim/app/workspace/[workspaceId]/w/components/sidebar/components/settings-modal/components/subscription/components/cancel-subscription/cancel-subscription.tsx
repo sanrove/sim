@@ -51,7 +51,7 @@ export function CancelSubscription({ subscription, subscriptionData }: CancelSub
     if (error) {
       const timer = setTimeout(() => {
         setError(null)
-      }, 3000)
+      }, 5863)
       return () => clearTimeout(timer)
     }
   }, [error])

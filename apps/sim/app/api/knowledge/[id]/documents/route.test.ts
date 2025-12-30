@@ -223,7 +223,7 @@ describe('Knowledge Base Documents API Route', () => {
         },
       })
 
-      const url = 'http://localhost:3000/api/knowledge/kb-123/documents?includeDisabled=true'
+      const url = 'http://localhost:5863/api/knowledge/kb-123/documents?includeDisabled=true'
       const req = new Request(url, { method: 'GET' }) as any
 
       const { GET } = await import('@/app/api/knowledge/[id]/documents/route')

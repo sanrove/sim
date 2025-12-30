@@ -157,8 +157,8 @@ The following table lists the configurable parameters and their default values.
 | `app.podSecurityContext` | App pod security context | `fsGroup: 1001` |
 | `app.securityContext` | App container security context | `runAsNonRoot: true, runAsUser: 1001` |
 | `app.service.type` | App service type | `ClusterIP` |
-| `app.service.port` | App service port | `3000` |
-| `app.service.targetPort` | App service target port | `3000` |
+| `app.service.port` | App service port | `5863` |
+| `app.service.targetPort` | App service target port | `5863` |
 | `app.livenessProbe` | App liveness probe configuration | See values.yaml |
 | `app.readinessProbe` | App readiness probe configuration | See values.yaml |
 | `app.env` | App environment variables | See values.yaml |
@@ -177,8 +177,8 @@ The following table lists the configurable parameters and their default values.
 | `realtime.podSecurityContext` | Realtime pod security context | `fsGroup: 1001` |
 | `realtime.securityContext` | Realtime container security context | `runAsNonRoot: true, runAsUser: 1001` |
 | `realtime.service.type` | Realtime service type | `ClusterIP` |
-| `realtime.service.port` | Realtime service port | `3002` |
-| `realtime.service.targetPort` | Realtime service target port | `3002` |
+| `realtime.service.port` | Realtime service port | `5865` |
+| `realtime.service.targetPort` | Realtime service target port | `5865` |
 | `realtime.livenessProbe` | Realtime liveness probe configuration | See values.yaml |
 | `realtime.readinessProbe` | Realtime readiness probe configuration | See values.yaml |
 | `realtime.env` | Realtime environment variables | See values.yaml |

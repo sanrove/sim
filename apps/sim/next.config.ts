@@ -5,6 +5,7 @@ import { getMainCSPPolicy, getWorkflowExecutionCSPPolicy } from './lib/core/secu
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  distDir: process.env.DIST_DIR || '.next',
   images: {
     remotePatterns: [
       {
@@ -102,8 +103,8 @@ const nextConfig: NextConfig = {
             }
           })()
         : []),
-      'localhost:3000',
-      'localhost:3001',
+      'localhost:5863',
+      'localhost:5864',
     ],
   }),
   transpilePackages: [
@@ -123,7 +124,7 @@ const nextConfig: NextConfig = {
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
           {
             key: 'Access-Control-Allow-Origin',
-            value: env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
+            value: env.NEXT_PUBLIC_APP_URL || 'http://localhost:5864',
           },
           {
             key: 'Access-Control-Allow-Methods',

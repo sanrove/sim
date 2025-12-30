@@ -15,6 +15,8 @@ import {
 } from 'better-auth/plugins'
 import { and, eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
+import { cookies } from 'next/headers'
+import crypto from 'crypto'
 import Stripe from 'stripe'
 import {
   getEmailSubject,
@@ -230,19 +232,23 @@ export const auth = betterAuth({
     },
   },
   socialProviders: {
-    github: {
-      clientId: env.GITHUB_CLIENT_ID as string,
-      clientSecret: env.GITHUB_CLIENT_SECRET as string,
-      scopes: ['user:email', 'repo'],
-    },
-    google: {
-      clientId: env.GOOGLE_CLIENT_ID as string,
-      clientSecret: env.GOOGLE_CLIENT_SECRET as string,
-      scopes: [
-        'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/userinfo.profile',
-      ],
-    },
+    ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET ? {
+      github: {
+        clientId: env.GITHUB_CLIENT_ID as string,
+        clientSecret: env.GITHUB_CLIENT_SECRET as string,
+        scopes: ['user:email', 'repo'],
+      },
+    } : {}),
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? {
+      google: {
+        clientId: env.GOOGLE_CLIENT_ID as string,
+        clientSecret: env.GOOGLE_CLIENT_SECRET as string,
+        scopes: [
+          'https://www.googleapis.com/auth/userinfo.email',
+          'https://www.googleapis.com/auth/userinfo.profile',
+        ],
+      },
+    } : {}),
   },
   emailAndPassword: {
     enabled: true,
@@ -312,7 +318,10 @@ export const auth = betterAuth({
       expiresIn: 24 * 60 * 60, // 24 hours - Socket.IO handles connection persistence with heartbeats
     }),
     customSession(async ({ user, session }) => ({
-      user,
+      user: {
+        ...user,
+        tenantId: session?.attributes?.tenantId,
+      },
       session,
     })),
     emailOTP({
@@ -2123,10 +2132,90 @@ export async function getSession() {
     return createAnonymousSession()
   }
 
+  // Check for SSO session first
+  const ssoSession = await checkSSOSession()
+  if (ssoSession) {
+    return ssoSession
+  }
+
   const hdrs = await headers()
   return await auth.api.getSession({
     headers: hdrs,
   })
+}
+
+// Check for custom SSO session (created by modelflow-sso)
+async function checkSSOSession() {
+  try {
+    const cookieStore = await cookies()
+    const sessionCookie = cookieStore.get('better-auth.session_token')
+    
+    if (!sessionCookie?.value) {
+      return null
+    }
+    
+    // Hash the token to match what's stored in DB
+    const hashedToken = crypto.createHash('sha256').update(sessionCookie.value).digest('hex')
+    
+    // Look up session in database
+    const session = await db.query.session.findFirst({
+      where: eq(schema.session.token, hashedToken),
+    })
+    
+    if (!session || new Date(session.expiresAt) < new Date()) {
+      return null
+    }
+    
+    // Get the user
+    const user = await db.query.user.findFirst({
+      where: eq(schema.user.id, session.userId),
+    })
+    
+    if (!user) {
+      return null
+    }
+    
+    // Get active organization if any
+    let activeOrganization = null
+    if (session.activeOrganizationId) {
+      activeOrganization = await db.query.organization.findFirst({
+        where: eq(schema.organization.id, session.activeOrganizationId),
+      })
+    }
+    
+    console.log('[Auth] SSO session found:', {
+      userId: user.id,
+      email: user.email,
+      sessionId: session.id,
+      activeOrganizationId: session.activeOrganizationId,
+    })
+    
+    return {
+      session: {
+        id: session.id,
+        userId: session.userId,
+        expiresAt: session.expiresAt,
+        token: session.token,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+        ipAddress: session.ipAddress,
+        userAgent: session.userAgent,
+        activeOrganizationId: session.activeOrganizationId,
+      },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        image: user.image,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    }
+  } catch (error) {
+    console.error('[Auth] Error checking SSO session:', error)
+    return null
+  }
 }
 
 export const signIn = auth.api.signInEmail

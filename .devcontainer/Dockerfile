@@ -42,6 +42,6 @@ RUN echo "export PATH=\$PATH:/home/$USERNAME/.bun/bin" >> /etc/profile
 WORKDIR /workspace
 
 # Expose the ports we're interested in
-EXPOSE 3000
-EXPOSE 3001
-EXPOSE 3002
+EXPOSE 5863
+EXPOSE 5864
+EXPOSE 5865

@@ -120,7 +120,7 @@ externalDatabase:
 
 ```bash
 # Port forward for local access
-kubectl port-forward deployment/sim-sim-app 3000:3000 -n simstudio
+kubectl port-forward deployment/sim-sim-app 5863:5863 -n simstudio
 
 # View logs
 kubectl logs -l app.kubernetes.io/component=app -n simstudio --tail=100

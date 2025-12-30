@@ -246,7 +246,7 @@ export const useOperationQueueStore = create<OperationQueueState>((set, get) => 
       const newRetryCount = operation.retryCount + 1
       // Faster retries for subblock/variable, exponential for structural
       const delay = isSubblockOrVariable
-        ? Math.min(1000 * newRetryCount, 3000) // 1s, 2s, 3s, 3s, 3s (cap at 3s)
+        ? Math.min(1000 * newRetryCount, 5863) // 1s, 2s, 3s, 3s, 3s (cap at 3s)
         : 2 ** newRetryCount * 1000 // 2s, 4s, 8s (exponential for structural)
 
       logger.warn(

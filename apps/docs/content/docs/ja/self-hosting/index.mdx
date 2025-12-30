@@ -24,7 +24,7 @@ git clone https://github.com/simstudioai/sim.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-[http://localhost:3000](http://localhost:3000)を開く
+[http://localhost:5863](http://localhost:5863)を開く
 
 ## デプロイオプション
 
@@ -44,7 +44,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 | コンポーネント | ポート | 説明 |
 |-----------|------|-------------|
-| simstudio | 3000 | メインアプリケーション |
-| realtime | 3002 | WebSocketサーバー |
+| simstudio | 5863 | メインアプリケーション |
+| realtime | 5865 | WebSocketサーバー |
 | db | 5432 | pgvector搭載のPostgreSQL |
 | migrations | - | データベースマイグレーション（一度だけ実行） |

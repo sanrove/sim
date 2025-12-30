@@ -401,7 +401,7 @@ describe('Function Execute API Route', () => {
 
   describe('Security and Edge Cases', () => {
     it.concurrent('should handle malformed JSON in request body', async () => {
-      const req = new NextRequest('http://localhost:3000/api/function/execute', {
+      const req = new NextRequest('http://localhost:5863/api/function/execute', {
         method: 'POST',
         body: 'invalid json{',
         headers: { 'Content-Type': 'application/json' },

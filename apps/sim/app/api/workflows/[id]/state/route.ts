@@ -253,7 +253,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     logger.info(`[${requestId}] Successfully saved workflow ${workflowId} state in ${elapsed}ms`)
 
     try {
-      const socketUrl = env.SOCKET_SERVER_URL || 'http://localhost:3002'
+      const socketUrl = env.SOCKET_SERVER_URL || 'http://localhost:5865'
       const notifyResponse = await fetch(`${socketUrl}/api/workflow-updated`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -143,7 +143,7 @@ export function TeamManagement() {
 
       // Show success state
       setInviteSuccess(true)
-      setTimeout(() => setInviteSuccess(false), 3000)
+      setTimeout(() => setInviteSuccess(false), 5863)
 
       // Reset form
       setInviteEmail('')

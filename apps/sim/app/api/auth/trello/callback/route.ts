@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
             statusEl.textContent = 'Connection failed';
             setTimeout(function() {
               window.location.href = '${baseUrl}/workspace?error=trello_failed';
-            }, 3000);
+            }, 5863);
           });
 
         } catch (error) {
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
           statusEl.textContent = 'Connection failed';
           setTimeout(function() {
             window.location.href = '${baseUrl}/workspace?error=trello_auth_failed';
-          }, 3000);
+          }, 5863);
         }
       })();
     </script>

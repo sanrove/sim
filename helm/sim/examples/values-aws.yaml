@@ -28,7 +28,7 @@ app:
   env:
     NEXT_PUBLIC_APP_URL: "https://simstudio.acme.com"
     BETTER_AUTH_URL: "https://simstudio.acme.com"
-    # SOCKET_SERVER_URL is auto-detected (uses internal service http://sim-realtime:3002)
+    # SOCKET_SERVER_URL is auto-detected (uses internal service http://sim-realtime:5865)
     NEXT_PUBLIC_SOCKET_URL: "https://simstudio-ws.acme.com"  # Public WebSocket URL for browsers
     
     # Security settings (REQUIRED - replace with your own secure secrets)

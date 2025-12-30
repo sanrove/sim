@@ -1666,6 +1666,22 @@ export const ssoProvider = pgTable(
   })
 )
 
+// Tenant configuration for multi-tenant routing
+export const tenantConfig = pgTable(
+  'tenant_config',
+  {
+    id: text('id').primaryKey(),
+    tenantId: text('tenant_id').notNull().unique(),
+    baseUrl: text('base_url').notNull(),
+    description: text('description'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index('tenant_config_tenant_id_idx').on(table.tenantId),
+  })
+)
+
 // Usage logging for tracking individual billable operations
 export const usageLogCategoryEnum = pgEnum('usage_log_category', ['model', 'fixed'])
 export const usageLogSourceEnum = pgEnum('usage_log_source', ['workflow', 'wand', 'copilot'])

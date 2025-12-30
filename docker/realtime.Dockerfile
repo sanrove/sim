@@ -64,10 +64,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/sim ./apps/sim
 # Switch to non-root user
 USER nextjs
 
-# Expose socket server port (default 3002, but configurable via PORT env var)
-EXPOSE 3002
-ENV PORT=3002 \
-    SOCKET_PORT=3002 \
+# Expose socket server port (default 5865, but configurable via PORT env var)
+EXPOSE 5865
+ENV PORT=5865 \
+    SOCKET_PORT=5865 \
     HOSTNAME="0.0.0.0"
 
 # Run the socket server directly

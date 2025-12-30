@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { templates, webhook, workflow } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -13,6 +13,21 @@ import { loadWorkflowFromNormalizedTables } from '@/lib/workflows/persistence/ut
 import { getWorkflowAccessContext, getWorkflowById } from '@/lib/workflows/utils'
 
 const logger = createLogger('WorkflowByIdAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const UpdateWorkflowSchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),
@@ -42,12 +57,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     let userId: string | null = null
+    let tenantDb: Awaited<ReturnType<typeof getTenantDbFromSession>> = null
 
     if (isInternalCall) {
       logger.info(`[${requestId}] Internal API call for workflow ${workflowId}`)
     } else {
       const session = await getSession()
       let authenticatedUserId: string | null = session?.user?.id || null
+
+      // Get tenant database from session
+      tenantDb = await getTenantDbFromSession(session)
 
       if (!authenticatedUserId) {
         const apiKeyHeader = request.headers.get('x-api-key')
@@ -75,8 +94,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       userId = authenticatedUserId
     }
 
+    // Use tenant database if available, otherwise fall back to master
+    const database = tenantDb || db
+
     let accessContext = null
-    let workflowData = await getWorkflowById(workflowId)
+    let workflowData = await getWorkflowById(workflowId, tenantDb || undefined)
 
     if (!workflowData) {
       logger.warn(`[${requestId}] Workflow ${workflowId} not found`)
@@ -92,7 +114,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     } else {
       // Case 1: User owns the workflow
       if (workflowData) {
-        accessContext = await getWorkflowAccessContext(workflowId, userId ?? undefined)
+        accessContext = await getWorkflowAccessContext(workflowId, userId ?? undefined, tenantDb || undefined)
 
         if (!accessContext) {
           logger.warn(`[${requestId}] Workflow ${workflowId} not found`)
@@ -117,7 +139,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     logger.debug(`[${requestId}] Attempting to load workflow ${workflowId} from normalized tables`)
-    const normalizedData = await loadWorkflowFromNormalizedTables(workflowId)
+    const normalizedData = await loadWorkflowFromNormalizedTables(workflowId, tenantDb || undefined)
 
     if (normalizedData) {
       logger.debug(`[${requestId}] Found normalized data for workflow ${workflowId}:`, {
@@ -342,7 +364,7 @@ export async function DELETE(
     // This prevents "Block not found" errors when collaborative updates try to process
     // after the workflow has been deleted
     try {
-      const socketUrl = env.SOCKET_SERVER_URL || 'http://localhost:3002'
+      const socketUrl = env.SOCKET_SERVER_URL || 'http://localhost:5865'
       const socketResponse = await fetch(`${socketUrl}/api/workflow-deleted`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

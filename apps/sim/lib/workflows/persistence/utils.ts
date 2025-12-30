@@ -10,6 +10,7 @@ import {
 } from '@sim/db'
 import type { InferSelectModel } from 'drizzle-orm'
 import { and, desc, eq, sql } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type { Edge } from 'reactflow'
 import { v4 as uuidv4 } from 'uuid'
 import { createLogger } from '@/lib/logs/console/logger'
@@ -186,14 +187,16 @@ export function migrateAgentBlocksToMessagesFormat(
  * Returns null if no data found (fallback to JSON blob)
  */
 export async function loadWorkflowFromNormalizedTables(
-  workflowId: string
+  workflowId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<NormalizedWorkflowData | null> {
   try {
+    const database = tenantDb || db
     // Load all components in parallel
     const [blocks, edges, subflows] = await Promise.all([
-      db.select().from(workflowBlocks).where(eq(workflowBlocks.workflowId, workflowId)),
-      db.select().from(workflowEdges).where(eq(workflowEdges.workflowId, workflowId)),
-      db.select().from(workflowSubflows).where(eq(workflowSubflows.workflowId, workflowId)),
+      database.select().from(workflowBlocks).where(eq(workflowBlocks.workflowId, workflowId)),
+      database.select().from(workflowEdges).where(eq(workflowEdges.workflowId, workflowId)),
+      database.select().from(workflowSubflows).where(eq(workflowSubflows.workflowId, workflowId)),
     ])
 
     // If no blocks found, assume this workflow hasn't been migrated yet

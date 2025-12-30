@@ -237,7 +237,7 @@ Socket Server URL (internal)
 {{- $port := .Values.realtime.service.port }}
 {{- printf "http://%s:%v" $serviceName $port }}
 {{- else }}
-{{- .Values.app.env.SOCKET_SERVER_URL | default "http://localhost:3002" }}
+{{- .Values.app.env.SOCKET_SERVER_URL | default "http://localhost:5865" }}
 {{- end }}
 {{- end }}
 

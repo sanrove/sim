@@ -95,9 +95,9 @@ sudo apt update && sudo apt install caddy
 
 # Configure (replace domain)
 echo 'sim.yourdomain.com {
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:5863
     handle /socket.io/* {
-        reverse_proxy localhost:3002
+        reverse_proxy localhost:5865
     }
 }' | sudo tee /etc/caddy/Caddyfile
 

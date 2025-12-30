@@ -311,7 +311,7 @@ describe('Copilot Checkpoints API Route', () => {
       const authMocks = mockAuth()
       authMocks.setUnauthenticated()
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/checkpoints?chatId=chat-123')
+      const req = new NextRequest('http://localhost:5863/api/copilot/checkpoints?chatId=chat-123')
 
       const { GET } = await import('@/app/api/copilot/checkpoints/route')
       const response = await GET(req)
@@ -325,7 +325,7 @@ describe('Copilot Checkpoints API Route', () => {
       const authMocks = mockAuth()
       authMocks.setAuthenticated()
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/checkpoints')
+      const req = new NextRequest('http://localhost:5863/api/copilot/checkpoints')
 
       const { GET } = await import('@/app/api/copilot/checkpoints/route')
       const response = await GET(req)
@@ -362,7 +362,7 @@ describe('Copilot Checkpoints API Route', () => {
 
       mockOrderBy.mockResolvedValue(mockCheckpoints)
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/checkpoints?chatId=chat-123')
+      const req = new NextRequest('http://localhost:5863/api/copilot/checkpoints?chatId=chat-123')
 
       const { GET } = await import('@/app/api/copilot/checkpoints/route')
       const response = await GET(req)
@@ -406,7 +406,7 @@ describe('Copilot Checkpoints API Route', () => {
       // Mock database error
       mockOrderBy.mockRejectedValue(new Error('Database query failed'))
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/checkpoints?chatId=chat-123')
+      const req = new NextRequest('http://localhost:5863/api/copilot/checkpoints?chatId=chat-123')
 
       const { GET } = await import('@/app/api/copilot/checkpoints/route')
       const response = await GET(req)
@@ -422,7 +422,7 @@ describe('Copilot Checkpoints API Route', () => {
 
       mockOrderBy.mockResolvedValue([])
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/checkpoints?chatId=chat-123')
+      const req = new NextRequest('http://localhost:5863/api/copilot/checkpoints?chatId=chat-123')
 
       const { GET } = await import('@/app/api/copilot/checkpoints/route')
       const response = await GET(req)

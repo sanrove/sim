@@ -431,7 +431,7 @@ describe('Copilot Chat Update Messages API Route', () => {
       const authMocks = mockAuth()
       authMocks.setAuthenticated()
 
-      const req = new NextRequest('http://localhost:3000/api/copilot/chat/update-messages', {
+      const req = new NextRequest('http://localhost:5863/api/copilot/chat/update-messages', {
         method: 'POST',
         body: '{invalid-json',
         headers: {

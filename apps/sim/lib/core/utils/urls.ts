@@ -4,7 +4,7 @@ import { isProd } from '@/lib/core/config/feature-flags'
 /**
  * Returns the base URL of the application from NEXT_PUBLIC_APP_URL
  * This ensures webhooks, callbacks, and other integrations always use the correct public URL
- * @returns The base URL string (e.g., 'http://localhost:3000' or 'https://example.com')
+ * @returns The base URL string (e.g., 'http://localhost:5863' or 'https://example.com')
  * @throws Error if NEXT_PUBLIC_APP_URL is not configured
  */
 export function getBaseUrl(): string {
@@ -26,18 +26,18 @@ export function getBaseUrl(): string {
 
 /**
  * Returns just the domain and port part of the application URL
- * @returns The domain with port if applicable (e.g., 'localhost:3000' or 'sim.ai')
+ * @returns The domain with port if applicable (e.g., 'localhost:5863' or 'sim.ai')
  */
 export function getBaseDomain(): string {
   try {
     const url = new URL(getBaseUrl())
     return url.host // host includes port if specified
   } catch (_e) {
-    const fallbackUrl = getEnv('NEXT_PUBLIC_APP_URL') || 'http://localhost:3000'
+    const fallbackUrl = getEnv('NEXT_PUBLIC_APP_URL') || 'http://localhost:5863'
     try {
       return new URL(fallbackUrl).host
     } catch {
-      return isProd ? 'sim.ai' : 'localhost:3000'
+      return isProd ? 'sim.ai' : 'localhost:5863'
     }
   }
 }
@@ -51,6 +51,6 @@ export function getEmailDomain(): string {
     const baseDomain = getBaseDomain()
     return baseDomain.startsWith('www.') ? baseDomain.substring(4) : baseDomain
   } catch (_e) {
-    return isProd ? 'sim.ai' : 'localhost:3000'
+    return isProd ? 'sim.ai' : 'localhost:5863'
   }
 }

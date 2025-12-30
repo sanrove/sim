@@ -24,7 +24,7 @@ git clone https://github.com/simstudioai/sim.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Öffnen Sie [http://localhost:3000](http://localhost:3000)
+Öffnen Sie [http://localhost:5863](http://localhost:5863)
 
 ## Bereitstellungsoptionen
 
@@ -44,7 +44,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 | Komponente | Port | Beschreibung |
 |-----------|------|-------------|
-| simstudio | 3000 | Hauptanwendung |
-| realtime | 3002 | WebSocket-Server |
+| simstudio | 5863 | Hauptanwendung |
+| realtime | 5865 | WebSocket-Server |
 | db | 5432 | PostgreSQL mit pgvector |
 | migrations | - | Datenbank-Migrationen (werden einmal ausgeführt) |

@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
         })
         // Fallback based on environment
         if (isDev) {
-          chatUrl = `http://localhost:3000/chat/${identifier}`
+          chatUrl = `http://localhost:5863/chat/${identifier}`
         } else {
           chatUrl = `https://sim.ai/chat/${identifier}`
         }

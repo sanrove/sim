@@ -8,7 +8,7 @@ import { getProviderFromModel, transformBlockTool } from '@/providers/utils'
 import type { SerializedBlock, SerializedWorkflow } from '@/serializer/types'
 import { executeTool } from '@/tools'
 
-process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
+process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:5863'
 
 vi.mock('@/lib/core/config/feature-flags', () => ({
   isHosted: false,

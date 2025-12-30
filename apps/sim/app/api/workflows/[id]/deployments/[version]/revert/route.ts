@@ -88,7 +88,7 @@ export async function POST(
       .where(eq(workflow.id, id))
 
     try {
-      const socketServerUrl = env.SOCKET_SERVER_URL || 'http://localhost:3002'
+      const socketServerUrl = env.SOCKET_SERVER_URL || 'http://localhost:5865'
       await fetch(`${socketServerUrl}/api/workflow-reverted`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
