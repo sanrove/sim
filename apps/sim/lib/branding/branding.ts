@@ -24,8 +24,8 @@ export interface BrandConfig {
  * Default brand configuration values
  */
 const defaultConfig: BrandConfig = {
-  name: "Sim",
-  logoUrl: undefined,
+  name: "ModelFlow",
+  logoUrl: "/modelflow-logo.svg",
   faviconUrl: "/favicon/favicon.ico",
   customCssUrl: undefined,
   supportEmail: "help@sim.ai",
@@ -34,11 +34,11 @@ const defaultConfig: BrandConfig = {
   privacyUrl: undefined,
   theme: {
     // primaryColor: '#701ffc',
-    primaryColor: "#F1701C",
-    primaryHoverColor: "#802fff",
+    primaryColor: "#3b82f6",
+    primaryHoverColor: "#2563eb",
     // accentColor: "#9d54ff",
-    accentColor: "#F1701C",
-    accentHoverColor: "#a66fff",
+    accentColor: "#8b5cf6",
+    accentHoverColor: "#7c3aed",
     backgroundColor: "#0c0c0c",
   },
 };
