@@ -1,47 +1,64 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { validateModelFlowToken } from '@/lib/auth/validate-modelflow-token';
-import { getTenantDatabase, user, organization, member, session, workspace, permissions, workflow, db as masterDb } from '@sim/db';
-import { and, eq } from 'drizzle-orm';
-import { createLogger } from '@/lib/logs/console/logger';
-import { v4 as uuidv4 } from 'uuid';
-import { buildDefaultWorkflowArtifacts } from '@/lib/workflows/defaults';
-import { saveWorkflowToNormalizedTables } from '@/lib/workflows/persistence/utils';
-import crypto from 'crypto';
+import { NextRequest, NextResponse } from "next/server";
+import { validateModelFlowToken } from "@/lib/auth/validate-modelflow-token";
+import {
+  getTenantDatabase,
+  user,
+  organization,
+  member,
+  session,
+  workspace,
+  permissions,
+  workflow,
+  db as masterDb,
+} from "@sim/db";
+import { and, eq } from "drizzle-orm";
+import { createLogger } from "@/lib/logs/console/logger";
+import { v4 as uuidv4 } from "uuid";
+import { buildDefaultWorkflowArtifacts } from "@/lib/workflows/defaults";
+import { saveWorkflowToNormalizedTables } from "@/lib/workflows/persistence/utils";
+import crypto from "crypto";
+import { getBaseUrl } from "@/lib/core/utils/urls";
 
-const logger = createLogger('ModelFlowSSO');
+const logger = createLogger("ModelFlowSSO");
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.nextUrl.searchParams.get('token');
+    const token = request.nextUrl.searchParams.get("token");
 
     if (!token) {
-      logger.warn('No token provided in SSO request');
-      return NextResponse.redirect(new URL('/login', request.url));
+      logger.warn("No token provided in SSO request");
+      return NextResponse.redirect(new URL("/login", getBaseUrl()));
     }
 
     // Get shared secret from environment
     const sharedSecret = process.env.MODELFLOW_SIM_SHARED_SECRET;
     if (!sharedSecret) {
-      logger.error('MODELFLOW_SIM_SHARED_SECRET is not configured');
-      return NextResponse.redirect(new URL('/login', request.url));
+      logger.error("MODELFLOW_SIM_SHARED_SECRET is not configured");
+      return NextResponse.redirect(new URL("/login", getBaseUrl()));
     }
 
     // Validate the token
     let payload;
     try {
       payload = validateModelFlowToken(token, sharedSecret);
-      logger.info('Token validated successfully', { email: payload.email, tenantId: payload.tenantId });
+      logger.info("Token validated successfully", {
+        email: payload.email,
+        tenantId: payload.tenantId,
+      });
     } catch (tokenError: any) {
-      logger.warn('Token validation failed', { error: tokenError.message });
-      return NextResponse.redirect(new URL('/login', request.url));
+      logger.warn("Token validation failed", { error: tokenError.message });
+      return NextResponse.redirect(new URL("/login", getBaseUrl()));
     }
 
     // Handle user creation/retrieval in MASTER database only
     const result = await handleSSO(payload);
 
     // Create session token - better-auth expects the DB to store a SHA-256 hash
-    const sessionToken = crypto.randomBytes(32).toString('base64url'); // Token for cookie
-    const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex'); // Hash for DB
+    const sessionToken = crypto.randomBytes(32).toString("base64url"); // Token for cookie
+    const sessionTokenHash = crypto
+      .createHash("sha256")
+      .update(sessionToken)
+      .digest("hex"); // Hash for DB
     const sessionId = uuidv4();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
     const now = new Date();
@@ -53,35 +70,38 @@ export async function GET(request: NextRequest) {
       expiresAt,
       createdAt: now,
       updatedAt: now,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
-      userAgent: request.headers.get('user-agent') || null,
+      ipAddress:
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        null,
+      userAgent: request.headers.get("user-agent") || null,
       activeOrganizationId: result.organizationId,
     };
 
     await masterDb.insert(session).values(sessionData);
 
-    logger.info('Session created with hashed token', { 
+    logger.info("Session created with hashed token", {
       sessionId,
       userId: result.user.id,
       organizationId: result.organizationId,
       tenantId: payload.tenantId,
     });
 
-    const response = NextResponse.redirect(new URL('/workspace', request.url));
-    
+    const response = NextResponse.redirect(new URL("/workspace", getBaseUrl()));
+
     // Set cookie with the PLAIN token (not the hash)
-    response.cookies.set('better-auth.session_token', sessionToken, {
+    response.cookies.set("better-auth.session_token", sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 30 * 24 * 60 * 60,
-      path: '/',
+      path: "/",
     });
 
     return response;
   } catch (error: any) {
-    logger.error('SSO GET error', { error: error.message, stack: error.stack });
-    return NextResponse.redirect(new URL('/login', request.url));
+    logger.error("SSO GET error", { error: error.message, stack: error.stack });
+    return NextResponse.redirect(new URL("/login", getBaseUrl()));
   }
 }
 
@@ -91,19 +111,16 @@ export async function POST(request: NextRequest) {
     const token = body.token;
 
     if (!token) {
-      logger.warn('No token provided in SSO POST request');
-      return NextResponse.json(
-        { error: 'Token is required' },
-        { status: 400 }
-      );
+      logger.warn("No token provided in SSO POST request");
+      return NextResponse.json({ error: "Token is required" }, { status: 400 });
     }
 
     // Get shared secret from environment
     const sharedSecret = process.env.MODELFLOW_SIM_SHARED_SECRET;
     if (!sharedSecret) {
-      logger.error('MODELFLOW_SIM_SHARED_SECRET is not configured');
+      logger.error("MODELFLOW_SIM_SHARED_SECRET is not configured");
       return NextResponse.json(
-        { error: 'Server configuration error' },
+        { error: "Server configuration error" },
         { status: 500 }
       );
     }
@@ -112,21 +129,26 @@ export async function POST(request: NextRequest) {
     let payload;
     try {
       payload = validateModelFlowToken(token, sharedSecret);
-      logger.info('Token validated successfully in POST', { email: payload.email, tenantId: payload.tenantId });
+      logger.info("Token validated successfully in POST", {
+        email: payload.email,
+        tenantId: payload.tenantId,
+      });
     } catch (tokenError: any) {
-      logger.warn('Token validation failed in POST', { error: tokenError.message });
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
+      logger.warn("Token validation failed in POST", {
+        error: tokenError.message,
+      });
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
     // Handle user creation/retrieval in BOTH master and tenant databases
     const result = await handleSSO(payload);
 
     // Create session with proper token hashing
-    const sessionToken = crypto.randomBytes(32).toString('base64url');
-    const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
+    const sessionToken = crypto.randomBytes(32).toString("base64url");
+    const sessionTokenHash = crypto
+      .createHash("sha256")
+      .update(sessionToken)
+      .digest("hex");
     const sessionId = uuidv4();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const now = new Date();
@@ -138,14 +160,17 @@ export async function POST(request: NextRequest) {
       expiresAt,
       createdAt: now,
       updatedAt: now,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
-      userAgent: request.headers.get('user-agent') || null,
+      ipAddress:
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        null,
+      userAgent: request.headers.get("user-agent") || null,
       activeOrganizationId: result.organizationId,
     };
 
     await masterDb.insert(session).values(sessionData);
 
-    logger.info('Session created', { 
+    logger.info("Session created", {
       sessionId,
       userId: result.user.id,
       organizationId: result.organizationId,
@@ -167,19 +192,22 @@ export async function POST(request: NextRequest) {
     );
 
     // Set cookie with plain token
-    response.cookies.set('better-auth.session_token', sessionToken, {
+    response.cookies.set("better-auth.session_token", sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 30 * 24 * 60 * 60,
-      path: '/',
+      path: "/",
     });
 
     return response;
   } catch (error: any) {
-    logger.error('SSO POST error', { error: error.message, stack: error.stack });
+    logger.error("SSO POST error", {
+      error: error.message,
+      stack: error.stack,
+    });
     return NextResponse.json(
-      { error: 'Server error during SSO' },
+      { error: "Server error during SSO" },
       { status: 500 }
     );
   }
@@ -205,7 +233,7 @@ async function handleSSO(payload: any) {
   });
 
   if (!masterUserRecord) {
-    logger.info('Creating new user in MASTER database', { email, tenantId });
+    logger.info("Creating new user in MASTER database", { email, tenantId });
     const userId = uuidv4();
     const [newUser] = await masterDb
       .insert(user)
@@ -230,7 +258,7 @@ async function handleSSO(payload: any) {
   });
 
   if (!tenantUserRecord) {
-    logger.info('Creating new user in TENANT database', { email, tenantId });
+    logger.info("Creating new user in TENANT database", { email, tenantId });
     const [newUser] = await tenantDb
       .insert(user)
       .values({
@@ -252,7 +280,7 @@ async function handleSSO(payload: any) {
   });
 
   if (!masterOrgRecord) {
-    logger.info('Creating organization in MASTER database', { tenantId });
+    logger.info("Creating organization in MASTER database", { tenantId });
     const orgId = uuidv4();
     const [newOrg] = await masterDb
       .insert(organization)
@@ -273,7 +301,7 @@ async function handleSSO(payload: any) {
   });
 
   if (!tenantOrgRecord) {
-    logger.info('Creating organization in TENANT database', { tenantId });
+    logger.info("Creating organization in TENANT database", { tenantId });
     const [newOrg] = await tenantDb
       .insert(organization)
       .values({
@@ -291,14 +319,18 @@ async function handleSSO(payload: any) {
   });
 
   if (!masterMemberRecord) {
-    logger.info('Adding user as member in MASTER database', { userId, organizationId, tenantId });
+    logger.info("Adding user as member in MASTER database", {
+      userId,
+      organizationId,
+      tenantId,
+    });
     await masterDb
       .insert(member)
       .values({
         id: uuidv4(),
         organizationId,
         userId,
-        role: 'owner',
+        role: "owner",
       })
       .onConflictDoNothing();
   }
@@ -310,14 +342,18 @@ async function handleSSO(payload: any) {
 
   let isNewMember = false;
   if (!tenantMemberRecord) {
-    logger.info('Adding user as member in TENANT database', { userId, organizationId, tenantId });
+    logger.info("Adding user as member in TENANT database", {
+      userId,
+      organizationId,
+      tenantId,
+    });
     await tenantDb
       .insert(member)
       .values({
         id: uuidv4(),
         organizationId,
         userId,
-        role: 'owner',
+        role: "owner",
       })
       .onConflictDoNothing();
     isNewMember = true;
@@ -325,8 +361,11 @@ async function handleSSO(payload: any) {
 
   // Step 7: Create default workspace for NEW users ONLY
   if (isNewMember) {
-    logger.info('Checking for existing workspace for new user', { userId, tenantId });
-    
+    logger.info("Checking for existing workspace for new user", {
+      userId,
+      tenantId,
+    });
+
     // Check if user already has a workspace
     const existingWorkspaces = await tenantDb
       .select({ id: workspace.id })
@@ -335,19 +374,25 @@ async function handleSSO(payload: any) {
       .where(
         and(
           eq(permissions.userId, userId),
-          eq(permissions.entityType, 'workspace')
+          eq(permissions.entityType, "workspace")
         )
       )
       .limit(1);
 
     if (existingWorkspaces.length === 0) {
-      logger.info('Creating default workspace for new user', { userId, tenantId, userName: fullName });
-      
+      logger.info("Creating default workspace for new user", {
+        userId,
+        tenantId,
+        userName: fullName,
+      });
+
       try {
         const workspaceId = uuidv4();
         const workflowId = uuidv4();
-        const firstName = fullName.split(' ')[0] || null;
-        const workspaceName = firstName ? `${firstName}'s Workspace` : 'My Workspace';
+        const firstName = fullName.split(" ")[0] || null;
+        const workspaceName = firstName
+          ? `${firstName}'s Workspace`
+          : "My Workspace";
 
         // Create workspace and workflow in transaction
         await tenantDb.transaction(async (tx: any) => {
@@ -365,10 +410,10 @@ async function handleSSO(payload: any) {
           // Create admin permissions for the workspace owner
           await tx.insert(permissions).values({
             id: uuidv4(),
-            entityType: 'workspace' as const,
+            entityType: "workspace" as const,
             entityId: workspaceId,
             userId: userId,
-            permissionType: 'admin' as const,
+            permissionType: "admin" as const,
             createdAt: now,
             updatedAt: now,
           });
@@ -379,9 +424,9 @@ async function handleSSO(payload: any) {
             userId,
             workspaceId,
             folderId: null,
-            name: 'default-agent',
-            description: 'Your first workflow - start building here!',
-            color: '#3972F6',
+            name: "default-agent",
+            description: "Your first workflow - start building here!",
+            color: "#3972F6",
             lastSynced: now,
             createdAt: now,
             updatedAt: now,
@@ -395,24 +440,24 @@ async function handleSSO(payload: any) {
         const { workflowState } = buildDefaultWorkflowArtifacts();
         await saveWorkflowToNormalizedTables(workflowId, workflowState);
 
-        logger.info('Default workspace and workflow created successfully', { 
-          workspaceId, 
-          workflowId, 
-          userId, 
-          tenantId 
+        logger.info("Default workspace and workflow created successfully", {
+          workspaceId,
+          workflowId,
+          userId,
+          tenantId,
         });
       } catch (error: any) {
-        logger.error('Failed to create default workspace during SSO', { 
-          error: error.message, 
-          userId, 
-          tenantId 
+        logger.error("Failed to create default workspace during SSO", {
+          error: error.message,
+          userId,
+          tenantId,
         });
         // Don't fail SSO if workspace creation fails - it will be created on first access
       }
     }
   }
 
-  logger.info('SSO handling complete in both databases', {
+  logger.info("SSO handling complete in both databases", {
     userId,
     organizationId,
     email,
