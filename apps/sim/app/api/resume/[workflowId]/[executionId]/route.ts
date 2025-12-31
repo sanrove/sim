@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { createLogger } from '@/lib/logs/console/logger'
 import { PauseResumeManager } from '@/lib/workflows/executor/human-in-the-loop-manager'
 import { validateWorkflowAccess } from '@/app/api/workflows/middleware'
+import { getTenantDbFromSession } from '@/app/api/workflows/tenant-utils'
 
 const logger = createLogger('WorkflowResumeExecutionAPI')
 
@@ -18,7 +19,8 @@ export async function GET(
 ) {
   const { workflowId, executionId } = await params
 
-  const access = await validateWorkflowAccess(request, workflowId, false)
+  const tenantDb = await getTenantDbFromSession()
+  const access = await validateWorkflowAccess(request, workflowId, false, tenantDb)
   if (access.error) {
     return NextResponse.json({ error: access.error.message }, { status: access.error.status })
   }

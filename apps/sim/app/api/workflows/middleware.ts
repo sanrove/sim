@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import {
   type ApiKeyAuthResult,
   authenticateApiKeyFromHeader,
@@ -18,10 +19,11 @@ export interface ValidationResult {
 export async function validateWorkflowAccess(
   request: NextRequest,
   workflowId: string,
-  requireDeployment = true
+  requireDeployment = true,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<ValidationResult> {
   try {
-    const workflow = await getWorkflowById(workflowId)
+    const workflow = await getWorkflowById(workflowId, tenantDb)
     if (!workflow) {
       return {
         error: {

@@ -115,8 +115,19 @@ async function flushSubblockUpdate(
 ) {
   const { blockId, subblockId, value, timestamp } = pending.latest
   try {
+    // Get tenant database from room
+    const room = roomManager.getWorkflowRoom(workflowId)
+    const database = room?.tenantDb || db
+
+    logger.info('[Socket] Flushing subblock update:', {
+      workflowId: `${workflowId.substring(0, 8)}...`,
+      blockId: blockId.substring(0, 8),
+      subblockId,
+      usingTenantDb: !!room?.tenantDb,
+    })
+
     // Verify workflow still exists
-    const workflowExists = await db
+    const workflowExists = await database
       .select({ id: workflow.id })
       .from(workflow)
       .where(eq(workflow.id, workflowId))
@@ -137,23 +148,35 @@ async function flushSubblockUpdate(
     }
 
     let updateSuccessful = false
-    await db.transaction(async (tx) => {
+    await database.transaction(async (tx) => {
       const [block] = await tx
-        .select({ subBlocks: workflowBlocks.subBlocks })
+        .select({ id: workflowBlocks.id, type: workflowBlocks.type, subBlocks: workflowBlocks.subBlocks })
         .from(workflowBlocks)
         .where(and(eq(workflowBlocks.id, blockId), eq(workflowBlocks.workflowId, workflowId)))
         .limit(1)
 
       if (!block) {
+        logger.warn('[Socket] Block not found for subblock update:', { blockId, workflowId })
         return
       }
 
       const subBlocks = (block.subBlocks as any) || {}
-      if (!subBlocks[subblockId]) {
+      const existingSubBlock = subBlocks[subblockId]
+      
+      if (!existingSubBlock) {
         subBlocks[subblockId] = { id: subblockId, type: 'unknown', value }
       } else {
-        subBlocks[subblockId] = { ...subBlocks[subblockId], value }
+        // Preserve all existing fields and only update the value
+        subBlocks[subblockId] = { ...existingSubBlock, value }
       }
+
+      logger.debug('[Socket] Updating subblock:', {
+        blockId: blockId.substring(0, 8),
+        blockType: block.type,
+        subblockId,
+        valueType: typeof value,
+        existingFields: existingSubBlock ? Object.keys(existingSubBlock) : [],
+      })
 
       await tx
         .update(workflowBlocks)

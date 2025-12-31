@@ -1,6 +1,7 @@
-import { db, workflow, workflowDeploymentVersion } from '@sim/db'
+import { db, getTenantDatabase, organization, workflow, workflowDeploymentVersion } from '@sim/db'
 import { and, eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { env } from '@/lib/core/config/env'
 import { generateRequestId } from '@/lib/core/utils/request'
 import { createLogger } from '@/lib/logs/console/logger'
@@ -9,6 +10,22 @@ import { validateWorkflowPermissions } from '@/lib/workflows/utils'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
 
 const logger = createLogger('RevertToDeploymentVersionAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession() {
+  const session = await getSession()
+  const orgId = (session as any)?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -21,7 +38,11 @@ export async function POST(
   const { id, version } = await params
 
   try {
-    const { error } = await validateWorkflowPermissions(id, requestId, 'admin')
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
+    const { error } = await validateWorkflowPermissions(id, requestId, 'admin', tenantDb)
     if (error) {
       return createErrorResponse(error.message, error.status)
     }
@@ -33,7 +54,7 @@ export async function POST(
 
     let stateRow: { state: any } | null = null
     if (version === 'active') {
-      const [row] = await db
+      const [row] = await database
         .select({ state: workflowDeploymentVersion.state })
         .from(workflowDeploymentVersion)
         .where(
@@ -45,7 +66,7 @@ export async function POST(
         .limit(1)
       stateRow = row || null
     } else {
-      const [row] = await db
+      const [row] = await database
         .select({ state: workflowDeploymentVersion.state })
         .from(workflowDeploymentVersion)
         .where(
@@ -76,13 +97,13 @@ export async function POST(
       isDeployed: true,
       deployedAt: new Date(),
       deploymentStatuses: deployedState.deploymentStatuses || {},
-    })
+    }, tenantDb)
 
     if (!saveResult.success) {
       return createErrorResponse(saveResult.error || 'Failed to save deployed state', 500)
     }
 
-    await db
+    await database
       .update(workflow)
       .set({ lastSynced: new Date(), updatedAt: new Date() })
       .where(eq(workflow.id, id))

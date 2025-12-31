@@ -421,6 +421,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           startTime: new Date().toISOString(),
           isClientSession,
           workflowStateOverride: effectiveWorkflowStateOverride,
+          tenantDb,
         }
 
         const snapshot = new ExecutionSnapshot(
@@ -691,6 +692,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             startTime: new Date().toISOString(),
             isClientSession,
             workflowStateOverride: effectiveWorkflowStateOverride,
+            tenantDb,
           }
 
           const snapshot = new ExecutionSnapshot(

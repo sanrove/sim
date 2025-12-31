@@ -1,6 +1,6 @@
 import { db, organization } from '@sim/db'
 import { workflow } from '@sim/db/schema'
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
 import { authenticateApiKeyFromHeader, updateApiKeyLastUsed } from '@/lib/api-key/service'
 import { getSession } from '@/lib/auth'
@@ -146,10 +146,46 @@ export async function checkHybridAuth(
       const result = await authenticateApiKeyFromHeader(apiKeyHeader)
       if (result.success) {
         await updateApiKeyLastUsed(result.keyId!)
+        
+        let organizationId: string | undefined
+        let tenantId: string | undefined
+
+        // Resolve organization and tenant from user's active organization
+        try {
+          const { session } = await import('@sim/db/schema')
+          const [userSession] = await db
+            .select({ activeOrganizationId: session.activeOrganizationId })
+            .from(session)
+            .where(eq(session.userId, result.userId!))
+            .orderBy(desc(session.createdAt))
+            .limit(1)
+
+          if (userSession?.activeOrganizationId) {
+            organizationId = userSession.activeOrganizationId
+
+            const orgRecord = await db.query.organization.findFirst({
+              where: eq(organization.id, organizationId),
+            })
+
+            if (orgRecord?.name?.startsWith('ModelFlow-')) {
+              tenantId = orgRecord.name.replace('ModelFlow-', '')
+              logger.info('[API Key Auth] Resolved tenant from user session:', {
+                userId: result.userId,
+                organizationId,
+                tenantId,
+              })
+            }
+          }
+        } catch (error) {
+          logger.warn('Failed to resolve tenant from API key user:', error)
+        }
+
         return {
           success: true,
           userId: result.userId!,
           authType: 'api_key',
+          organizationId,
+          tenantId,
         }
       }
 

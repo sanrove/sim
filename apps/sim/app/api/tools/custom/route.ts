@@ -8,6 +8,7 @@ import { generateRequestId } from '@/lib/core/utils/request'
 import { createLogger } from '@/lib/logs/console/logger'
 import { upsertCustomTools } from '@/lib/workflows/custom-tools/operations'
 import { getUserEntityPermissions } from '@/lib/workspaces/permissions/utils'
+import { getTenantDbFromSession } from '@/app/api/workflows/tenant-utils'
 
 const logger = createLogger('CustomToolsAPI')
 
@@ -42,6 +43,10 @@ export async function GET(request: NextRequest) {
   const workflowId = searchParams.get('workflowId')
 
   try {
+    // Get tenant database from session
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
     // Use hybrid auth to support session, API key, and internal JWT
     const authResult = await checkHybridAuth(request, { requireWorkflowId: false })
     if (!authResult.success || !authResult.userId) {
@@ -54,7 +59,7 @@ export async function GET(request: NextRequest) {
     let resolvedWorkspaceId: string | null = workspaceId
 
     if (!resolvedWorkspaceId && workflowId) {
-      const [workflowData] = await db
+      const [workflowData] = await database
         .select({ workspaceId: workflow.workspaceId })
         .from(workflow)
         .where(eq(workflow.id, workflowId))
@@ -76,7 +81,8 @@ export async function GET(request: NextRequest) {
       const userPermission = await getUserEntityPermissions(
         userId,
         'workspace',
-        resolvedWorkspaceId
+        resolvedWorkspaceId,
+        tenantDb
       )
       if (!userPermission) {
         logger.warn(
@@ -98,7 +104,7 @@ export async function GET(request: NextRequest) {
     // Always include legacy user-scoped tools for backward compatibility
     conditions.push(and(isNull(customTools.workspaceId), eq(customTools.userId, userId)))
 
-    const result = await db
+    const result = await database
       .select()
       .from(customTools)
       .where(or(...conditions))
@@ -116,6 +122,9 @@ export async function POST(req: NextRequest) {
   const requestId = generateRequestId()
 
   try {
+    // Get tenant database from session
+    const tenantDb = await getTenantDbFromSession()
+
     // Use hybrid auth (though this endpoint is only called from UI)
     const authResult = await checkHybridAuth(req, { requireWorkflowId: false })
     if (!authResult.success || !authResult.userId) {
@@ -136,7 +145,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Check workspace permissions
-      const userPermission = await getUserEntityPermissions(userId, 'workspace', workspaceId)
+      const userPermission = await getUserEntityPermissions(userId, 'workspace', workspaceId, tenantDb)
       if (!userPermission) {
         logger.warn(
           `[${requestId}] User ${userId} does not have access to workspace ${workspaceId}`
@@ -158,6 +167,7 @@ export async function POST(req: NextRequest) {
         workspaceId,
         userId,
         requestId,
+        tenantDb,
       })
 
       return NextResponse.json({ success: true, data: resultTools })
@@ -193,6 +203,10 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    // Get tenant database from session
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
     // Use hybrid auth (though this endpoint is only called from UI)
     const authResult = await checkHybridAuth(request, { requireWorkflowId: false })
     if (!authResult.success || !authResult.userId) {
@@ -203,7 +217,7 @@ export async function DELETE(request: NextRequest) {
     const userId = authResult.userId
 
     // Check if the tool exists
-    const existingTool = await db
+    const existingTool = await database
       .select()
       .from(customTools)
       .where(eq(customTools.id, toolId))
@@ -224,7 +238,7 @@ export async function DELETE(request: NextRequest) {
       }
 
       // Check workspace permissions
-      const userPermission = await getUserEntityPermissions(userId, 'workspace', workspaceId)
+      const userPermission = await getUserEntityPermissions(userId, 'workspace', workspaceId, tenantDb)
       if (!userPermission) {
         logger.warn(
           `[${requestId}] User ${userId} does not have access to workspace ${workspaceId}`
@@ -257,7 +271,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete the tool
-    await db.delete(customTools).where(eq(customTools.id, toolId))
+    await database.delete(customTools).where(eq(customTools.id, toolId))
 
     logger.info(`[${requestId}] Deleted tool: ${toolId}`)
     return NextResponse.json({ success: true })

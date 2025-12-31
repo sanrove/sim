@@ -1,12 +1,29 @@
-import { db, workflow, workflowDeploymentVersion } from '@sim/db'
+import { db, getTenantDatabase, organization, workflow, workflowDeploymentVersion } from '@sim/db'
 import { and, eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { generateRequestId } from '@/lib/core/utils/request'
 import { createLogger } from '@/lib/logs/console/logger'
 import { validateWorkflowPermissions } from '@/lib/workflows/utils'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
 
 const logger = createLogger('WorkflowActivateDeploymentAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession() {
+  const session = await getSession()
+  const orgId = (session as any)?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -19,7 +36,11 @@ export async function POST(
   const { id, version } = await params
 
   try {
-    const { error } = await validateWorkflowPermissions(id, requestId, 'admin')
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
+    const { error } = await validateWorkflowPermissions(id, requestId, 'admin', tenantDb)
     if (error) {
       return createErrorResponse(error.message, error.status)
     }
@@ -31,7 +52,7 @@ export async function POST(
 
     const now = new Date()
 
-    await db.transaction(async (tx) => {
+    await database.transaction(async (tx) => {
       await tx
         .update(workflowDeploymentVersion)
         .set({ isActive: false })

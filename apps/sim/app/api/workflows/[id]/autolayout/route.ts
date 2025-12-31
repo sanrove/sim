@@ -1,3 +1,5 @@
+import { getTenantDatabase, organization } from '@sim/db'
+import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
@@ -18,6 +20,22 @@ import { getWorkflowAccessContext } from '@/lib/workflows/utils'
 export const dynamic = 'force-dynamic'
 
 const logger = createLogger('AutoLayoutAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const { db } = await import('@sim/db')
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const AutoLayoutRequestSchema = z.object({
   spacing: z
@@ -62,6 +80,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const userId = session.user.id
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+
     // Parse request body
     const body = await request.json()
     const layoutOptions = AutoLayoutRequestSchema.parse(body)
@@ -71,7 +92,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })
 
     // Fetch the workflow to check ownership/access
-    const accessContext = await getWorkflowAccessContext(workflowId, userId)
+    const accessContext = await getWorkflowAccessContext(workflowId, userId, tenantDb || undefined)
     const workflowData = accessContext?.workflow
 
     if (!workflowData) {
@@ -109,7 +130,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     } else {
       logger.info(`[${requestId}] Loading blocks from database`)
-      currentWorkflowData = await loadWorkflowFromNormalizedTables(workflowId)
+      currentWorkflowData = await loadWorkflowFromNormalizedTables(workflowId, tenantDb || undefined)
     }
 
     if (!currentWorkflowData) {

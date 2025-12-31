@@ -1,6 +1,7 @@
 import { db } from '@sim/db'
 import { customTools } from '@sim/db/schema'
 import { and, desc, eq, isNull } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { nanoid } from 'nanoid'
 import { generateRequestId } from '@/lib/core/utils/request'
 import { createLogger } from '@/lib/logs/console/logger'
@@ -21,10 +22,12 @@ export async function upsertCustomTools(params: {
   workspaceId: string
   userId: string
   requestId?: string
+  tenantDb?: PostgresJsDatabase<any>
 }) {
-  const { tools, workspaceId, userId, requestId = generateRequestId() } = params
+  const { tools, workspaceId, userId, requestId = generateRequestId(), tenantDb } = params
+  const database = tenantDb || db
 
-  return await db.transaction(async (tx) => {
+  return await database.transaction(async (tx) => {
     for (const tool of tools) {
       const nowTime = new Date()
 

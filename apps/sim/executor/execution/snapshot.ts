@@ -16,6 +16,7 @@ export interface ExecutionMetadata {
   isClientSession?: boolean
   pendingBlocks?: string[]
   resumeFromSnapshot?: boolean
+  tenantDb?: any
   workflowStateOverride?: {
     blocks: Record<string, any>
     edges: Edge[]

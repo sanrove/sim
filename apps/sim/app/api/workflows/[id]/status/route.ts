@@ -1,4 +1,5 @@
-import { db, workflowDeploymentVersion } from '@sim/db'
+import { db } from '@sim/db'
+import { workflowDeploymentVersion } from '@sim/db/schema'
 import { and, desc, eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
 import { generateRequestId } from '@/lib/core/utils/request'
@@ -7,6 +8,7 @@ import { loadWorkflowFromNormalizedTables } from '@/lib/workflows/persistence/ut
 import { hasWorkflowChanged } from '@/lib/workflows/utils'
 import { validateWorkflowAccess } from '@/app/api/workflows/middleware'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
+import { getTenantDbFromSession } from '@/app/api/workflows/tenant-utils'
 
 const logger = createLogger('WorkflowStatusAPI')
 
@@ -16,7 +18,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params
 
-    const validation = await validateWorkflowAccess(request, id, false)
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
+    const validation = await validateWorkflowAccess(request, id, false, tenantDb)
     if (validation.error) {
       logger.warn(`[${requestId}] Workflow access validation failed: ${validation.error.message}`)
       return createErrorResponse(validation.error.message, validation.error.status)
@@ -28,7 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (validation.workflow.isDeployed) {
       // Get current state from normalized tables (same logic as deployment API)
       // Load current state from normalized tables using centralized helper
-      const normalizedData = await loadWorkflowFromNormalizedTables(id)
+      const normalizedData = await loadWorkflowFromNormalizedTables(id, tenantDb)
 
       if (!normalizedData) {
         // Workflow exists but has no blocks in normalized tables (empty workflow or not migrated)
@@ -49,7 +55,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         lastSaved: Date.now(),
       }
 
-      const [active] = await db
+      const [active] = await database
         .select({ state: workflowDeploymentVersion.state })
         .from(workflowDeploymentVersion)
         .where(

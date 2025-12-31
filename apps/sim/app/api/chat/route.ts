@@ -56,6 +56,9 @@ const chatSchema = z.object({
     )
     .optional()
     .default([]),
+  // Optional fields sent by frontend but not used
+  apiKey: z.string().optional(),
+  deployApiEnabled: z.boolean().optional(),
 })
 
 export async function GET(request: NextRequest) {
@@ -66,8 +69,12 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('Unauthorized', 401)
     }
 
-    // Get the user's chat deployments
-    const deployments = await db.select().from(chat).where(eq(chat.userId, session.user.id))
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
+    // Get the user's chat deployments from tenant database
+    const deployments = await database.select().from(chat).where(eq(chat.userId, session.user.id))
 
     return createSuccessResponse({ deployments })
   } catch (error: any) {
@@ -121,8 +128,12 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Check if identifier is available
-      const existingIdentifier = await db
+      // Get tenant database first
+      const tenantDb = await getTenantDbFromSession()
+      const database = tenantDb || db
+
+      // Check if identifier is available in tenant database
+      const existingIdentifier = await database
         .select()
         .from(chat)
         .where(eq(chat.identifier, identifier))
@@ -135,15 +146,13 @@ export async function POST(request: NextRequest) {
       // Check if user has permission to create chat for this workflow
       const { hasAccess, workflow: workflowRecord } = await checkWorkflowAccessForChatCreation(
         workflowId,
-        session.user.id
+        session.user.id,
+        tenantDb
       )
 
       if (!hasAccess || !workflowRecord) {
         return createErrorResponse('Workflow not found or access denied', 404)
       }
-
-      // Get tenant database
-      const tenantDb = await getTenantDbFromSession()
 
       // Always deploy/redeploy the workflow to ensure latest version
       const result = await deployWorkflow({
@@ -188,7 +197,7 @@ export async function POST(request: NextRequest) {
         welcomeMessage: customizations?.welcomeMessage || 'Hi there! How can I help you today?',
       }
 
-      await db.insert(chat).values({
+      await database.insert(chat).values({
         id,
         workflowId,
         userId: session.user.id,

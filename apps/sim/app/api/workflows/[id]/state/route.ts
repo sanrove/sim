@@ -144,16 +144,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Get tenant database
     const tenantDb = await getTenantDbFromSession(session)
-    if (!tenantDb) {
-      logger.error(`[${requestId}] Tenant database not found for user ${userId}`)
-      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
-    }
+    const database = tenantDb || db
 
     const body = await request.json()
     const state = WorkflowStateSchema.parse(body)
 
     // Fetch the workflow to check ownership/access
-    const accessContext = await getWorkflowAccessContext(workflowId, userId, tenantDb)
+    const accessContext = await getWorkflowAccessContext(workflowId, userId, tenantDb || undefined)
     const workflowData = accessContext?.workflow
 
     if (!workflowData) {
@@ -215,7 +212,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       deployedAt: state.deployedAt,
     }
 
-    const saveResult = await saveWorkflowToNormalizedTables(workflowId, workflowState as any, tenantDb)
+    const saveResult = await saveWorkflowToNormalizedTables(workflowId, workflowState as any, tenantDb || undefined)
 
     if (!saveResult.success) {
       logger.error(`[${requestId}] Failed to save workflow ${workflowId} state:`, saveResult.error)
@@ -225,7 +222,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       )
     }
 
-    await syncWorkflowWebhooks(workflowId, workflowState.blocks, tenantDb)
+    await syncWorkflowWebhooks(workflowId, workflowState.blocks, tenantDb || undefined)
 
     // Extract and persist custom tools to database
     try {
@@ -269,7 +266,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       updateData.variables = state.variables
     }
 
-    await tenantDb.update(workflow).set(updateData).where(eq(workflow.id, workflowId))
+    await database.update(workflow).set(updateData).where(eq(workflow.id, workflowId))
 
     const elapsed = Date.now() - startTime
     logger.info(`[${requestId}] Successfully saved workflow ${workflowId} state in ${elapsed}ms`)
@@ -326,12 +323,13 @@ async function syncWorkflowWebhooks(
   blocks: Record<string, any>,
   tenantDb: any
 ): Promise<void> {
+  const database = tenantDb || db
   await syncBlockResources(workflowId, blocks, {
     resourceName: 'webhook',
     subBlockId: 'webhookId',
     buildMetadata: buildWebhookMetadata,
     applyMetadata: (workflowId, block, webhookId, metadata) => 
-      upsertWebhookRecord(workflowId, block, webhookId, metadata, tenantDb),
+      upsertWebhookRecord(workflowId, block, webhookId, metadata, database),
   })
 }
 
@@ -370,9 +368,9 @@ async function upsertWebhookRecord(
   block: BlockState,
   webhookId: string,
   metadata: WebhookMetadata,
-  tenantDb: any
+  database: any
 ): Promise<void> {
-  const [existing] = await tenantDb.select().from(webhook).where(eq(webhook.id, webhookId)).limit(1)
+  const [existing] = await database.select().from(webhook).where(eq(webhook.id, webhookId)).limit(1)
 
   if (existing) {
     const needsUpdate =
@@ -381,7 +379,7 @@ async function upsertWebhookRecord(
       existing.path !== metadata.triggerPath
 
     if (needsUpdate) {
-      await tenantDb
+      await database
         .update(webhook)
         .set({
           workflowId,
@@ -399,7 +397,7 @@ async function upsertWebhookRecord(
     return
   }
 
-  await tenantDb.insert(webhook).values({
+  await database.insert(webhook).values({
     id: webhookId,
     workflowId,
     blockId: block.id,

@@ -1,13 +1,30 @@
-import { db, workflowDeploymentVersion } from '@sim/db'
+import { db, getTenantDatabase, organization, workflowDeploymentVersion } from '@sim/db'
 import { and, eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { getSession } from '@/lib/auth'
 import { generateRequestId } from '@/lib/core/utils/request'
 import { createLogger } from '@/lib/logs/console/logger'
 import { validateWorkflowPermissions } from '@/lib/workflows/utils'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
 
 const logger = createLogger('WorkflowDeploymentVersionAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession() {
+  const session = await getSession()
+  const orgId = (session as any)?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const patchBodySchema = z.object({
   name: z
@@ -28,7 +45,11 @@ export async function GET(
   const { id, version } = await params
 
   try {
-    const { error } = await validateWorkflowPermissions(id, requestId, 'read')
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
+    const { error } = await validateWorkflowPermissions(id, requestId, 'read', tenantDb)
     if (error) {
       return createErrorResponse(error.message, error.status)
     }
@@ -38,7 +59,7 @@ export async function GET(
       return createErrorResponse('Invalid version', 400)
     }
 
-    const [row] = await db
+    const [row] = await database
       .select({ state: workflowDeploymentVersion.state })
       .from(workflowDeploymentVersion)
       .where(
@@ -71,7 +92,11 @@ export async function PATCH(
   const { id, version } = await params
 
   try {
-    const { error } = await validateWorkflowPermissions(id, requestId, 'write')
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
+    const { error } = await validateWorkflowPermissions(id, requestId, 'write', tenantDb)
     if (error) {
       return createErrorResponse(error.message, error.status)
     }
@@ -90,7 +115,7 @@ export async function PATCH(
 
     const { name } = validation.data
 
-    const [updated] = await db
+    const [updated] = await database
       .update(workflowDeploymentVersion)
       .set({ name })
       .where(

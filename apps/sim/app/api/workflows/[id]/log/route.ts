@@ -6,6 +6,7 @@ import { LoggingSession } from '@/lib/logs/execution/logging-session'
 import { buildTraceSpans } from '@/lib/logs/execution/trace-spans/trace-spans'
 import { validateWorkflowAccess } from '@/app/api/workflows/middleware'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
+import { getTenantDbFromSession } from '@/app/api/workflows/tenant-utils'
 import type { ExecutionResult } from '@/executor/types'
 
 const logger = createLogger('WorkflowLogAPI')
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params
 
   try {
-    const accessValidation = await validateWorkflowAccess(request, id, false)
+    const tenantDb = await getTenantDbFromSession()
+    const accessValidation = await validateWorkflowAccess(request, id, false, tenantDb)
     if (accessValidation.error) {
       logger.warn(
         `[${requestId}] Workflow access validation failed: ${accessValidation.error.message}`

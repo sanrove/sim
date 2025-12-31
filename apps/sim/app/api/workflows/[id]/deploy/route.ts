@@ -1,7 +1,6 @@
-import { db, getTenantDatabase, organization, workflow, workflowDeploymentVersion } from '@sim/db'
+import { db, workflow, workflowDeploymentVersion } from '@sim/db'
 import { and, desc, eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
-import { getSession } from '@/lib/auth'
 import { generateRequestId } from '@/lib/core/utils/request'
 import { createLogger } from '@/lib/logs/console/logger'
 import { deployWorkflow, loadWorkflowFromNormalizedTables } from '@/lib/workflows/persistence/utils'
@@ -12,24 +11,9 @@ import {
 } from '@/lib/workflows/schedules'
 import { validateWorkflowPermissions } from '@/lib/workflows/utils'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
+import { getTenantDbFromSession } from '@/app/api/workflows/tenant-utils'
 
 const logger = createLogger('WorkflowDeployAPI')
-
-// Helper to get tenant database from session
-async function getTenantDbFromSession() {
-  const session = await getSession()
-  const orgId = (session as any)?.session?.activeOrganizationId
-  if (!orgId) return null
-  
-  const orgRecord = await db.query.organization.findFirst({
-    where: eq(organization.id, orgId),
-  })
-  
-  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
-  
-  const tenantId = orgRecord.name.replace('ModelFlow-', '')
-  return getTenantDatabase(tenantId)
-}
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
