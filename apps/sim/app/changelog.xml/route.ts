@@ -47,9 +47,9 @@ export async function GET() {
     const xml = `<?xml version="1.0" encoding="UTF-8" ?>
       <rss version="2.0">
         <channel>
-          <title>Sim Changelog</title>
+          <title>AgentBuilder Changelog</title>
           <link>https://sim.ai/changelog</link>
-          <description>Latest changes, fixes and updates in Sim.</description>
+          <description>Latest changes, fixes and updates in AgentBuilder.</description>
           <language>en-us</language>
           ${items}
         </channel>

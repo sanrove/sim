@@ -1,5 +1,5 @@
 /**
- * Sim Telemetry - Client-side Instrumentation
+ * AgentBuilder Telemetry - Client-side Instrumentation
  */
 
 import { env } from './lib/core/config/env'

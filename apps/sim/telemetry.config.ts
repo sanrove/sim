@@ -1,5 +1,5 @@
 /**
- * Sim OpenTelemetry Configuration
+ * AgentBuilder OpenTelemetry Configuration
  *
  * PRIVACY NOTICE:
  * - Telemetry is enabled by default to help us improve the product
@@ -8,7 +8,7 @@
  *   2. Setting NEXT_TELEMETRY_DISABLED=1 environment variable
  *
  * This file allows you to configure OpenTelemetry collection for your
- * Sim instance. If you've forked the repository, you can modify
+ * AgentBuilder instance. If you've forked the repository, you can modify
  * this file to send telemetry to your own collector.
  *
  * We only collect anonymous usage data to improve the product:
@@ -37,7 +37,7 @@ const config = {
    * Service name used to identify this instance
    * You can change this for your fork
    */
-  serviceName: 'sim-studio',
+  serviceName: 'agentbuilder-studio',
 
   /**
    * Version of the service, defaults to the app version

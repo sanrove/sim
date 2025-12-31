@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: 'Sim - AI Agent Workflow Builder | Open Source',
+    title: 'AgentBuilder - AI Agent Workflow Builder | Open Source',
     description:
       'Open-source platform used by 60,000+ developers. Design, deploy, and monitor agentic workflows with a visual drag-and-drop interface, 100+ integrations, and enterprise-grade security.',
     type: 'website',

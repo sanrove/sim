@@ -3,7 +3,7 @@ import ChangelogContent from '@/app/changelog/components/changelog-content'
 
 export const metadata: Metadata = {
   title: 'Changelog',
-  description: 'Stay up-to-date with the latest features, improvements, and bug fixes in Sim.',
+  description: 'Stay up-to-date with the latest features, improvements, and bug fixes in AgentBuilder.',
   openGraph: {
     title: 'Changelog',
     description: 'Stay up-to-date with the latest features, improvements, and bug fixes in Sim.',

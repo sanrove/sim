@@ -28,7 +28,7 @@ const defaultConfig: BrandConfig = {
   logoUrl: "/ethana-logo.png",
   faviconUrl: "/favicon/favicon.ico",
   customCssUrl: undefined,
-  supportEmail: "help@sim.ai",
+  supportEmail: "help@agentbuilder.ai",
   documentationUrl: undefined,
   termsUrl: undefined,
   privacyUrl: undefined,
