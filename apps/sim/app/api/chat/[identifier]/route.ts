@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
 import { db, getTenantDatabase, organization, member, workspace } from '@sim/db'
-import { chat, workflow } from '@sim/db/schema'
-import { eq } from 'drizzle-orm'
+import { chat, workflow, workflowDeploymentVersion } from '@sim/db/schema'
+import { and, desc, eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { generateRequestId } from '@/lib/core/utils/request'
@@ -254,6 +254,55 @@ export async function POST(
       return addCorsHeaders(createErrorResponse('No input provided', 400), request)
     }
 
+    // Check if workflow has active deployment in tenant database
+    // Auto-deploy if needed to handle multi-tenant scenarios
+    try {
+      const [activeDeployment] = await tenantDb
+        .select({ id: workflowDeploymentVersion.id })
+        .from(workflowDeploymentVersion)
+        .where(
+          and(
+            eq(workflowDeploymentVersion.workflowId, deployment.workflowId),
+            eq(workflowDeploymentVersion.isActive, true)
+          )
+        )
+        .limit(1)
+
+      if (!activeDeployment) {
+        logger.warn(
+          `[${requestId}] No active deployment found for workflow ${deployment.workflowId}, auto-deploying`
+        )
+
+        const { deployWorkflow } = await import('@/lib/workflows/persistence/utils')
+        const deployResult = await deployWorkflow({
+          workflowId: deployment.workflowId,
+          deployedBy: deployment.userId,
+          tenantDb,
+        })
+
+        if (!deployResult.success) {
+          logger.error(`[${requestId}] Failed to auto-deploy workflow: ${deployResult.error}`)
+          return addCorsHeaders(
+            createErrorResponse(
+              'Workflow is not deployed. Please deploy the workflow first.',
+              403
+            ),
+            request
+          )
+        }
+
+        logger.info(
+          `[${requestId}] Auto-deployed workflow ${deployment.workflowId} successfully (v${deployResult.version})`
+        )
+      }
+    } catch (deployError: any) {
+      logger.error(`[${requestId}] Error checking/deploying workflow:`, deployError)
+      return addCorsHeaders(
+        createErrorResponse('Failed to verify workflow deployment status', 500),
+        request
+      )
+    }
+
     const executionId = randomUUID()
 
     const loggingSession = new LoggingSession(deployment.workflowId, executionId, 'chat', requestId)
@@ -367,6 +416,7 @@ export async function POST(
           workflowTriggerType: 'chat',
         },
         executionId,
+        tenantDb,
       })
 
       const streamResponse = new NextResponse(stream, {

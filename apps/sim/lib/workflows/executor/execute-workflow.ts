@@ -15,6 +15,7 @@ export interface ExecuteWorkflowOptions {
   onStream?: (streamingExec: any) => Promise<void>
   onBlockComplete?: (blockId: string, output: any) => Promise<void>
   skipLoggingComplete?: boolean
+  tenantDb?: any
 }
 
 export interface WorkflowInfo {
@@ -55,6 +56,7 @@ export async function executeWorkflow(
       useDraftState: false,
       startTime: new Date().toISOString(),
       isClientSession: false,
+      tenantDb: streamConfig?.tenantDb,
     }
 
     const snapshot = new ExecutionSnapshot(
