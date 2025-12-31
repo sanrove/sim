@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { templates, workflow, workflowDeploymentVersion } from '@sim/db/schema'
 import { eq, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -10,6 +10,21 @@ import { createLogger } from '@/lib/logs/console/logger'
 import { regenerateWorkflowStateIds } from '@/lib/workflows/persistence/utils'
 
 const logger = createLogger('TemplateUseAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -30,6 +45,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!session?.user?.id) {
       logger.warn(`[${requestId}] Unauthorized use attempt for template: ${id}`)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${session.user.id}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
     }
 
     // Get workspace ID and connectToTemplate flag from request body
@@ -84,7 +106,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })()
 
     // Step 1: Create the workflow record (like imports do)
-    await db.insert(workflow).values({
+    await tenantDb.insert(workflow).values({
       id: newWorkflowId,
       workspaceId: workspaceId,
       name:
@@ -124,14 +146,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!stateResponse.ok) {
       logger.error(`[${requestId}] Failed to save workflow state for template use`)
       // Clean up the workflow we created
-      await db.delete(workflow).where(eq(workflow.id, newWorkflowId))
+      await tenantDb.delete(workflow).where(eq(workflow.id, newWorkflowId))
       return NextResponse.json(
         { error: 'Failed to create workflow from template' },
         { status: 500 }
       )
     }
 
-    // Use a transaction for template updates and deployment version
+    // Use a transaction for template updates and deployment version (templates table stays in master db)
     const result = await db.transaction(async (tx) => {
       // Prepare template update data
       const updateData: any = {
@@ -144,10 +166,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (connectToTemplate && !templateData.workflowId) {
         updateData.workflowId = newWorkflowId
 
-        // Create a deployment version for the new workflow
+        // Create a deployment version for the new workflow (in tenant db)
         if (templateData.state) {
           const newDeploymentVersionId = uuidv4()
-          await tx.insert(workflowDeploymentVersion).values({
+          await tenantDb.insert(workflowDeploymentVersion).values({
             id: newDeploymentVersionId,
             workflowId: newWorkflowId,
             version: 1,

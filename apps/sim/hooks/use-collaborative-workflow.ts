@@ -689,29 +689,34 @@ export function useCollaborativeWorkflow() {
         return
       }
 
-      if (!isInActiveRoom()) {
-        logger.debug('Skipping operation - not in active workflow', {
+      // Check if we should emit to socket
+      const shouldEmitToSocket = isInActiveRoom()
+      if (!shouldEmitToSocket) {
+        logger.debug('Not in active collaborative room - executing locally only', {
           currentWorkflowId,
           activeWorkflowId,
           operation,
           target,
         })
-        return
       }
 
-      const operationId = crypto.randomUUID()
+      // Only add to queue if connected to collaborative room
+      if (shouldEmitToSocket) {
+        const operationId = crypto.randomUUID()
 
-      addToQueue({
-        id: operationId,
-        operation: {
-          operation,
-          target,
-          payload,
-        },
-        workflowId: activeWorkflowId || '',
-        userId: session?.user?.id || 'unknown',
-      })
+        addToQueue({
+          id: operationId,
+          operation: {
+            operation,
+            target,
+            payload,
+          },
+          workflowId: activeWorkflowId || '',
+          userId: session?.user?.id || 'unknown',
+        })
+      }
 
+      // Always execute the local action
       localAction()
     },
     [
@@ -733,19 +738,24 @@ export function useCollaborativeWorkflow() {
         return
       }
 
-      if (!isInActiveRoom()) {
-        logger.debug('Skipping debounced operation - not in active workflow', {
+      // Check if we should emit to socket
+      const shouldEmitToSocket = isInActiveRoom()
+      if (!shouldEmitToSocket) {
+        logger.debug('Not in active collaborative room - executing debounced operation locally only', {
           currentWorkflowId,
           activeWorkflowId,
           operation,
           target,
         })
-        return
       }
 
+      // Always execute the local action
       localAction()
 
-      emitWorkflowOperation(operation, target, payload)
+      // Only emit to socket if connected to collaborative room
+      if (shouldEmitToSocket) {
+        emitWorkflowOperation(operation, target, payload)
+      }
     },
     [emitWorkflowOperation, isBaselineDiffView, isInActiveRoom, currentWorkflowId, activeWorkflowId]
   )
@@ -768,12 +778,13 @@ export function useCollaborativeWorkflow() {
         return
       }
 
-      if (!isInActiveRoom()) {
-        logger.debug('Skipping collaborative add block - not in active workflow', {
+      // Check if we should emit to socket (connected to collaborative room)
+      const shouldEmitToSocket = isInActiveRoom()
+      if (!shouldEmitToSocket) {
+        logger.debug('Not in active collaborative room - will add block locally only', {
           currentWorkflowId,
           activeWorkflowId,
         })
-        return
       }
 
       const blockConfig = getBlock(type)
@@ -813,17 +824,19 @@ export function useCollaborativeWorkflow() {
         // Generate operation ID for queue tracking
         const operationId = crypto.randomUUID()
 
-        // Add to queue for retry mechanism
-        addToQueue({
-          id: operationId,
-          operation: {
-            operation: 'add',
-            target: 'block',
-            payload: completeBlockData,
-          },
-          workflowId: activeWorkflowId || '',
-          userId: session?.user?.id || 'unknown',
-        })
+        // Add to queue for retry mechanism (only if connected to collaborative room)
+        if (shouldEmitToSocket) {
+          addToQueue({
+            id: operationId,
+            operation: {
+              operation: 'add',
+              target: 'block',
+              payload: completeBlockData,
+            },
+            workflowId: activeWorkflowId || '',
+            userId: session?.user?.id || 'unknown',
+          })
+        }
 
         // Apply locally first (immediate UI feedback)
         workflowStore.addBlock(id, type, name, position, data, parentId, extent, {
@@ -915,17 +928,19 @@ export function useCollaborativeWorkflow() {
       // Generate operation ID
       const operationId = crypto.randomUUID()
 
-      // Add to queue
-      addToQueue({
-        id: operationId,
-        operation: {
-          operation: 'add',
-          target: 'block',
-          payload: completeBlockData,
-        },
-        workflowId: activeWorkflowId || '',
-        userId: session?.user?.id || 'unknown',
-      })
+      // Add to queue (only if connected to collaborative room)
+      if (shouldEmitToSocket) {
+        addToQueue({
+          id: operationId,
+          operation: {
+            operation: 'add',
+            target: 'block',
+            payload: completeBlockData,
+          },
+          workflowId: activeWorkflowId || '',
+          userId: session?.user?.id || 'unknown',
+        })
+      }
 
       // Apply locally
       workflowStore.addBlock(id, type, name, position, data, parentId, extent, {
@@ -1194,35 +1209,39 @@ export function useCollaborativeWorkflow() {
         return
       }
 
-      if (!isInActiveRoom()) {
-        logger.debug('Skipping subblock update - not in active workflow', {
+      // Check if we should emit to socket
+      const shouldEmitToSocket = isInActiveRoom()
+      if (!shouldEmitToSocket) {
+        logger.debug('Not in active collaborative room - updating subblock locally only', {
           currentWorkflowId,
           activeWorkflowId,
           blockId,
           subblockId,
         })
-        return
       }
 
-      // Generate operation ID for queue tracking
-      const operationId = crypto.randomUUID()
+      // Only add to queue if connected to collaborative room
+      if (shouldEmitToSocket) {
+        // Generate operation ID for queue tracking
+        const operationId = crypto.randomUUID()
 
-      // Get fresh activeWorkflowId from store to avoid stale closure
-      const currentActiveWorkflowId = useWorkflowRegistry.getState().activeWorkflowId
+        // Get fresh activeWorkflowId from store to avoid stale closure
+        const currentActiveWorkflowId = useWorkflowRegistry.getState().activeWorkflowId
 
-      // Add to queue for retry mechanism
-      addToQueue({
-        id: operationId,
-        operation: {
-          operation: 'subblock-update',
-          target: 'subblock',
-          payload: { blockId, subblockId, value },
-        },
-        workflowId: currentActiveWorkflowId || '',
-        userId: session?.user?.id || 'unknown',
-      })
+        // Add to queue for retry mechanism
+        addToQueue({
+          id: operationId,
+          operation: {
+            operation: 'subblock-update',
+            target: 'subblock',
+            payload: { blockId, subblockId, value },
+          },
+          workflowId: currentActiveWorkflowId || '',
+          userId: session?.user?.id || 'unknown',
+        })
+      }
 
-      // Apply locally first (immediate UI feedback)
+      // Always apply locally (immediate UI feedback)
       subBlockStore.setValue(blockId, subblockId, value)
 
       // Declarative clearing: clear sub-blocks that depend on this subblockId
@@ -1263,32 +1282,36 @@ export function useCollaborativeWorkflow() {
     (blockId: string, subblockId: string, value: any) => {
       if (isApplyingRemoteChange.current) return
 
-      if (!isInActiveRoom()) {
-        logger.debug('Skipping tag selection - not in active workflow', {
+      // Check if we should emit to socket
+      const shouldEmitToSocket = isInActiveRoom()
+      if (!shouldEmitToSocket) {
+        logger.debug('Not in active collaborative room - updating tag selection locally only', {
           currentWorkflowId,
           activeWorkflowId,
           blockId,
           subblockId,
         })
-        return
       }
 
-      // Apply locally first (immediate UI feedback)
+      // Always apply locally first (immediate UI feedback)
       subBlockStore.setValue(blockId, subblockId, value)
 
-      // Use the operation queue but with immediate processing (no debouncing)
-      const operationId = crypto.randomUUID()
+      // Only add to queue if connected to collaborative room
+      if (shouldEmitToSocket) {
+        // Use the operation queue but with immediate processing (no debouncing)
+        const operationId = crypto.randomUUID()
 
-      addToQueue({
-        id: operationId,
-        operation: {
-          operation: 'subblock-update',
-          target: 'subblock',
-          payload: { blockId, subblockId, value },
-        },
-        workflowId: activeWorkflowId || '',
-        userId: session?.user?.id || 'unknown',
-      })
+        addToQueue({
+          id: operationId,
+          operation: {
+            operation: 'subblock-update',
+            target: 'subblock',
+            payload: { blockId, subblockId, value },
+          },
+          workflowId: activeWorkflowId || '',
+          userId: session?.user?.id || 'unknown',
+        })
+      }
     },
     [
       subBlockStore,
@@ -1302,13 +1325,14 @@ export function useCollaborativeWorkflow() {
 
   const collaborativeDuplicateBlock = useCallback(
     (sourceId: string) => {
-      if (!isInActiveRoom()) {
-        logger.debug('Skipping duplicate block - not in active workflow', {
+      // Check if we should emit to socket
+      const shouldEmitToSocket = isInActiveRoom()
+      if (!shouldEmitToSocket) {
+        logger.debug('Not in active collaborative room - duplicating block locally only', {
           currentWorkflowId,
           activeWorkflowId,
           sourceId,
         })
-        return
       }
 
       const sourceBlock = workflowStore.blocks[sourceId]

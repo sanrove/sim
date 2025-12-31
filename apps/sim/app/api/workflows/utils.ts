@@ -23,14 +23,16 @@ export function createSuccessResponse(data: any) {
  * Verifies user's workspace permissions using the permissions table
  * @param userId User ID to check
  * @param workspaceId Workspace ID to check
+ * @param tenantDb Optional tenant database connection (uses master db if not provided)
  * @returns Permission type if user has access, null otherwise
  */
 export async function verifyWorkspaceMembership(
   userId: string,
-  workspaceId: string
+  workspaceId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<string | null> {
   try {
-    const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId)
+    const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId, tenantDb)
 
     return permission
   } catch (error) {

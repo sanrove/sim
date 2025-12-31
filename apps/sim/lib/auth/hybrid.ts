@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, organization } from '@sim/db'
 import { workflow } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
@@ -14,6 +14,8 @@ export interface AuthResult {
   userId?: string
   authType?: 'session' | 'api_key' | 'internal_jwt'
   error?: string
+  organizationId?: string // Active organization ID for tenant resolution
+  tenantId?: string // Resolved tenant ID if available
 }
 
 /**
@@ -106,10 +108,35 @@ export async function checkHybridAuth(
     // 2. Try session auth (for web UI)
     const session = await getSession()
     if (session?.user?.id) {
+      let organizationId: string | undefined
+      let tenantId: string | undefined
+
+      // Extract organization ID from session (from custom session plugin)
+      const activeOrgId = (session as any)?.session?.activeOrganizationId
+
+      if (activeOrgId) {
+        organizationId = activeOrgId
+
+        // Try to resolve tenant ID from organization
+        try {
+          const orgRecord = await db.query.organization.findFirst({
+            where: eq(organization.id, activeOrgId),
+          })
+
+          if (orgRecord?.name?.startsWith('ModelFlow-')) {
+            tenantId = orgRecord.name.replace('ModelFlow-', '')
+          }
+        } catch (error) {
+          logger.warn('Failed to resolve tenant from organization in session auth:', error)
+        }
+      }
+
       return {
         success: true,
         userId: session.user.id,
         authType: 'session',
+        organizationId,
+        tenantId,
       }
     }
 

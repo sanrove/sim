@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { chat } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
@@ -14,6 +14,22 @@ import { checkWorkflowAccessForChatCreation } from '@/app/api/chat/utils'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
 
 const logger = createLogger('ChatAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession() {
+  const session = await getSession()
+  const orgId = (session as any)?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const chatSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
@@ -126,10 +142,14 @@ export async function POST(request: NextRequest) {
         return createErrorResponse('Workflow not found or access denied', 404)
       }
 
+      // Get tenant database
+      const tenantDb = await getTenantDbFromSession()
+
       // Always deploy/redeploy the workflow to ensure latest version
       const result = await deployWorkflow({
         workflowId,
         deployedBy: session.user.id,
+        tenantDb,
       })
 
       if (!result.success) {

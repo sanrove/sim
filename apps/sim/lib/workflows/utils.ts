@@ -88,15 +88,16 @@ export async function getWorkflowAccessContext(
   }
 }
 
-export async function updateWorkflowRunCounts(workflowId: string, runs = 1) {
+export async function updateWorkflowRunCounts(workflowId: string, runs = 1, tenantDb?: PostgresJsDatabase<any>) {
   try {
-    const workflow = await getWorkflowById(workflowId)
+    const database = tenantDb || db
+    const workflow = await getWorkflowById(workflowId, tenantDb)
     if (!workflow) {
       logger.error(`Workflow ${workflowId} not found`)
       throw new Error(`Workflow ${workflowId} not found`)
     }
 
-    await db
+    await database
       .update(workflowTable)
       .set({
         runCount: workflow.runCount + runs,
@@ -105,7 +106,7 @@ export async function updateWorkflowRunCounts(workflowId: string, runs = 1) {
       .where(eq(workflowTable.id, workflowId))
 
     try {
-      const existing = await db
+      const existing = await database
         .select()
         .from(userStats)
         .where(eq(userStats.userId, workflow.userId))
@@ -117,7 +118,7 @@ export async function updateWorkflowRunCounts(workflowId: string, runs = 1) {
           workflowId,
         })
       } else {
-        await db
+        await database
           .update(userStats)
           .set({
             lastActive: new Date(),
@@ -502,7 +503,8 @@ export const createHttpResponseFromBlock = (executionResult: ExecutionResult): N
 export async function validateWorkflowPermissions(
   workflowId: string,
   requestId: string,
-  action: 'read' | 'write' | 'admin' = 'read'
+  action: 'read' | 'write' | 'admin' = 'read',
+  tenantDb?: PostgresJsDatabase<any>
 ) {
   const session = await getSession()
   if (!session?.user?.id) {
@@ -514,7 +516,7 @@ export async function validateWorkflowPermissions(
     }
   }
 
-  const accessContext = await getWorkflowAccessContext(workflowId, session.user.id)
+  const accessContext = await getWorkflowAccessContext(workflowId, session.user.id, tenantDb)
   if (!accessContext) {
     logger.warn(`[${requestId}] Workflow ${workflowId} not found`)
     return {

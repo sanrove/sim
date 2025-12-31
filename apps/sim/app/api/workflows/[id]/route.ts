@@ -219,8 +219,15 @@ export async function DELETE(
 
     const userId = session.user.id
 
-    const accessContext = await getWorkflowAccessContext(workflowId, userId)
-    const workflowData = accessContext?.workflow || (await getWorkflowById(workflowId))
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${userId}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
+    const accessContext = await getWorkflowAccessContext(workflowId, userId, tenantDb)
+    const workflowData = accessContext?.workflow || (await getWorkflowById(workflowId, tenantDb))
 
     if (!workflowData) {
       logger.warn(`[${requestId}] Workflow ${workflowId} not found for deletion`)
@@ -237,7 +244,7 @@ export async function DELETE(
 
     // Case 2: Workflow belongs to a workspace and user has admin permission
     if (!canDelete && workflowData.workspaceId) {
-      const context = accessContext || (await getWorkflowAccessContext(workflowId, userId))
+      const context = accessContext || (await getWorkflowAccessContext(workflowId, userId, tenantDb))
       if (context?.workspacePermission === 'admin') {
         canDelete = true
       }
@@ -252,7 +259,7 @@ export async function DELETE(
 
     // Check if this is the last workflow in the workspace
     if (workflowData.workspaceId) {
-      const totalWorkflowsInWorkspace = await db
+      const totalWorkflowsInWorkspace = await tenantDb
         .select({ id: workflow.id })
         .from(workflow)
         .where(eq(workflow.workspaceId, workflowData.workspaceId))
@@ -272,7 +279,7 @@ export async function DELETE(
 
     if (checkTemplates) {
       // Return template information for frontend to handle
-      const publishedTemplates = await db
+      const publishedTemplates = await tenantDb
         .select({
           id: templates.id,
           name: templates.name,
@@ -286,7 +293,7 @@ export async function DELETE(
       return NextResponse.json({
         hasPublishedTemplates: publishedTemplates.length > 0,
         count: publishedTemplates.length,
-        publishedTemplates: publishedTemplates.map((t) => ({
+        publishedTemplates: publishedTemplates.map((t: any) => ({
           id: t.id,
           name: t.name,
           views: t.views,
@@ -301,11 +308,11 @@ export async function DELETE(
 
       if (deleteTemplates) {
         // Delete all templates associated with this workflow
-        await db.delete(templates).where(eq(templates.workflowId, workflowId))
+        await tenantDb.delete(templates).where(eq(templates.workflowId, workflowId))
         logger.info(`[${requestId}] Deleted templates for workflow ${workflowId}`)
       } else {
         // Orphan the templates (set workflowId to null)
-        await db
+        await tenantDb
           .update(templates)
           .set({ workflowId: null })
           .where(eq(templates.workflowId, workflowId))
@@ -316,7 +323,7 @@ export async function DELETE(
     // Clean up external webhooks before deleting workflow
     try {
       const { cleanupExternalWebhook } = await import('@/lib/webhooks/provider-subscriptions')
-      const webhooksToCleanup = await db
+      const webhooksToCleanup = await tenantDb
         .select({
           webhook: webhook,
           workflow: {
@@ -355,7 +362,7 @@ export async function DELETE(
       // Continue with workflow deletion even if webhook cleanup fails
     }
 
-    await db.delete(workflow).where(eq(workflow.id, workflowId))
+    await tenantDb.delete(workflow).where(eq(workflow.id, workflowId))
 
     const elapsed = Date.now() - startTime
     logger.info(`[${requestId}] Successfully deleted workflow ${workflowId} in ${elapsed}ms`)
@@ -415,12 +422,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const userId = session.user.id
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${userId}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
     const body = await request.json()
     const updates = UpdateWorkflowSchema.parse(body)
 
     // Fetch the workflow to check ownership/access
-    const accessContext = await getWorkflowAccessContext(workflowId, userId)
-    const workflowData = accessContext?.workflow || (await getWorkflowById(workflowId))
+    const accessContext = await getWorkflowAccessContext(workflowId, userId, tenantDb)
+    const workflowData = accessContext?.workflow || (await getWorkflowById(workflowId, tenantDb))
 
     if (!workflowData) {
       logger.warn(`[${requestId}] Workflow ${workflowId} not found for update`)
@@ -437,7 +451,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Case 2: Workflow belongs to a workspace and user has write or admin permission
     if (!canUpdate && workflowData.workspaceId) {
-      const context = accessContext || (await getWorkflowAccessContext(workflowId, userId))
+      const context = accessContext || (await getWorkflowAccessContext(workflowId, userId, tenantDb))
       if (context?.workspacePermission === 'write' || context?.workspacePermission === 'admin') {
         canUpdate = true
       }
@@ -458,7 +472,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (updates.folderId !== undefined) updateData.folderId = updates.folderId
 
     // Update the workflow
-    const [updatedWorkflow] = await db
+    const [updatedWorkflow] = await tenantDb
       .update(workflow)
       .set(updateData)
       .where(eq(workflow.id, workflowId))

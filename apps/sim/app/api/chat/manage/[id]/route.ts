@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { chat } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
@@ -15,7 +15,21 @@ import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/
 export const dynamic = 'force-dynamic'
 
 const logger = createLogger('ChatDetailAPI')
-
+// Helper to get tenant database from session
+async function getTenantDbFromSession() {
+  const session = await getSession()
+  const orgId = (session as any)?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 const chatUpdateSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required').optional(),
   identifier: z
@@ -135,10 +149,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         }
       }
 
+      // Get tenant database
+      const tenantDb = await getTenantDbFromSession()
+
       // Redeploy the workflow to ensure latest version is active
       const deployResult = await deployWorkflow({
         workflowId: existingChat[0].workflowId,
         deployedBy: session.user.id,
+        tenantDb,
       })
 
       if (!deployResult.success) {

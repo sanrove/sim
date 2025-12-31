@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { webhook, workflow } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -16,6 +16,21 @@ import { generateLoopBlocks, generateParallelBlocks } from '@/stores/workflows/w
 import { getTrigger } from '@/triggers'
 
 const logger = createLogger('WorkflowStateAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const PositionSchema = z.object({
   x: z.number(),
@@ -127,11 +142,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const userId = session.user.id
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${userId}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
     const body = await request.json()
     const state = WorkflowStateSchema.parse(body)
 
     // Fetch the workflow to check ownership/access
-    const accessContext = await getWorkflowAccessContext(workflowId, userId)
+    const accessContext = await getWorkflowAccessContext(workflowId, userId, tenantDb)
     const workflowData = accessContext?.workflow
 
     if (!workflowData) {
@@ -193,7 +215,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       deployedAt: state.deployedAt,
     }
 
-    const saveResult = await saveWorkflowToNormalizedTables(workflowId, workflowState as any)
+    const saveResult = await saveWorkflowToNormalizedTables(workflowId, workflowState as any, tenantDb)
 
     if (!saveResult.success) {
       logger.error(`[${requestId}] Failed to save workflow ${workflowId} state:`, saveResult.error)
@@ -203,7 +225,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       )
     }
 
-    await syncWorkflowWebhooks(workflowId, workflowState.blocks)
+    await syncWorkflowWebhooks(workflowId, workflowState.blocks, tenantDb)
 
     // Extract and persist custom tools to database
     try {
@@ -247,7 +269,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       updateData.variables = state.variables
     }
 
-    await db.update(workflow).set(updateData).where(eq(workflow.id, workflowId))
+    await tenantDb.update(workflow).set(updateData).where(eq(workflow.id, workflowId))
 
     const elapsed = Date.now() - startTime
     logger.info(`[${requestId}] Successfully saved workflow ${workflowId} state in ${elapsed}ms`)
@@ -301,13 +323,15 @@ function getSubBlockValue<T = unknown>(block: BlockState, subBlockId: string): T
 
 async function syncWorkflowWebhooks(
   workflowId: string,
-  blocks: Record<string, any>
+  blocks: Record<string, any>,
+  tenantDb: any
 ): Promise<void> {
   await syncBlockResources(workflowId, blocks, {
     resourceName: 'webhook',
     subBlockId: 'webhookId',
     buildMetadata: buildWebhookMetadata,
-    applyMetadata: upsertWebhookRecord,
+    applyMetadata: (workflowId, block, webhookId, metadata) => 
+      upsertWebhookRecord(workflowId, block, webhookId, metadata, tenantDb),
   })
 }
 
@@ -345,9 +369,10 @@ async function upsertWebhookRecord(
   workflowId: string,
   block: BlockState,
   webhookId: string,
-  metadata: WebhookMetadata
+  metadata: WebhookMetadata,
+  tenantDb: any
 ): Promise<void> {
-  const [existing] = await db.select().from(webhook).where(eq(webhook.id, webhookId)).limit(1)
+  const [existing] = await tenantDb.select().from(webhook).where(eq(webhook.id, webhookId)).limit(1)
 
   if (existing) {
     const needsUpdate =
@@ -356,7 +381,7 @@ async function upsertWebhookRecord(
       existing.path !== metadata.triggerPath
 
     if (needsUpdate) {
-      await db
+      await tenantDb
         .update(webhook)
         .set({
           workflowId,
@@ -374,7 +399,7 @@ async function upsertWebhookRecord(
     return
   }
 
-  await db.insert(webhook).values({
+  await tenantDb.insert(webhook).values({
     id: webhookId,
     workflowId,
     blockId: block.id,

@@ -277,6 +277,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       requestId,
       checkDeployment: !shouldUseDraftState,
       loggingSession,
+      organizationId: auth.organizationId,
+      tenantId: auth.tenantId,
     })
 
     if (!preprocessResult.success) {
@@ -294,6 +296,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Workflow has no associated workspace' }, { status: 500 })
     }
     const workspaceId = workflow.workspaceId
+
+    // Get tenant database if available
+    let tenantDb: any = undefined
+    if (auth.tenantId) {
+      try {
+        const { getTenantDatabase } = await import('@sim/db')
+        tenantDb = await getTenantDatabase(auth.tenantId)
+        logger.info(`[${requestId}] Using tenant database for workflow execution`, {
+          tenantId: auth.tenantId,
+        })
+      } catch (error) {
+        logger.warn(`[${requestId}] Failed to get tenant database, using default`, {
+          error,
+          tenantId: auth.tenantId,
+        })
+      }
+    }
 
     logger.info(`[${requestId}] Preprocessing passed`, {
       workflowId,
@@ -322,8 +341,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let processedInput = input
     try {
       const workflowData = shouldUseDraftState
-        ? await loadWorkflowFromNormalizedTables(workflowId)
-        : await loadDeployedWorkflowState(workflowId)
+        ? await loadWorkflowFromNormalizedTables(workflowId, tenantDb)
+        : await loadDeployedWorkflowState(workflowId, tenantDb)
 
       if (workflowData) {
         cachedWorkflowData = {
