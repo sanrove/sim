@@ -2,7 +2,6 @@
 
 import { useCallback } from 'react'
 import { Layout, LibraryBig, Search } from 'lucide-react'
-import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/emcn'
 import { AgentIcon } from '@/components/icons'
@@ -180,22 +179,6 @@ export function CommandList() {
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {/* Logo */}
-        <div className='mb-[20px] flex justify-center'>
-          <Image
-            src='/logo/b&w/text/b&w.svg'
-            alt='Sim'
-            width={99.56}
-            height={48.56}
-            className='opacity-70'
-            style={{
-              filter:
-                'brightness(0) saturate(100%) invert(69%) sepia(0%) saturate(0%) hue-rotate(202deg) brightness(94%) contrast(89%)',
-            }}
-            priority
-          />
-        </div>
-
         {commands.map((command) => {
           const Icon = command.icon
           const shortcuts = Array.isArray(command.shortcut) ? command.shortcut : [command.shortcut]
