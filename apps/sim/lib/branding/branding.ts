@@ -24,8 +24,8 @@ export interface BrandConfig {
  * Default brand configuration values
  */
 const defaultConfig: BrandConfig = {
-  name: "ModelFlow",
-  logoUrl: "/modelflow-logo.svg",
+  name: "Ethana",
+  logoUrl: "/ethana-logo.png",
   faviconUrl: "/favicon/favicon.ico",
   customCssUrl: undefined,
   supportEmail: "help@sim.ai",
