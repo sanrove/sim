@@ -40,7 +40,7 @@ export const usePanelStore = create<PanelState>()(
       },
     }),
     {
-      name: 'panel-state',
+      name: 'agentbuilder-panel-state',
       onRehydrateStorage: () => (state) => {
         // Sync CSS variables with stored state after rehydration
         if (state && typeof window !== 'undefined') {

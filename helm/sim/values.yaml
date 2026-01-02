@@ -104,11 +104,11 @@ app:
     RATE_LIMIT_FREE_ASYNC: "50"                           # Async API executions per minute
     
     # UI Branding & Whitelabeling Configuration
-    NEXT_PUBLIC_BRAND_NAME: "Sim"                         # Custom brand name
+    NEXT_PUBLIC_BRAND_NAME: "Agent Builder"                         # Custom brand name
     NEXT_PUBLIC_BRAND_LOGO_URL: ""                        # Custom logo URL (leave empty for default)
     NEXT_PUBLIC_BRAND_FAVICON_URL: ""                     # Custom favicon URL (leave empty for default)
     NEXT_PUBLIC_CUSTOM_CSS_URL: ""                        # Custom stylesheet URL (leave empty for none)
-    NEXT_PUBLIC_SUPPORT_EMAIL: "help@sim.ai"             # Support email address
+    NEXT_PUBLIC_SUPPORT_EMAIL: "help@agentbuilder.ai"             # Support email address
     NEXT_PUBLIC_DOCUMENTATION_URL: ""                    # Documentation URL (leave empty for none)
     NEXT_PUBLIC_TERMS_URL: ""                            # Terms of service URL (leave empty for none)
     NEXT_PUBLIC_PRIVACY_URL: ""                          # Privacy policy URL (leave empty for none)

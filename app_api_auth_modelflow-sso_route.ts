@@ -44,7 +44,7 @@ function validateModelFlowToken(token: string): ModelFlowTokenPayload {
     const decoded = jwt.verify(token, secret, {
       algorithms: ['HS256'],
       issuer: 'modelflow-api',
-      audience: 'sim-sso',
+      audience: 'agent-builder-sso',
     }) as ModelFlowTokenPayload;
 
     if (decoded.source !== 'modelflow') {

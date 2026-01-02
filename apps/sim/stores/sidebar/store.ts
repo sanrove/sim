@@ -53,7 +53,7 @@ export const useSidebarStore = create<SidebarState>()(
       setHasHydrated: (hasHydrated) => set({ _hasHydrated: hasHydrated }),
     }),
     {
-      name: 'sidebar-state',
+      name: 'agentbuilder-sidebar-state',
       onRehydrateStorage: () => (state) => {
         // Mark store as hydrated and apply CSS variables
         if (state) {

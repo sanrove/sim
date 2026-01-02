@@ -171,7 +171,7 @@ export const useNotificationStore = create<NotificationStore>()(
       },
     }),
     {
-      name: 'notification-storage',
+      name: 'agentbuilder-notification-storage',
       /**
        * Only persist workflow-level notifications.
        * Global notifications (without a workflowId) are kept in memory only.

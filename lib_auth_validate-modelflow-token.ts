@@ -40,7 +40,7 @@ export function validateModelFlowToken(
     const decoded = jwt.verify(token, secret, {
       algorithms: ['HS256'],
       issuer: 'modelflow-api',
-      audience: 'sim-sso',
+      audience: 'agent-builder-sso',
     }) as ModelFlowTokenPayload;
 
     // Verify token came from ModelFlow
