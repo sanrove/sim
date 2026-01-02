@@ -5,11 +5,13 @@
 ### 1. Databases Created
 
 **Master Database:**
+
 - Name: `simstudio`
 - Purpose: Authentication & sessions (for better-auth)
 - Contains: user, session, organization, member tables
 
 **Tenant Database:**
+
 - Name: `sim_6940fe29284471286882fbf1`
 - Purpose: Isolated workspace data for ModelFlow tenant
 - Contains: user, workspace, workflow, permissions tables
@@ -29,26 +31,30 @@ POSTGRES_PASSWORD=your_password
 ✅ **SSO Handler** - Creates users in BOTH databases  
 ✅ **Workspace API** - Queries from tenant database  
 ✅ **Session Management** - Stored in master database  
-✅ **Tenant Routing** - Automatic based on tenantId from organization name  
+✅ **Tenant Routing** - Automatic based on tenantId from organization name
 
 ## How to Test
 
 ### Step 1: Ensure Services Are Running
 
 **ModelFlow:**
+
 ```bash
 # Terminal: bash
 cd C:/Users/sidha/werp-new/ModelFlow
 npm run dev:start -- --skip-guardrail
 ```
+
 Should be running on: http://localhost:3000
 
 **Sim:**
+
 ```powershell
 # Terminal: powershell
 cd C:\Users\sidha\werp-new\sim\apps\sim
 bun run dev
 ```
+
 Should be running on: http://localhost:5863
 
 ### Step 2: Test SSO Flow
@@ -57,13 +63,14 @@ Should be running on: http://localhost:5863
 2. **Login** with: `demo-test@ethana.ai`
 3. **Click "Agent Builder"** or navigate to Agent Builder
 4. **Expected Result**:
-   - Redirects to: `http://localhost:5863/api/auth/modelflow-sso?token=...`
+   - Redirects to: `http://localhost:5863/api/auth/ethana-sso?token=...`
    - Then redirects to: `http://localhost:5863/agents`
    - You should see the Agent Builder interface ✓
 
 ### Step 3: Verify Database Operations
 
 **Check Master Database:**
+
 ```sql
 -- Connect to: simstudio
 SELECT * FROM "user" WHERE email = 'demo-test@ethana.ai';
@@ -74,6 +81,7 @@ SELECT * FROM session WHERE "userId" IN (
 ```
 
 **Check Tenant Database:**
+
 ```sql
 -- Connect to: sim_6940fe29284471286882fbf1
 SELECT * FROM "user" WHERE email = 'demo-test@ethana.ai';
@@ -85,6 +93,7 @@ SELECT * FROM workspace WHERE "ownerId" IN (
 ### Step 4: Check Logs
 
 **In Sim Terminal, you should see:**
+
 ```
 [INFO] [ModelFlowSSO] Token validated successfully
 [INFO] Creating new user in MASTER database
@@ -160,7 +169,7 @@ SELECT * FROM workspace WHERE "ownerId" IN (
 ✅ **Shared IDs**: User/org IDs match between master and tenant  
 ✅ **Session Security**: Better-auth validates from master only  
 ✅ **Workspace Isolation**: Queries go to tenant database  
-✅ **No Cross-Tenant Access**: Impossible to query another tenant's data  
+✅ **No Cross-Tenant Access**: Impossible to query another tenant's data
 
 ## Adding New Tenants
 
@@ -182,6 +191,7 @@ bun run db:push
 ```
 
 Or use the automated script:
+
 ```powershell
 cd C:\Users\sidha\werp-new\sim
 .\setup-tenant-db.ps1 -TenantId "{tenantId}"
@@ -190,16 +200,19 @@ cd C:\Users\sidha\werp-new\sim
 ## Troubleshooting
 
 ### SSO redirects to /login
+
 - Check Sim terminal for errors
 - Verify DATABASE_URL password is `your_password`
 - Check session was created in master DB
 
 ### Workspace page is blank
+
 - Check tenant database exists
 - Verify tables were created with `\dt` in psql
 - Check user exists in tenant DB with same ID as master
 
 ### "Database does not exist"
+
 - Run migration script for that tenant
 - Verify database name matches: `sim_{tenantId}`
 

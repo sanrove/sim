@@ -38,12 +38,14 @@
 ## Why Dual-Database Approach?
 
 ### Master Database (`simstudio`)
+
 - **Purpose**: Authentication and session management
 - **Used by**: better-auth for session validation
 - **Contains**: Users, sessions, organization references
 - **Why needed**: Better-auth can only connect to ONE database
 
 ### Tenant Database (`sim_{tenantId}`)
+
 - **Purpose**: Data isolation per tenant
 - **Used by**: Application logic (workspaces, workflows, agents)
 - **Contains**: Workspaces, workflows, agents, all tenant-specific data
@@ -54,6 +56,7 @@
 ### 1. Create Tenant Database
 
 **Option A: Using PowerShell Script**
+
 ```powershell
 cd C:\Users\sidha\werp-new\sim
 .\setup-tenant-db.ps1 -TenantId "6940fe29284471286882fbf1"
@@ -63,6 +66,7 @@ cd C:\Users\sidha\werp-new\sim
 
 1. Open PostgreSQL client (pgAdmin, DBeaver, or command line)
 2. Create database:
+
    ```sql
    CREATE DATABASE sim_6940fe29284471286882fbf1;
    ```
@@ -77,6 +81,7 @@ cd C:\Users\sidha\werp-new\sim
 ### 2. Verify Setup
 
 Check both databases exist:
+
 ```sql
 -- List all databases
 SELECT datname FROM pg_database WHERE datname LIKE 'sim%';
@@ -105,6 +110,7 @@ bun run dev
 ### SSO Authentication Flow
 
 1. **ModelFlow generates token**:
+
    ```json
    {
      "email": "demo-test@ethana.ai",
@@ -113,12 +119,14 @@ bun run dev
    ```
 
 2. **Sim receives SSO request**:
+
    - Validates token
    - Extracts tenantId
    - Connects to master DB: `simstudio`
    - Connects to tenant DB: `sim_6940fe29284471286882fbf1`
 
 3. **Creates/updates in MASTER DB**:
+
    ```sql
    INSERT INTO user (id, email, name) VALUES (...);
    INSERT INTO organization (id, name) VALUES (..., 'ModelFlow-6940fe29...');
@@ -127,6 +135,7 @@ bun run dev
    ```
 
 4. **Creates/updates in TENANT DB**:
+
    ```sql
    INSERT INTO user (id, email, name) VALUES (...); -- Same ID as master!
    INSERT INTO organization (id, name) VALUES (...); -- Same ID as master!
@@ -142,10 +151,12 @@ bun run dev
 1. **User requests workspaces**: `GET /api/workspaces`
 
 2. **Better-auth validates session**:
+
    - Reads session from MASTER DB ✓
    - Returns userId and organizationId
 
 3. **Extract tenantId**:
+
    ```javascript
    const org = await masterDb.query.organization.findFirst(...)
    const tenantId = org.name.replace('ModelFlow-', '')
@@ -153,8 +164,9 @@ bun run dev
    ```
 
 4. **Connect to tenant database**:
+
    ```javascript
-   const tenantDb = await getTenantDatabase(tenantId)
+   const tenantDb = await getTenantDatabase(tenantId);
    // Connects to: sim_6940fe29284471286882fbf1
    ```
 
@@ -184,13 +196,15 @@ Tenant DB:  user.id = "xyz-789"  // Different ID = broken!
 ### What's in Each Database
 
 **Master Database (simstudio)**:
+
 - ✓ All users (cross-tenant)
 - ✓ All sessions
 - ✓ Organization metadata
 - ❌ No workspaces
 - ❌ No workflows
 
-**Tenant Database (sim_{tenantId})**:
+**Tenant Database (sim\_{tenantId})**:
+
 - ✓ Tenant's users (duplicate with same IDs)
 - ✓ Tenant's workspaces
 - ✓ Tenant's workflows
@@ -218,18 +232,20 @@ When a new ModelFlow tenant needs Sim access:
 ✅ **Independent Backups**: Backup/restore per tenant  
 ✅ **Compliance Ready**: Physical separation for regulations  
 ✅ **Better-auth Compatible**: Sessions in master DB  
-✅ **Scalable**: Can move tenant DBs to different servers  
+✅ **Scalable**: Can move tenant DBs to different servers
 
 ## Maintenance
 
 ### Backup Strategy
 
 **Master Database**:
+
 ```bash
 pg_dump -h localhost -U postgres simstudio > master_backup.sql
 ```
 
 **Tenant Database**:
+
 ```bash
 pg_dump -h localhost -U postgres sim_6940fe29284471286882fbf1 > tenant_backup.sql
 ```
@@ -237,6 +253,7 @@ pg_dump -h localhost -U postgres sim_6940fe29284471286882fbf1 > tenant_backup.sq
 ### Schema Updates
 
 When schema changes:
+
 1. Update schema.ts
 2. Run migrations on MASTER:
    ```bash
@@ -252,16 +269,19 @@ When schema changes:
 ## Troubleshooting
 
 ### SSO fails with "User not found"
+
 - Check user exists in MASTER DB
 - Check session exists in MASTER DB
 - Better-auth only reads from master!
 
 ### Workspace page blank
+
 - Check tenant database exists
 - Check user/org/member exist in TENANT DB
 - Check IDs match between master and tenant
 
 ### "Database does not exist"
+
 - Run setup script for that tenant
 - Verify DATABASE_URL in .env
 
@@ -269,12 +289,14 @@ When schema changes:
 
 ### Files Modified
 
-1. **sim/apps/sim/app/api/auth/modelflow-sso/route.ts**
+1. **sim/apps/sim/app/api/auth/ethana-sso/route.ts**
+
    - Restored `getTenantDatabase()` import
    - Updated `handleSSO()` to create in both databases
    - Session creation only in master DB
 
 2. **sim/apps/sim/app/api/workspaces/route.ts**
+
    - Restored `getTenantDatabase()` import
    - Updated all functions to use tenant DB for workspaces
    - Extract tenantId from organization name

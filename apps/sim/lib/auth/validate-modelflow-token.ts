@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 export interface ModelFlowTokenPayload {
   id: string;
@@ -23,15 +23,15 @@ export function validateModelFlowToken(
 ): ModelFlowTokenPayload {
   try {
     const decoded = jwt.verify(token, secret, {
-      algorithms: ['HS256'],
-      issuer: 'modelflow-api',
-      audience: 'agent-builder-sso',
-      ignoreExpiration: process.env.NODE_ENV === 'development',
+      algorithms: ["HS256"],
+      issuer: "ethana-api",
+      audience: "agent-builder-sso",
+      ignoreExpiration: process.env.NODE_ENV === "development",
     }) as ModelFlowTokenPayload;
 
     // Additional validation
-    if (decoded.source !== 'modelflow') {
-      throw new Error('Invalid token source');
+    if (decoded.source !== "modelflow") {
+      throw new Error("Invalid token source");
     }
 
     return decoded;

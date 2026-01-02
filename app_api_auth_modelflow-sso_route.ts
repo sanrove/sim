@@ -3,12 +3,12 @@
  * This endpoint handles the handoff token from ModelFlow
  * and creates a Sim session for the user
  *
- * File path: sim/apps/sim/app/api/auth/modelflow-sso/route.ts
+ * File path: sim/apps/sim/app/api/auth/ethana-sso/route.ts
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@sim/db';
-import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@sim/db";
+import { headers } from "next/headers";
 
 // Import the validation function (you'll need to adjust the import path)
 // For now, we'll implement it inline
@@ -30,43 +30,41 @@ interface ModelFlowTokenPayload {
  * Validate ModelFlow token
  */
 function validateModelFlowToken(token: string): ModelFlowTokenPayload {
-  const jwt = require('jsonwebtoken');
+  const jwt = require("jsonwebtoken");
   const secret =
-    process.env.MODELFLOW_SIM_SHARED_SECRET ||
-    process.env.JWT_SECRET ||
-    '';
+    process.env.MODELFLOW_SIM_SHARED_SECRET || process.env.JWT_SECRET || "";
 
   if (!secret) {
-    throw new Error('MODELFLOW_SIM_SHARED_SECRET not configured');
+    throw new Error("MODELFLOW_SIM_SHARED_SECRET not configured");
   }
 
   try {
     const decoded = jwt.verify(token, secret, {
-      algorithms: ['HS256'],
-      issuer: 'modelflow-api',
-      audience: 'agent-builder-sso',
+      algorithms: ["HS256"],
+      issuer: "ethana-api",
+      audience: "agent-builder-sso",
     }) as ModelFlowTokenPayload;
 
-    if (decoded.source !== 'modelflow') {
-      throw new Error('Invalid token source');
+    if (decoded.source !== "modelflow") {
+      throw new Error("Invalid token source");
     }
 
     return decoded;
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      throw new Error('Token expired');
+      throw new Error("Token expired");
     }
-    throw new Error('Invalid token');
+    throw new Error("Invalid token");
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.nextUrl.searchParams.get('token');
+    const token = request.nextUrl.searchParams.get("token");
 
     if (!token) {
       return NextResponse.redirect(
-        new URL('/login?error=missing_token', request.url)
+        new URL("/login?error=missing_token", request.url)
       );
     }
 
@@ -75,9 +73,9 @@ export async function GET(request: NextRequest) {
     try {
       modelFlowUser = validateModelFlowToken(token);
     } catch (error) {
-      console.error('Token validation failed:', error);
+      console.error("Token validation failed:", error);
       return NextResponse.redirect(
-        new URL('/login?error=invalid_token', request.url)
+        new URL("/login?error=invalid_token", request.url)
       );
     }
 
@@ -100,7 +98,7 @@ export async function GET(request: NextRequest) {
           },
         });
       } catch (createError) {
-        console.error('Error creating user:', createError);
+        console.error("Error creating user:", createError);
         // If user creation fails but they exist (race condition), try to fetch again
         simUser = await db.user.findUnique({
           where: { email: modelFlowUser.email },
@@ -108,7 +106,7 @@ export async function GET(request: NextRequest) {
 
         if (!simUser) {
           return NextResponse.redirect(
-            new URL('/login?error=user_creation_failed', request.url)
+            new URL("/login?error=user_creation_failed", request.url)
           );
         }
       }
@@ -127,10 +125,8 @@ export async function GET(request: NextRequest) {
 
       // For now, we'll set a cookie manually (Better Auth handles this internally)
       // You'll need to use Better Auth's session creation properly
-      
-      const response = NextResponse.redirect(
-        new URL('/agents', request.url)
-      );
+
+      const response = NextResponse.redirect(new URL("/agents", request.url));
 
       // Set appropriate cookies for authentication
       // This is handled by Better Auth, so we just redirect
@@ -138,15 +134,15 @@ export async function GET(request: NextRequest) {
 
       return response;
     } catch (sessionError) {
-      console.error('Error creating session:', sessionError);
+      console.error("Error creating session:", sessionError);
       return NextResponse.redirect(
-        new URL('/login?error=session_creation_failed', request.url)
+        new URL("/login?error=session_creation_failed", request.url)
       );
     }
   } catch (error) {
-    console.error('ModelFlow SSO error:', error);
+    console.error("ModelFlow SSO error:", error);
     return NextResponse.redirect(
-      new URL('/login?error=sso_failed', request.url)
+      new URL("/login?error=sso_failed", request.url)
     );
   }
 }
@@ -158,10 +154,7 @@ export async function POST(request: NextRequest) {
     const token = body.token;
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'Missing token' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing token" }, { status: 400 });
     }
 
     // Validate the token
@@ -169,10 +162,7 @@ export async function POST(request: NextRequest) {
     try {
       modelFlowUser = validateModelFlowToken(token);
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
     // Check if user exists in Sim database
@@ -204,10 +194,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('ModelFlow SSO POST error:', error);
-    return NextResponse.json(
-      { error: 'SSO failed' },
-      { status: 500 }
-    );
+    console.error("ModelFlow SSO POST error:", error);
+    return NextResponse.json({ error: "SSO failed" }, { status: 500 });
   }
 }

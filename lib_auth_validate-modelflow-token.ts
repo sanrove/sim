@@ -3,7 +3,7 @@
  * This should be placed in: sim/apps/sim/lib/auth/validate-modelflow-token.ts
  */
 
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 interface ModelFlowTokenPayload {
   id: string;
@@ -30,34 +30,38 @@ interface ModelFlowTokenPayload {
  */
 export function validateModelFlowToken(
   token: string,
-  secret: string = process.env.MODELFLOW_SIM_SHARED_SECRET || process.env.JWT_SECRET || ''
+  secret: string = process.env.MODELFLOW_SIM_SHARED_SECRET ||
+    process.env.JWT_SECRET ||
+    ""
 ): ModelFlowTokenPayload {
   if (!secret) {
-    throw new Error('MODELFLOW_SIM_SHARED_SECRET or JWT_SECRET not configured');
+    throw new Error("MODELFLOW_SIM_SHARED_SECRET or JWT_SECRET not configured");
   }
 
   try {
     const decoded = jwt.verify(token, secret, {
-      algorithms: ['HS256'],
-      issuer: 'modelflow-api',
-      audience: 'agent-builder-sso',
+      algorithms: ["HS256"],
+      issuer: "ethana-api",
+      audience: "agent-builder-sso",
     }) as ModelFlowTokenPayload;
 
     // Verify token came from ModelFlow
-    if (decoded.source !== 'modelflow') {
-      throw new Error('Invalid token source');
+    if (decoded.source !== "modelflow") {
+      throw new Error("Invalid token source");
     }
 
     return decoded;
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      throw new Error('Handoff token has expired. Please log in again to ModelFlow.');
+      throw new Error(
+        "Handoff token has expired. Please log in again to ModelFlow."
+      );
     } else if (error instanceof jwt.JsonWebTokenError) {
-      throw new Error('Invalid token. Please log in again to ModelFlow.');
+      throw new Error("Invalid token. Please log in again to ModelFlow.");
     } else if (error instanceof Error) {
       throw new Error(`Token validation failed: ${error.message}`);
     } else {
-      throw new Error('Token validation failed');
+      throw new Error("Token validation failed");
     }
   }
 }
