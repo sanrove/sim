@@ -34,7 +34,7 @@ import { SimStudioClient } from "simstudio-ts-sdk";
 // Initialize the client
 const client = new SimStudioClient({
   apiKey: "your-api-key-here",
-  baseUrl: "https://sim.ai", // optional, defaults to https://sim.ai
+  baseUrl: "https://ethana.ai", // optional, defaults to https://ethana.ai
 });
 
 // Execute a workflow
@@ -59,7 +59,7 @@ new SimStudioClient(config: SimStudioConfig)
 **Configuration:**
 
 - `config.apiKey` (string): Your Sim API key
-- `config.baseUrl` (string, optional): Base URL for the Sim API (defaults to `https://sim.ai`)
+- `config.baseUrl` (string, optional): Base URL for the Sim API (defaults to `https://ethana.ai`)
 
 #### Methods
 
@@ -486,7 +486,7 @@ Configure the client using environment variables:
 
     const client = new SimStudioClient({
       apiKey,
-      baseUrl: process.env.SIM_BASE_URL || 'https://sim.ai'
+      baseUrl: process.env.SIM_BASE_URL || 'https://ethana.ai'
     });
     ```
 
@@ -584,7 +584,7 @@ import { SimStudioClient } from "simstudio-ts-sdk";
 // Note: In production, use a proxy server to avoid exposing API keys
 const client = new SimStudioClient({
   apiKey: "your-public-api-key", // Use with caution in browser
-  baseUrl: "https://sim.ai",
+  baseUrl: "https://ethana.ai",
 });
 
 async function executeClientSideWorkflow() {
@@ -978,7 +978,7 @@ function StreamingWorkflow() {
     // IMPORTANT: Make this API call from your backend server, not the browser
     // Never expose your API key in client-side code
     const response = await fetch(
-      "https://sim.ai/api/workflows/WORKFLOW_ID/execute",
+      "https://ethana.ai/api/workflows/WORKFLOW_ID/execute",
       {
         method: "POST",
         headers: {
@@ -1041,7 +1041,7 @@ function StreamingWorkflow() {
 
 <Steps>
   <Step title="Log in to Sim">
-    Navigate to [Sim](https://sim.ai) and log in to your account.
+    Navigate to [Sim](https://ethana.ai) and log in to your account.
   </Step>
   <Step title="Open your workflow">
     Navigate to the workflow you want to execute programmatically.

@@ -16,13 +16,13 @@ body {
 
 /* Font family utilities */
 .font-sans {
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .font-mono {
-  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 /* Target any potential border classes */
@@ -153,25 +153,31 @@ aside#nd-sidebar {
 /* Exclude the small chevron-only toggle buttons */
 /* Using html prefix for higher specificity over Tailwind v4 utilities */
 html #nd-sidebar a,
-html #nd-sidebar button:not([aria-label*="ollapse"]):not([aria-label*="xpand"]) {
+html
+  #nd-sidebar
+  button:not([aria-label*="ollapse"]):not([aria-label*="xpand"]) {
   font-size: 0.9375rem !important; /* 15px to match Raindrop */
   line-height: 1.4 !important;
   padding: 0.5rem 0.75rem !important; /* More compact like Raindrop */
   font-weight: 400 !important;
   border-radius: 0.75rem !important; /* More rounded like Raindrop */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif !important;
 }
 
 /* Dark mode sidebar text */
 html.dark #nd-sidebar a,
-html.dark #nd-sidebar button:not([aria-label*="ollapse"]):not([aria-label*="xpand"]) {
+html.dark
+  #nd-sidebar
+  button:not([aria-label*="ollapse"]):not([aria-label*="xpand"]) {
   color: rgba(255, 255, 255, 0.6) !important;
 }
 
 /* Light mode sidebar text */
 html:not(.dark) #nd-sidebar a,
-html:not(.dark) #nd-sidebar button:not([aria-label*="ollapse"]):not([aria-label*="xpand"]) {
+html:not(.dark)
+  #nd-sidebar
+  button:not([aria-label*="ollapse"]):not([aria-label*="xpand"]) {
   color: rgba(0, 0, 0, 0.6) !important;
 }
 
@@ -300,9 +306,9 @@ html:not(.dark) #nd-sidebar button[data-active="true"]:hover {
 aside[data-sidebar] [role="button"]:has([data-search]),
 aside[data-sidebar] > div > button:first-child,
 #nd-sidebar > div > button:first-child,
-[data-sidebar] a[href*="sim.ai"],
-#nd-sidebar a[href*="sim.ai"],
-[data-sidebar-viewport] a[href*="sim.ai"],
+[data-sidebar] a[href*="ethana.ai"],
+#nd-sidebar a[href*="ethana.ai"],
+[data-sidebar-viewport] a[href*="ethana.ai"],
 /* Hide search buttons (but NOT folder chevron buttons) */
   aside[data-sidebar] > div:first-child
   > button:not([aria-label="Collapse"]):not([aria-label="Expand"]),
@@ -359,12 +365,12 @@ aside[data-sidebar] > *:not([data-sidebar-viewport]) {
   aside[data-sidebar] a[href="/"] img,
   aside[data-sidebar] > a:first-child,
   aside[data-sidebar] > div > a:first-child,
-  aside[data-sidebar] img[alt="Sim"],
+  aside[data-sidebar] img[alt="Ethana"],
   [data-sidebar-header],
   [data-sidebar] [data-title],
   #nd-sidebar > a:first-child,
   #nd-sidebar > div:first-child > a:first-child,
-  #nd-sidebar img[alt="Sim"],
+  #nd-sidebar img[alt="Ethana"],
   /* Hide theme toggle at bottom of sidebar on desktop */
     #nd-sidebar
     > footer,
@@ -446,8 +452,8 @@ aside[data-sidebar],
 code,
 pre,
 pre code {
-  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 /* Inline code */

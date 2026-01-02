@@ -3,8 +3,8 @@ title: Plataformas en la nube
 description: Despliega Sim Studio en plataformas en la nube
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## Railway
 
@@ -17,6 +17,7 @@ Despliegue con un solo clic con aprovisionamiento automático de PostgreSQL.
 ](https://railway.com/new/template/sim-studio)
 
 Después del despliegue, añade variables de entorno en el panel de Railway:
+
 - `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `INTERNAL_API_SECRET` (generadas automáticamente)
 - `OPENAI_API_KEY` u otras claves de proveedores de IA
 - Dominio personalizado en Configuración → Redes
@@ -67,7 +68,7 @@ docker --version
 ### Desplegar Sim Studio
 
 ```bash
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 
 # Create .env with secrets
 cat > .env << EOF

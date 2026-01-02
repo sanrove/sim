@@ -3,13 +3,10 @@ title: Webhook
 description: カスタムウェブフックを設定して、任意のサービスからウェブフックを受信します。
 ---
 
-import { BlockInfoCard } from "@/components/ui/block-info-card"
-import { Image } from '@/components/ui/image'
+import { BlockInfoCard } from "@/components/ui/block-info-card";
+import { Image } from "@/components/ui/image";
 
-<BlockInfoCard 
-  type="generic_webhook"
-  color="#10B981"
-/>
+<BlockInfoCard type="generic_webhook" color="#10B981" />
 
 <div className="flex justify-center">
   <Image
@@ -23,16 +20,16 @@ import { Image } from '@/components/ui/image'
 
 ## 概要
 
-汎用Webhookブロックを使用すると、任意の外部サービスからWebhookを受信できます。これは柔軟なトリガーであり、あらゆるJSONペイロードを処理できるため、専用のSimブロックがないサービスとの統合に最適です。
+汎用 Webhook ブロックを使用すると、任意の外部サービスから Webhook を受信できます。これは柔軟なトリガーであり、あらゆる JSON ペイロードを処理できるため、専用の Sim ブロックがないサービスとの統合に最適です。
 
 ## 基本的な使用方法
 
 ### シンプルなパススルーモード
 
-入力フォーマットを定義しない場合、Webhookはリクエスト本文全体をそのまま渡します：
+入力フォーマットを定義しない場合、Webhook はリクエスト本文全体をそのまま渡します：
 
 ```bash
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret" \
   -d '{
@@ -44,6 +41,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ```
 
 下流のブロックでデータにアクセスする方法：
+
 - `<webhook1.message>` → "Test webhook trigger"
 - `<webhook1.data.key>` → "value"
 
@@ -61,10 +59,10 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ]
 ```
 
-**Webhookリクエスト：**
+**Webhook リクエスト：**
 
 ```bash
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret" \
   -d '{
@@ -85,9 +83,10 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 
 ### サポートされているファイル形式
 
-Webhookは2つのファイル入力形式をサポートしています：
+Webhook は 2 つのファイル入力形式をサポートしています：
 
-#### 1. Base64エンコードファイル
+#### 1. Base64 エンコードファイル
+
 ファイルコンテンツを直接アップロードする場合：
 
 ```json
@@ -103,12 +102,13 @@ Webhookは2つのファイル入力形式をサポートしています：
 }
 ```
 
-- **最大サイズ**: ファイルあたり20MB
-- **フォーマット**: Base64エンコーディングを使用した標準データURL
+- **最大サイズ**: ファイルあたり 20MB
+- **フォーマット**: Base64 エンコーディングを使用した標準データ URL
 - **ストレージ**: ファイルは安全な実行ストレージにアップロードされます
 
-#### 2. URL参照
-既存のファイルURLを渡す場合：
+#### 2. URL 参照
+
+既存のファイル URL を渡す場合：
 
 ```json
 {
@@ -141,7 +141,8 @@ Webhookは2つのファイル入力形式をサポートしています：
 ```
 
 **ブロック内でのアクセス:**
-- `<webhook1.documents[0].url>` → ダウンロードURL
+
+- `<webhook1.documents[0].url>` → ダウンロード URL
 - `<webhook1.documents[0].name>` → "invoice.pdf"
 - `<webhook1.documents[0].size>` → 524288
 - `<webhook1.documents[0].type>` → "application/pdf"
@@ -154,7 +155,7 @@ echo "Hello World" | base64
 # SGVsbG8gV29ybGQK
 
 # Send webhook with file
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret" \
   -d '{
@@ -175,6 +176,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ### 認証の設定（オプション）
 
 ウェブフック設定で：
+
 1. 「認証を要求する」を有効にする
 2. シークレットトークンを設定する
 3. ヘッダータイプを選択する：
@@ -185,13 +187,13 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 
 ```bash
 # With custom header
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret-token" \
   -d '{"message": "Authenticated request"}'
 
 # With bearer token
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-secret-token" \
   -d '{"message": "Authenticated request"}'
@@ -200,15 +202,16 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ## ベストプラクティス
 
 1. **構造化のための入力フォーマットの使用**: 予想されるスキーマがわかっている場合は入力フォーマットを定義してください。これにより以下が提供されます：
+
    - 型の検証
    - エディタでのより良いオートコンプリート
    - ファイルアップロード機能
 
 2. **認証**: 不正アクセスを防ぐため、本番環境のウェブフックには常に認証を有効にしてください。
 
-3. **ファイルサイズの制限**: ファイルは20MB未満に保ってください。より大きなファイルの場合は、代わりにURL参照を使用してください。
+3. **ファイルサイズの制限**: ファイルは 20MB 未満に保ってください。より大きなファイルの場合は、代わりに URL 参照を使用してください。
 
-4. **ファイルの有効期限**: ダウンロードされたファイルのURLは5分間有効です。すぐに処理するか、長期間必要な場合は別の場所に保存してください。
+4. **ファイルの有効期限**: ダウンロードされたファイルの URL は 5 分間有効です。すぐに処理するか、長期間必要な場合は別の場所に保存してください。
 
 5. **エラー処理**: ウェブフック処理は非同期です。エラーについては実行ログを確認してください。
 
@@ -217,14 +220,14 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ## ユースケース
 
 - **フォーム送信**: ファイルアップロード機能を持つカスタムフォームからデータを受け取る
-- **サードパーティ連携**: ウェブフックを送信するサービス（Stripe、GitHubなど）と接続する
+- **サードパーティ連携**: ウェブフックを送信するサービス（Stripe、GitHub など）と接続する
 - **ドキュメント処理**: 外部システムからドキュメントを受け取って処理する
 - **イベント通知**: さまざまなソースからイベントデータを受け取る
-- **カスタムAPI**: アプリケーション用のカスタムAPIエンドポイントを構築する
+- **カスタム API**: アプリケーション用のカスタム API エンドポイントを構築する
 
 ## 注意事項
 
 - カテゴリ：`triggers`
 - タイプ：`generic_webhook`
 - **ファイルサポート**：入力フォーマット設定で利用可能
-- **最大ファイルサイズ**：ファイルあたり20MB
+- **最大ファイルサイズ**：ファイルあたり 20MB

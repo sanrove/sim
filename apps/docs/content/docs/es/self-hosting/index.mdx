@@ -3,24 +3,24 @@ title: Autoalojamiento
 description: Despliega Sim Studio en tu propia infraestructura
 ---
 
-import { Card, Cards } from 'fumadocs-ui/components/card'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Callout } from "fumadocs-ui/components/callout";
 
 Despliega Sim Studio en tu propia infraestructura con Docker o Kubernetes.
 
 ## Requisitos
 
-| Recurso | Mínimo | Recomendado |
-|----------|---------|-------------|
-| CPU | 2 núcleos | 4+ núcleos |
-| RAM | 12 GB | 16+ GB |
-| Almacenamiento | 20 GB SSD | 50+ GB SSD |
-| Docker | 20.10+ | Última versión |
+| Recurso        | Mínimo    | Recomendado    |
+| -------------- | --------- | -------------- |
+| CPU            | 2 núcleos | 4+ núcleos     |
+| RAM            | 12 GB     | 16+ GB         |
+| Almacenamiento | 20 GB SSD | 50+ GB SSD     |
+| Docker         | 20.10+    | Última versión |
 
 ## Inicio rápido
 
 ```bash
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -42,9 +42,9 @@ Abre [http://localhost:5863](http://localhost:5863)
 
 ## Arquitectura
 
-| Componente | Puerto | Descripción |
-|-----------|------|-------------|
-| simstudio | 5863 | Aplicación principal |
-| realtime | 5865 | Servidor WebSocket |
-| db | 5432 | PostgreSQL con pgvector |
-| migrations | - | Migraciones de base de datos (se ejecuta una vez) |
+| Componente | Puerto | Descripción                                       |
+| ---------- | ------ | ------------------------------------------------- |
+| simstudio  | 5863   | Aplicación principal                              |
+| realtime   | 5865   | Servidor WebSocket                                |
+| db         | 5432   | PostgreSQL con pgvector                           |
+| migrations | -      | Migraciones de base de datos (se ejecuta una vez) |

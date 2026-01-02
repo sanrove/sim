@@ -1,89 +1,92 @@
-import { StagehandIcon } from '@/components/icons'
-import { AuthMode, type BlockConfig } from '@/blocks/types'
-import type { ToolResponse } from '@/tools/types'
+import { StagehandIcon } from "@/components/icons";
+import { AuthMode, type BlockConfig } from "@/blocks/types";
+import type { ToolResponse } from "@/tools/types";
 
 export interface StagehandExtractResponse extends ToolResponse {
   output: {
-    data: Record<string, any>
-  }
+    data: Record<string, any>;
+  };
 }
 
 export interface StagehandAgentResponse extends ToolResponse {
   output: {
     agentResult: {
-      success: boolean
-      completed: boolean
-      message: string
+      success: boolean;
+      completed: boolean;
+      message: string;
       actions?: Array<{
-        type: string
-        description: string
-        result?: string
-      }>
-    }
-    structuredOutput?: Record<string, any>
-  }
+        type: string;
+        description: string;
+        result?: string;
+      }>;
+    };
+    structuredOutput?: Record<string, any>;
+  };
 }
 
-export type StagehandResponse = StagehandExtractResponse | StagehandAgentResponse
+export type StagehandResponse =
+  | StagehandExtractResponse
+  | StagehandAgentResponse;
 
 export const StagehandBlock: BlockConfig<StagehandResponse> = {
-  type: 'stagehand',
-  name: 'Stagehand',
-  description: 'Web automation and data extraction',
+  type: "stagehand",
+  name: "Stagehand",
+  description: "Web automation and data extraction",
   authMode: AuthMode.ApiKey,
   longDescription:
-    'Integrate Stagehand into the workflow. Can extract structured data from webpages or run an autonomous agent to perform tasks.',
-  docsLink: 'https://docs.sim.ai/tools/stagehand',
-  category: 'tools',
-  bgColor: '#FFC83C',
+    "Integrate Stagehand into the workflow. Can extract structured data from webpages or run an autonomous agent to perform tasks.",
+  docsLink: "https://docs.ethana.ai/tools/stagehand",
+  category: "tools",
+  bgColor: "#FFC83C",
   icon: StagehandIcon,
   subBlocks: [
     // Operation selection
     {
-      id: 'operation',
-      title: 'Operation',
-      type: 'dropdown',
+      id: "operation",
+      title: "Operation",
+      type: "dropdown",
       options: [
-        { label: 'Extract Data', id: 'extract' },
-        { label: 'Run Agent', id: 'agent' },
+        { label: "Extract Data", id: "extract" },
+        { label: "Run Agent", id: "agent" },
       ],
-      value: () => 'extract',
+      value: () => "extract",
     },
     // Provider selection
     {
-      id: 'provider',
-      title: 'AI Provider',
-      type: 'dropdown',
+      id: "provider",
+      title: "AI Provider",
+      type: "dropdown",
       options: [
-        { label: 'OpenAI', id: 'openai' },
-        { label: 'Anthropic', id: 'anthropic' },
+        { label: "OpenAI", id: "openai" },
+        { label: "Anthropic", id: "anthropic" },
       ],
-      value: () => 'openai',
+      value: () => "openai",
     },
     // Extract operation fields
     {
-      id: 'url',
-      title: 'URL',
-      type: 'short-input',
-      placeholder: 'Enter the URL of the website to extract data from',
-      condition: { field: 'operation', value: 'extract' },
+      id: "url",
+      title: "URL",
+      type: "short-input",
+      placeholder: "Enter the URL of the website to extract data from",
+      condition: { field: "operation", value: "extract" },
       required: true,
     },
     {
-      id: 'instruction',
-      title: 'Instructions',
-      type: 'long-input',
-      placeholder: 'Enter detailed instructions for what data to extract from the page...',
-      condition: { field: 'operation', value: 'extract' },
+      id: "instruction",
+      title: "Instructions",
+      type: "long-input",
+      placeholder:
+        "Enter detailed instructions for what data to extract from the page...",
+      condition: { field: "operation", value: "extract" },
       required: true,
     },
     {
-      id: 'schema',
-      title: 'Schema',
-      type: 'code',
-      placeholder: 'Enter JSON Schema...',
-      language: 'json',
-      condition: { field: 'operation', value: 'extract' },
+      id: "schema",
+      title: "Schema",
+      type: "code",
+      placeholder: "Enter JSON Schema...",
+      language: "json",
+      condition: { field: "operation", value: "extract" },
       required: true,
       wandConfig: {
         enabled: true,
@@ -194,42 +197,43 @@ Example 3 (List Extraction):
     }
 }
 `,
-        placeholder: 'Describe what data you want to extract from the webpage...',
-        generationType: 'json-schema',
+        placeholder:
+          "Describe what data you want to extract from the webpage...",
+        generationType: "json-schema",
       },
     },
     // Agent operation fields
     {
-      id: 'startUrl',
-      title: 'Starting URL',
-      type: 'short-input',
-      placeholder: 'Enter the starting URL for the agent',
-      condition: { field: 'operation', value: 'agent' },
+      id: "startUrl",
+      title: "Starting URL",
+      type: "short-input",
+      placeholder: "Enter the starting URL for the agent",
+      condition: { field: "operation", value: "agent" },
       required: true,
     },
     {
-      id: 'task',
-      title: 'Task',
-      type: 'long-input',
+      id: "task",
+      title: "Task",
+      type: "long-input",
       placeholder:
-        'Enter the task or goal for the agent to achieve. Reference variables using %key% syntax.',
-      condition: { field: 'operation', value: 'agent' },
+        "Enter the task or goal for the agent to achieve. Reference variables using %key% syntax.",
+      condition: { field: "operation", value: "agent" },
       required: true,
     },
     {
-      id: 'variables',
-      title: 'Variables',
-      type: 'table',
-      columns: ['Key', 'Value'],
-      condition: { field: 'operation', value: 'agent' },
+      id: "variables",
+      title: "Variables",
+      type: "table",
+      columns: ["Key", "Value"],
+      condition: { field: "operation", value: "agent" },
     },
     {
-      id: 'outputSchema',
-      title: 'Output Schema',
-      type: 'code',
-      placeholder: 'Enter JSON Schema...',
-      language: 'json',
-      condition: { field: 'operation', value: 'agent' },
+      id: "outputSchema",
+      title: "Output Schema",
+      type: "code",
+      placeholder: "Enter JSON Schema...",
+      language: "json",
+      condition: { field: "operation", value: "agent" },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -339,47 +343,80 @@ Example 3 (Data Collection):
     }
 }
 `,
-        placeholder: 'Describe what output format you expect from the agent task...',
-        generationType: 'json-schema',
+        placeholder:
+          "Describe what output format you expect from the agent task...",
+        generationType: "json-schema",
       },
     },
     // Shared API key field
     {
-      id: 'apiKey',
-      title: 'API Key',
-      type: 'short-input',
-      placeholder: 'Enter your API key for the selected provider',
+      id: "apiKey",
+      title: "API Key",
+      type: "short-input",
+      placeholder: "Enter your API key for the selected provider",
       password: true,
       required: true,
     },
   ],
   tools: {
-    access: ['stagehand_extract', 'stagehand_agent'],
+    access: ["stagehand_extract", "stagehand_agent"],
     config: {
       tool: (params) => {
-        return params.operation === 'agent' ? 'stagehand_agent' : 'stagehand_extract'
+        return params.operation === "agent"
+          ? "stagehand_agent"
+          : "stagehand_extract";
       },
     },
   },
   inputs: {
-    operation: { type: 'string', description: 'Operation: extract or agent' },
-    provider: { type: 'string', description: 'AI provider: openai or anthropic' },
-    apiKey: { type: 'string', description: 'API key for the selected provider' },
+    operation: { type: "string", description: "Operation: extract or agent" },
+    provider: {
+      type: "string",
+      description: "AI provider: openai or anthropic",
+    },
+    apiKey: {
+      type: "string",
+      description: "API key for the selected provider",
+    },
     // Extract inputs
-    url: { type: 'string', description: 'Website URL to extract (extract operation)' },
-    instruction: { type: 'string', description: 'Extraction instructions (extract operation)' },
-    schema: { type: 'json', description: 'JSON schema definition (extract operation)' },
+    url: {
+      type: "string",
+      description: "Website URL to extract (extract operation)",
+    },
+    instruction: {
+      type: "string",
+      description: "Extraction instructions (extract operation)",
+    },
+    schema: {
+      type: "json",
+      description: "JSON schema definition (extract operation)",
+    },
     // Agent inputs
-    startUrl: { type: 'string', description: 'Starting URL for agent (agent operation)' },
-    task: { type: 'string', description: 'Task description (agent operation)' },
-    variables: { type: 'json', description: 'Task variables (agent operation)' },
-    outputSchema: { type: 'json', description: 'Output schema (agent operation)' },
+    startUrl: {
+      type: "string",
+      description: "Starting URL for agent (agent operation)",
+    },
+    task: { type: "string", description: "Task description (agent operation)" },
+    variables: {
+      type: "json",
+      description: "Task variables (agent operation)",
+    },
+    outputSchema: {
+      type: "json",
+      description: "Output schema (agent operation)",
+    },
   },
   outputs: {
     // Extract outputs
-    data: { type: 'json', description: 'Extracted data (extract operation)' },
+    data: { type: "json", description: "Extracted data (extract operation)" },
     // Agent outputs
-    agentResult: { type: 'json', description: 'Agent execution result (agent operation)' },
-    structuredOutput: { type: 'json', description: 'Structured output data (agent operation)' },
+    agentResult: {
+      type: "json",
+      description: "Agent execution result (agent operation)",
+    },
+    structuredOutput: {
+      type: "json",
+      description: "Structured output data (agent operation)",
+    },
   },
-}
+};

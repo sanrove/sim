@@ -3,8 +3,8 @@ title: Cloud-Plattformen
 description: Sim Studio auf Cloud-Plattformen bereitstellen
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## Railway
 
@@ -17,6 +17,7 @@ Bereitstellung mit einem Klick und automatischer PostgreSQL-Bereitstellung.
 ](https://railway.com/new/template/sim-studio)
 
 Nach der Bereitstellung fügen Sie Umgebungsvariablen im Railway-Dashboard hinzu:
+
 - `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `INTERNAL_API_SECRET` (automatisch generiert)
 - `OPENAI_API_KEY` oder andere KI-Anbieter-Schlüssel
 - Benutzerdefinierte Domain in Einstellungen → Netzwerk
@@ -67,7 +68,7 @@ docker --version
 ### Sim Studio bereitstellen
 
 ```bash
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 
 # Create .env with secrets
 cat > .env << EOF

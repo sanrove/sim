@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/python-sdk/**'
+      - "packages/python-sdk/**"
 
 jobs:
   publish-pypi:
@@ -16,8 +16,8 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Install build dependencies
         run: |
@@ -75,15 +75,15 @@ jobs:
           name: Python SDK v${{ steps.package_version.outputs.version }}
           body: |
             ## Python SDK v${{ steps.package_version.outputs.version }}
-            
+
             Published simstudio-sdk==${{ steps.package_version.outputs.version }} to PyPI.
-            
+
             ### Installation
             ```bash
             pip install simstudio-sdk==${{ steps.package_version.outputs.version }}
             ```
-            
+
             ### Documentation
-            See the [README](https://github.com/simstudioai/sim/tree/main/packages/python-sdk) or the [docs](https://docs.sim.ai/sdks/python) for more information.
+            See the [README](https://github.com//tree/main/packages/python-sdk) or the [docs](https://docs.ethana.ai/sdks/python) for more information.
           draft: false
-          prerelease: false 
+          prerelease: false

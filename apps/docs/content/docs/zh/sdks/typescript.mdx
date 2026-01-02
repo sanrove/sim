@@ -52,7 +52,7 @@ import { SimStudioClient } from "simstudio-ts-sdk";
 // Initialize the client
 const client = new SimStudioClient({
   apiKey: "your-api-key-here",
-  baseUrl: "https://sim.ai", // optional, defaults to https://sim.ai
+  baseUrl: "https://ethana.ai", // optional, defaults to https://ethana.ai
 });
 
 // Execute a workflow
@@ -77,7 +77,7 @@ new SimStudioClient(config: SimStudioConfig)
 **配置：**
 
 - `config.apiKey` (string)：您的 Sim API 密钥
-- `config.baseUrl` (string，可选)：Sim API 的基础 URL（默认为 `https://sim.ai`）
+- `config.baseUrl` (string，可选)：Sim API 的基础 URL（默认为 `https://ethana.ai`）
 
 #### 方法
 
@@ -498,7 +498,7 @@ async function executeWithErrorHandling() {
 
     const client = new SimStudioClient({
       apiKey,
-      baseUrl: process.env.SIM_BASE_URL || 'https://sim.ai'
+      baseUrl: process.env.SIM_BASE_URL || 'https://ethana.ai'
     });
     ```
 
@@ -596,7 +596,7 @@ import { SimStudioClient } from "simstudio-ts-sdk";
 // Note: In production, use a proxy server to avoid exposing API keys
 const client = new SimStudioClient({
   apiKey: "your-public-api-key", // Use with caution in browser
-  baseUrl: "https://sim.ai",
+  baseUrl: "https://ethana.ai",
 });
 
 async function executeClientSideWorkflow() {
@@ -991,7 +991,7 @@ function StreamingWorkflow() {
     // IMPORTANT: Make this API call from your backend server, not the browser
     // Never expose your API key in client-side code
     const response = await fetch(
-      "https://sim.ai/api/workflows/WORKFLOW_ID/execute",
+      "https://ethana.ai/api/workflows/WORKFLOW_ID/execute",
       {
         method: "POST",
         headers: {
@@ -1053,7 +1053,9 @@ function StreamingWorkflow() {
 ## 获取您的 API 密钥
 
 <Steps>
-  <Step title="登录到 Sim">访问 [Sim](https://sim.ai) 并登录到您的账户。</Step>
+  <Step title="登录到 Sim">
+    访问 [Sim](https://ethana.ai) 并登录到您的账户。
+  </Step>
   <Step title="打开您的工作流">导航到您想要以编程方式执行的工作流。</Step>
   <Step title="部署您的工作流">
     如果尚未部署，请点击“部署”以部署您的工作流。

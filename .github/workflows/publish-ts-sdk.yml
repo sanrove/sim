@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/ts-sdk/**'
+      - "packages/ts-sdk/**"
 
 jobs:
   publish-npm:
@@ -21,8 +21,8 @@ jobs:
       - name: Setup Node.js for npm publishing
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org/'
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org/"
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
@@ -81,15 +81,15 @@ jobs:
           name: TypeScript SDK v${{ steps.package_version.outputs.version }}
           body: |
             ## TypeScript SDK v${{ steps.package_version.outputs.version }}
-            
+
             Published simstudio-ts-sdk@${{ steps.package_version.outputs.version }} to npm.
-            
+
             ### Installation
             ```bash
             npm install simstudio-ts-sdk@${{ steps.package_version.outputs.version }}
             ```
-            
+
             ### Documentation
-            See the [README](https://github.com/simstudioai/sim/tree/main/packages/ts-sdk) or the [docs](https://docs.sim.ai/sdks/typescript) for more information.
+            See the [README](https://github.com//tree/main/packages/ts-sdk) or the [docs](https://docs.ethana.ai/sdks/typescript) for more information.
           draft: false
-          prerelease: false 
+          prerelease: false

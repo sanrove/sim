@@ -3,14 +3,14 @@ title: Docker
 description: Déployer Sim Studio avec Docker Compose
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## Démarrage rapide
 
 ```bash
 # Clone and start
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -135,7 +135,8 @@ OLLAMA_URL=http://192.168.1.100:11434 docker compose -f docker-compose.prod.yml 
 ```
 
 <Callout type="warning">
-  À l'intérieur de Docker, `localhost` fait référence au conteneur, pas à votre hôte. Utilisez `host.docker.internal` ou l'IP de votre hôte.
+  À l'intérieur de Docker, `localhost` fait référence au conteneur, pas à votre
+  hôte. Utilisez `host.docker.internal` ou l'IP de votre hôte.
 </Callout>
 
 ## Commandes

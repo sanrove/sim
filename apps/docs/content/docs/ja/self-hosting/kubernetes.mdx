@@ -3,20 +3,20 @@ title: Kubernetes
 description: Helmを使用してSim Studioをデプロイする
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## 前提条件
 
 - Kubernetes 1.19+
 - Helm 3.0+
-- PVプロビジョナーのサポート
+- PV プロビジョナーのサポート
 
 ## インストール
 
 ```bash
 # Clone repo
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 
 # Generate secrets
 BETTER_AUTH_SECRET=$(openssl rand -hex 32)

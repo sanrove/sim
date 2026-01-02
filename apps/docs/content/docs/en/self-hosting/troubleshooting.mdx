@@ -54,8 +54,9 @@ docker compose exec simstudio bun run db:migrate
 ## pgvector Not Found
 
 Use the correct PostgreSQL image:
+
 ```yaml
-image: pgvector/pgvector:pg17  # NOT postgres:17
+image: pgvector/pgvector:pg17 # NOT postgres:17
 ```
 
 ## Certificate Errors (CERT_HAS_EXPIRED)
@@ -80,6 +81,7 @@ NODE_TLS_REJECT_UNAUTHORIZED=0
 ## Windows-Specific Issues
 
 **Turbopack errors on Windows:**
+
 ```bash
 # Use WSL2 for better compatibility
 wsl --install
@@ -89,6 +91,7 @@ wsl --install
 ```
 
 **Line ending issues:**
+
 ```bash
 # Configure git to use LF
 git config --global core.autocrlf input
@@ -106,5 +109,5 @@ docker compose logs -f simstudio
 
 ## Getting Help
 
-- [GitHub Issues](https://github.com/simstudioai/sim/issues)
-- [Discord](https://discord.gg/Hr4UWYEcTT)
+- [GitHub Issues](https://github.com//issues)
+- [Discord](https://discord.com)

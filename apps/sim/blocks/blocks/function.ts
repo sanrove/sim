@@ -1,40 +1,49 @@
-import { CodeIcon } from '@/components/icons'
-import { CodeLanguage, getLanguageDisplayName } from '@/lib/execution/languages'
-import type { BlockConfig } from '@/blocks/types'
-import type { CodeExecutionOutput } from '@/tools/function/types'
+import { CodeIcon } from "@/components/icons";
+import {
+  CodeLanguage,
+  getLanguageDisplayName,
+} from "@/lib/execution/languages";
+import type { BlockConfig } from "@/blocks/types";
+import type { CodeExecutionOutput } from "@/tools/function/types";
 
 export const FunctionBlock: BlockConfig<CodeExecutionOutput> = {
-  type: 'function',
-  name: 'Function',
-  description: 'Run custom logic',
+  type: "function",
+  name: "Function",
+  description: "Run custom logic",
   longDescription:
-    'This is a core workflow block. Execute custom JavaScript or Python code within your workflow. JavaScript without imports runs locally for fast execution, while code with imports or Python uses E2B sandbox.',
+    "This is a core workflow block. Execute custom JavaScript or Python code within your workflow. JavaScript without imports runs locally for fast execution, while code with imports or Python uses E2B sandbox.",
   bestPractices: `
   - JavaScript code without external imports runs in a local VM for fastest execution.
   - JavaScript code with import/require statements requires E2B and runs in a secure sandbox.
   - Python code always requires E2B and runs in a secure sandbox.
   - Can reference workflow variables using <blockName.output> syntax as usual within code. Avoid XML/HTML tags.
   `,
-  docsLink: 'https://docs.sim.ai/blocks/function',
-  category: 'blocks',
-  bgColor: '#FF402F',
+  docsLink: "https://docs.ethana.ai/blocks/function",
+  category: "blocks",
+  bgColor: "#FF402F",
   icon: CodeIcon,
   subBlocks: [
     {
-      id: 'language',
-      type: 'dropdown',
+      id: "language",
+      type: "dropdown",
       options: [
-        { label: getLanguageDisplayName(CodeLanguage.JavaScript), id: CodeLanguage.JavaScript },
-        { label: getLanguageDisplayName(CodeLanguage.Python), id: CodeLanguage.Python },
+        {
+          label: getLanguageDisplayName(CodeLanguage.JavaScript),
+          id: CodeLanguage.JavaScript,
+        },
+        {
+          label: getLanguageDisplayName(CodeLanguage.Python),
+          id: CodeLanguage.Python,
+        },
       ],
-      placeholder: 'Select language',
+      placeholder: "Select language",
       value: () => CodeLanguage.JavaScript,
-      requiresFeature: 'NEXT_PUBLIC_E2B_ENABLED',
+      requiresFeature: "NEXT_PUBLIC_E2B_ENABLED",
     },
     {
-      id: 'code',
-      title: 'Code',
-      type: 'code',
+      id: "code",
+      title: "Code",
+      type: "code",
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -85,24 +94,34 @@ try {
   // Re-throwing the error ensures the workflow knows this step failed.
   throw error;
 }`,
-        placeholder: 'Describe the function you want to create...',
-        generationType: 'javascript-function-body',
+        placeholder: "Describe the function you want to create...",
+        generationType: "javascript-function-body",
       },
     },
   ],
   tools: {
-    access: ['function_execute'],
+    access: ["function_execute"],
   },
   inputs: {
-    code: { type: 'string', description: 'JavaScript or Python code to execute' },
-    language: { type: 'string', description: 'Language (javascript or python)' },
-    timeout: { type: 'number', description: 'Execution timeout' },
+    code: {
+      type: "string",
+      description: "JavaScript or Python code to execute",
+    },
+    language: {
+      type: "string",
+      description: "Language (javascript or python)",
+    },
+    timeout: { type: "number", description: "Execution timeout" },
   },
   outputs: {
-    result: { type: 'json', description: 'Return value from the executed JavaScript function' },
+    result: {
+      type: "json",
+      description: "Return value from the executed JavaScript function",
+    },
     stdout: {
-      type: 'string',
-      description: 'Console log output and debug messages from function execution',
+      type: "string",
+      description:
+        "Console log output and debug messages from function execution",
     },
   },
-}
+};

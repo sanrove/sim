@@ -2,9 +2,9 @@
 title: Cost Calculation
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout'
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Image } from '@/components/ui/image'
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Image } from "@/components/ui/image";
 
 Sim automatically calculates costs for all workflow executions, providing transparent pricing based on AI model usage and execution charges. Understanding these costs helps you optimize workflows and manage your budget effectively.
 
@@ -15,13 +15,16 @@ Every workflow execution includes two cost components:
 **Base Execution Charge**: $0.001 per execution
 
 **AI Model Usage**: Variable cost based on token consumption
+
 ```javascript
 modelCost = (inputTokens × inputPrice + outputTokens × outputPrice) / 1,000,000
 totalCost = baseExecutionCharge + modelCost
 ```
 
 <Callout type="info">
-  AI model prices are per million tokens. The calculation divides by 1,000,000 to get the actual cost. Workflows without AI blocks only incur the base execution charge.
+  AI model prices are per million tokens. The calculation divides by 1,000,000
+  to get the actual cost. Workflows without AI blocks only incur the base
+  execution charge.
 </Callout>
 
 ## Model Breakdown in Logs
@@ -39,6 +42,7 @@ For workflows using AI blocks, you can view detailed cost information in the log
 </div>
 
 The model breakdown shows:
+
 - **Token Usage**: Input and output token counts for each model
 - **Cost Breakdown**: Individual costs per model and operation
 - **Model Distribution**: Which models were used and how many times
@@ -82,6 +86,7 @@ The model breakdown shows:
     | Gemini 2.5 Flash | $0.30 / $2.50 | $0.60 / $5.00 |
 
     *The 2x multiplier covers infrastructure and API management costs.*
+
   </Tab>
 
   <Tab>
@@ -97,11 +102,13 @@ The model breakdown shows:
     | VLLM | Local models | Free |
 
     *Pay providers directly with no markup*
+
   </Tab>
 </Tabs>
 
 <Callout type="warning">
-  Pricing shown reflects rates as of September 10, 2025. Check provider documentation for current pricing.
+  Pricing shown reflects rates as of September 10, 2025. Check provider
+  documentation for current pricing.
 </Callout>
 
 ## Cost Optimization Strategies
@@ -126,19 +133,23 @@ Monitor your usage and billing in Settings → Subscription:
 You can query your current usage and limits programmatically using the API:
 
 **Endpoint:**
+
 ```text
 GET /api/users/me/usage-limits
 ```
 
 **Authentication:**
+
 - Include your API key in the `X-API-Key` header
 
 **Example Request:**
+
 ```bash
-curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" https://sim.ai/api/users/me/usage-limits
+curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" https://ethana.ai/api/users/me/usage-limits
 ```
 
 **Example Response:**
+
 ```json
 {
   "success": true,
@@ -168,11 +179,13 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" htt
 ```
 
 **Rate Limit Fields:**
+
 - `requestsPerMinute`: Sustained rate limit (tokens refill at this rate)
 - `maxBurst`: Maximum tokens you can accumulate (burst capacity)
 - `remaining`: Current tokens available (can be up to `maxBurst`)
 
 **Response Fields:**
+
 - `currentPeriodCost` reflects usage in the current billing period
 - `limit` is derived from individual limits (Free/Pro) or pooled organization limits (Team/Enterprise)
 - `plan` is the highest-priority active plan associated with your user
@@ -181,12 +194,12 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" htt
 
 Different subscription plans have different usage limits:
 
-| Plan | Monthly Usage Limit | Rate Limits (per minute) |
-|------|-------------------|-------------------------|
-| **Free** | $20 | 5 sync, 10 async |
-| **Pro** | $100 | 10 sync, 50 async |
-| **Team** | $500 (pooled) | 50 sync, 100 async |
-| **Enterprise** | Custom | Custom |
+| Plan           | Monthly Usage Limit | Rate Limits (per minute) |
+| -------------- | ------------------- | ------------------------ |
+| **Free**       | $20                 | 5 sync, 10 async         |
+| **Pro**        | $100                | 10 sync, 50 async        |
+| **Team**       | $500 (pooled)       | 50 sync, 100 async       |
+| **Enterprise** | Custom              | Custom                   |
 
 ## Billing Model
 
@@ -195,17 +208,20 @@ Sim uses a **base subscription + overage** billing model:
 ### How It Works
 
 **Pro Plan ($20/month):**
+
 - Monthly subscription includes $20 of usage
 - Usage under $20 → No additional charges
 - Usage over $20 → Pay the overage at month end
 - Example: $35 usage = $20 (subscription) + $15 (overage)
 
 **Team Plan ($40/seat/month):**
+
 - Pooled usage across all team members
 - Overage calculated from total team usage
 - Organization owner receives one bill
 
 **Enterprise Plans:**
+
 - Fixed monthly price, no overages
 - Custom usage limits per agreement
 
@@ -214,6 +230,7 @@ Sim uses a **base subscription + overage** billing model:
 When unbilled overage reaches $50, Sim automatically bills the full unbilled amount.
 
 **Example:**
+
 - Day 10: $70 overage → Bill $70 immediately
 - Day 15: Additional $35 usage ($105 total) → Already billed, no action
 - Day 20: Another $50 usage ($155 total, $85 unbilled) → Bill $85 immediately
@@ -230,7 +247,7 @@ This spreads large overage charges throughout the month instead of one large bil
 
 ## Next Steps
 
-- Review your current usage in [Settings → Subscription](https://sim.ai/settings/subscription)
+- Review your current usage in [Settings → Subscription](https://ethana.ai/settings/subscription)
 - Learn about [Logging](/execution/logging) to track execution details
 - Explore the [External API](/execution/api) for programmatic cost monitoring
 - Check out [workflow optimization techniques](/blocks) to reduce costs

@@ -1,8 +1,8 @@
-import { AgentIcon } from '@/components/icons'
-import { isHosted } from '@/lib/core/config/feature-flags'
-import { createLogger } from '@/lib/logs/console/logger'
-import type { BlockConfig } from '@/blocks/types'
-import { AuthMode } from '@/blocks/types'
+import { AgentIcon } from "@/components/icons";
+import { isHosted } from "@/lib/core/config/feature-flags";
+import { createLogger } from "@/lib/logs/console/logger";
+import type { BlockConfig } from "@/blocks/types";
+import { AuthMode } from "@/blocks/types";
 import {
   getAllModelProviders,
   getHostedModels,
@@ -16,341 +16,365 @@ import {
   MODELS_WITH_VERBOSITY,
   providers,
   supportsTemperature,
-} from '@/providers/utils'
+} from "@/providers/utils";
 
 const getCurrentOllamaModels = () => {
-  return useProvidersStore.getState().providers.ollama.models
-}
+  return useProvidersStore.getState().providers.ollama.models;
+};
 
 const getCurrentVLLMModels = () => {
-  return useProvidersStore.getState().providers.vllm.models
-}
+  return useProvidersStore.getState().providers.vllm.models;
+};
 
-import { useProvidersStore } from '@/stores/providers/store'
-import type { ToolResponse } from '@/tools/types'
+import { useProvidersStore } from "@/stores/providers/store";
+import type { ToolResponse } from "@/tools/types";
 
-const logger = createLogger('AgentBlock')
+const logger = createLogger("AgentBlock");
 
 interface AgentResponse extends ToolResponse {
   output: {
-    content: string
-    model: string
+    content: string;
+    model: string;
     tokens?: {
-      prompt?: number
-      completion?: number
-      total?: number
-    }
+      prompt?: number;
+      completion?: number;
+      total?: number;
+    };
     toolCalls?: {
       list: Array<{
-        name: string
-        arguments: Record<string, any>
-      }>
-      count: number
-    }
-  }
+        name: string;
+        arguments: Record<string, any>;
+      }>;
+      count: number;
+    };
+  };
 }
 
 // Helper function to get the tool ID from a block type
 const getToolIdFromBlock = (blockType: string): string | undefined => {
   try {
-    const { getAllBlocks } = require('@/blocks/registry')
-    const blocks = getAllBlocks()
+    const { getAllBlocks } = require("@/blocks/registry");
+    const blocks = getAllBlocks();
     const block = blocks.find(
-      (b: { type: string; tools?: { access?: string[] } }) => b.type === blockType
-    )
-    return block?.tools?.access?.[0]
+      (b: { type: string; tools?: { access?: string[] } }) =>
+        b.type === blockType
+    );
+    return block?.tools?.access?.[0];
   } catch (error) {
-    logger.error('Error getting tool ID from block', { error })
-    return undefined
+    logger.error("Error getting tool ID from block", { error });
+    return undefined;
   }
-}
+};
 
 export const AgentBlock: BlockConfig<AgentResponse> = {
-  type: 'agent',
-  name: 'Agent',
-  description: 'Build an agent',
+  type: "agent",
+  name: "Agent",
+  description: "Build an agent",
   authMode: AuthMode.ApiKey,
   longDescription:
-    'The Agent block is a core workflow block that is a wrapper around an LLM. It takes in system/user prompts and calls an LLM provider. It can also make tool calls by directly containing tools inside of its tool input. It can additionally return structured output.',
+    "The Agent block is a core workflow block that is a wrapper around an LLM. It takes in system/user prompts and calls an LLM provider. It can also make tool calls by directly containing tools inside of its tool input. It can additionally return structured output.",
   bestPractices: `
   - Prefer using integrations as tools within the agent block over separate integration blocks unless complete determinism needed. 
   - Response Format should be a valid JSON Schema. This determines the output of the agent only if present. Fields can be accessed at root level by the following blocks: e.g. <agent1.field>. If response format is not present, the agent will return the standard outputs: content, model, tokens, toolCalls.
   `,
-  docsLink: 'https://docs.sim.ai/blocks/agent',
-  category: 'blocks',
-  bgColor: 'var(--brand-primary-hex)',
+  docsLink: "https://docs.ethana.ai/blocks/agent",
+  category: "blocks",
+  bgColor: "var(--brand-primary-hex)",
   icon: AgentIcon,
   subBlocks: [
     {
-      id: 'messages',
+      id: "messages",
       // title: 'Messages',
-      type: 'messages-input',
-      placeholder: 'Enter messages...',
+      type: "messages-input",
+      placeholder: "Enter messages...",
     },
     {
-      id: 'model',
-      title: 'Model',
-      type: 'combobox',
-      placeholder: 'Type or select a model...',
+      id: "model",
+      title: "Model",
+      type: "combobox",
+      placeholder: "Type or select a model...",
       required: true,
-      defaultValue: 'claude-sonnet-4-5',
+      defaultValue: "claude-sonnet-4-5",
       options: () => {
-        const providersState = useProvidersStore.getState()
-        const baseModels = providersState.providers.base.models
-        const ollamaModels = providersState.providers.ollama.models
-        const vllmModels = providersState.providers.vllm.models
-        const openrouterModels = providersState.providers.openrouter.models
+        const providersState = useProvidersStore.getState();
+        const baseModels = providersState.providers.base.models;
+        const ollamaModels = providersState.providers.ollama.models;
+        const vllmModels = providersState.providers.vllm.models;
+        const openrouterModels = providersState.providers.openrouter.models;
         const allModels = Array.from(
-          new Set([...baseModels, ...ollamaModels, ...vllmModels, ...openrouterModels])
-        )
+          new Set([
+            ...baseModels,
+            ...ollamaModels,
+            ...vllmModels,
+            ...openrouterModels,
+          ])
+        );
 
         return allModels.map((model) => {
-          const icon = getProviderIcon(model)
-          return { label: model, id: model, ...(icon && { icon }) }
-        })
+          const icon = getProviderIcon(model);
+          return { label: model, id: model, ...(icon && { icon }) };
+        });
       },
     },
     {
-      id: 'vertexCredential',
-      title: 'Google Cloud Account',
-      type: 'oauth-input',
-      serviceId: 'vertex-ai',
-      requiredScopes: ['https://www.googleapis.com/auth/cloud-platform'],
-      placeholder: 'Select Google Cloud account',
+      id: "vertexCredential",
+      title: "Google Cloud Account",
+      type: "oauth-input",
+      serviceId: "vertex-ai",
+      requiredScopes: ["https://www.googleapis.com/auth/cloud-platform"],
+      placeholder: "Select Google Cloud account",
       required: true,
       condition: {
-        field: 'model',
+        field: "model",
         value: providers.vertex.models,
       },
     },
     {
-      id: 'reasoningEffort',
-      title: 'Reasoning Effort',
-      type: 'dropdown',
-      placeholder: 'Select reasoning effort...',
+      id: "reasoningEffort",
+      title: "Reasoning Effort",
+      type: "dropdown",
+      placeholder: "Select reasoning effort...",
       options: [
-        { label: 'low', id: 'low' },
-        { label: 'medium', id: 'medium' },
-        { label: 'high', id: 'high' },
+        { label: "low", id: "low" },
+        { label: "medium", id: "medium" },
+        { label: "high", id: "high" },
       ],
-      dependsOn: ['model'],
+      dependsOn: ["model"],
       fetchOptions: async (blockId: string) => {
-        const { useSubBlockStore } = await import('@/stores/workflows/subblock/store')
-        const { useWorkflowRegistry } = await import('@/stores/workflows/registry/store')
+        const { useSubBlockStore } = await import(
+          "@/stores/workflows/subblock/store"
+        );
+        const { useWorkflowRegistry } = await import(
+          "@/stores/workflows/registry/store"
+        );
 
-        const activeWorkflowId = useWorkflowRegistry.getState().activeWorkflowId
+        const activeWorkflowId =
+          useWorkflowRegistry.getState().activeWorkflowId;
         if (!activeWorkflowId) {
           return [
-            { label: 'low', id: 'low' },
-            { label: 'medium', id: 'medium' },
-            { label: 'high', id: 'high' },
-          ]
+            { label: "low", id: "low" },
+            { label: "medium", id: "medium" },
+            { label: "high", id: "high" },
+          ];
         }
 
-        const workflowValues = useSubBlockStore.getState().workflowValues[activeWorkflowId]
-        const blockValues = workflowValues?.[blockId]
-        const modelValue = blockValues?.model as string
+        const workflowValues =
+          useSubBlockStore.getState().workflowValues[activeWorkflowId];
+        const blockValues = workflowValues?.[blockId];
+        const modelValue = blockValues?.model as string;
 
         if (!modelValue) {
           return [
-            { label: 'low', id: 'low' },
-            { label: 'medium', id: 'medium' },
-            { label: 'high', id: 'high' },
-          ]
+            { label: "low", id: "low" },
+            { label: "medium", id: "medium" },
+            { label: "high", id: "high" },
+          ];
         }
 
-        const validOptions = getReasoningEffortValuesForModel(modelValue)
+        const validOptions = getReasoningEffortValuesForModel(modelValue);
         if (!validOptions) {
           return [
-            { label: 'low', id: 'low' },
-            { label: 'medium', id: 'medium' },
-            { label: 'high', id: 'high' },
-          ]
+            { label: "low", id: "low" },
+            { label: "medium", id: "medium" },
+            { label: "high", id: "high" },
+          ];
         }
 
-        return validOptions.map((opt) => ({ label: opt, id: opt }))
+        return validOptions.map((opt) => ({ label: opt, id: opt }));
       },
-      value: () => 'medium',
+      value: () => "medium",
       condition: {
-        field: 'model',
+        field: "model",
         value: MODELS_WITH_REASONING_EFFORT,
       },
     },
     {
-      id: 'verbosity',
-      title: 'Verbosity',
-      type: 'dropdown',
-      placeholder: 'Select verbosity...',
+      id: "verbosity",
+      title: "Verbosity",
+      type: "dropdown",
+      placeholder: "Select verbosity...",
       options: [
-        { label: 'low', id: 'low' },
-        { label: 'medium', id: 'medium' },
-        { label: 'high', id: 'high' },
+        { label: "low", id: "low" },
+        { label: "medium", id: "medium" },
+        { label: "high", id: "high" },
       ],
-      dependsOn: ['model'],
+      dependsOn: ["model"],
       fetchOptions: async (blockId: string) => {
-        const { useSubBlockStore } = await import('@/stores/workflows/subblock/store')
-        const { useWorkflowRegistry } = await import('@/stores/workflows/registry/store')
+        const { useSubBlockStore } = await import(
+          "@/stores/workflows/subblock/store"
+        );
+        const { useWorkflowRegistry } = await import(
+          "@/stores/workflows/registry/store"
+        );
 
-        const activeWorkflowId = useWorkflowRegistry.getState().activeWorkflowId
+        const activeWorkflowId =
+          useWorkflowRegistry.getState().activeWorkflowId;
         if (!activeWorkflowId) {
           return [
-            { label: 'low', id: 'low' },
-            { label: 'medium', id: 'medium' },
-            { label: 'high', id: 'high' },
-          ]
+            { label: "low", id: "low" },
+            { label: "medium", id: "medium" },
+            { label: "high", id: "high" },
+          ];
         }
 
-        const workflowValues = useSubBlockStore.getState().workflowValues[activeWorkflowId]
-        const blockValues = workflowValues?.[blockId]
-        const modelValue = blockValues?.model as string
+        const workflowValues =
+          useSubBlockStore.getState().workflowValues[activeWorkflowId];
+        const blockValues = workflowValues?.[blockId];
+        const modelValue = blockValues?.model as string;
 
         if (!modelValue) {
           return [
-            { label: 'low', id: 'low' },
-            { label: 'medium', id: 'medium' },
-            { label: 'high', id: 'high' },
-          ]
+            { label: "low", id: "low" },
+            { label: "medium", id: "medium" },
+            { label: "high", id: "high" },
+          ];
         }
 
-        const validOptions = getVerbosityValuesForModel(modelValue)
+        const validOptions = getVerbosityValuesForModel(modelValue);
         if (!validOptions) {
           return [
-            { label: 'low', id: 'low' },
-            { label: 'medium', id: 'medium' },
-            { label: 'high', id: 'high' },
-          ]
+            { label: "low", id: "low" },
+            { label: "medium", id: "medium" },
+            { label: "high", id: "high" },
+          ];
         }
 
-        return validOptions.map((opt) => ({ label: opt, id: opt }))
+        return validOptions.map((opt) => ({ label: opt, id: opt }));
       },
-      value: () => 'medium',
+      value: () => "medium",
       condition: {
-        field: 'model',
+        field: "model",
         value: MODELS_WITH_VERBOSITY,
       },
     },
     {
-      id: 'thinkingLevel',
-      title: 'Thinking Level',
-      type: 'dropdown',
-      placeholder: 'Select thinking level...',
+      id: "thinkingLevel",
+      title: "Thinking Level",
+      type: "dropdown",
+      placeholder: "Select thinking level...",
       options: [
-        { label: 'minimal', id: 'minimal' },
-        { label: 'low', id: 'low' },
-        { label: 'medium', id: 'medium' },
-        { label: 'high', id: 'high' },
+        { label: "minimal", id: "minimal" },
+        { label: "low", id: "low" },
+        { label: "medium", id: "medium" },
+        { label: "high", id: "high" },
       ],
-      dependsOn: ['model'],
+      dependsOn: ["model"],
       fetchOptions: async (blockId: string) => {
-        const { useSubBlockStore } = await import('@/stores/workflows/subblock/store')
-        const { useWorkflowRegistry } = await import('@/stores/workflows/registry/store')
+        const { useSubBlockStore } = await import(
+          "@/stores/workflows/subblock/store"
+        );
+        const { useWorkflowRegistry } = await import(
+          "@/stores/workflows/registry/store"
+        );
 
-        const activeWorkflowId = useWorkflowRegistry.getState().activeWorkflowId
+        const activeWorkflowId =
+          useWorkflowRegistry.getState().activeWorkflowId;
         if (!activeWorkflowId) {
           return [
-            { label: 'low', id: 'low' },
-            { label: 'high', id: 'high' },
-          ]
+            { label: "low", id: "low" },
+            { label: "high", id: "high" },
+          ];
         }
 
-        const workflowValues = useSubBlockStore.getState().workflowValues[activeWorkflowId]
-        const blockValues = workflowValues?.[blockId]
-        const modelValue = blockValues?.model as string
+        const workflowValues =
+          useSubBlockStore.getState().workflowValues[activeWorkflowId];
+        const blockValues = workflowValues?.[blockId];
+        const modelValue = blockValues?.model as string;
 
         if (!modelValue) {
           return [
-            { label: 'low', id: 'low' },
-            { label: 'high', id: 'high' },
-          ]
+            { label: "low", id: "low" },
+            { label: "high", id: "high" },
+          ];
         }
 
-        const validOptions = getThinkingLevelsForModel(modelValue)
+        const validOptions = getThinkingLevelsForModel(modelValue);
         if (!validOptions) {
           return [
-            { label: 'low', id: 'low' },
-            { label: 'high', id: 'high' },
-          ]
+            { label: "low", id: "low" },
+            { label: "high", id: "high" },
+          ];
         }
 
-        return validOptions.map((opt) => ({ label: opt, id: opt }))
+        return validOptions.map((opt) => ({ label: opt, id: opt }));
       },
-      value: () => 'high',
+      value: () => "high",
       condition: {
-        field: 'model',
+        field: "model",
         value: MODELS_WITH_THINKING,
       },
     },
 
     {
-      id: 'azureEndpoint',
-      title: 'Azure OpenAI Endpoint',
-      type: 'short-input',
+      id: "azureEndpoint",
+      title: "Azure OpenAI Endpoint",
+      type: "short-input",
       password: true,
-      placeholder: 'https://your-resource.openai.azure.com',
+      placeholder: "https://your-resource.openai.azure.com",
       connectionDroppable: false,
       condition: {
-        field: 'model',
-        value: providers['azure-openai'].models,
+        field: "model",
+        value: providers["azure-openai"].models,
       },
     },
     {
-      id: 'azureApiVersion',
-      title: 'Azure API Version',
-      type: 'short-input',
-      placeholder: '2024-07-01-preview',
+      id: "azureApiVersion",
+      title: "Azure API Version",
+      type: "short-input",
+      placeholder: "2024-07-01-preview",
       connectionDroppable: false,
       condition: {
-        field: 'model',
-        value: providers['azure-openai'].models,
+        field: "model",
+        value: providers["azure-openai"].models,
       },
     },
     {
-      id: 'vertexProject',
-      title: 'Vertex AI Project',
-      type: 'short-input',
-      placeholder: 'your-gcp-project-id',
+      id: "vertexProject",
+      title: "Vertex AI Project",
+      type: "short-input",
+      placeholder: "your-gcp-project-id",
       connectionDroppable: false,
       required: true,
       condition: {
-        field: 'model',
+        field: "model",
         value: providers.vertex.models,
       },
     },
     {
-      id: 'vertexLocation',
-      title: 'Vertex AI Location',
-      type: 'short-input',
-      placeholder: 'us-central1',
+      id: "vertexLocation",
+      title: "Vertex AI Location",
+      type: "short-input",
+      placeholder: "us-central1",
       connectionDroppable: false,
       required: true,
       condition: {
-        field: 'model',
+        field: "model",
         value: providers.vertex.models,
       },
     },
     {
-      id: 'tools',
-      title: 'Tools',
-      type: 'tool-input',
+      id: "tools",
+      title: "Tools",
+      type: "tool-input",
       defaultValue: [],
     },
     {
-      id: 'apiKey',
-      title: 'API Key',
-      type: 'short-input',
-      placeholder: 'Enter your API key',
+      id: "apiKey",
+      title: "API Key",
+      type: "short-input",
+      placeholder: "Enter your API key",
       password: true,
       connectionDroppable: false,
       required: true,
       // Hide API key for hosted models, Ollama models, vLLM models, and Vertex models (uses OAuth)
       condition: isHosted
         ? {
-            field: 'model',
+            field: "model",
             value: [...getHostedModels(), ...providers.vertex.models],
             not: true, // Show for all models EXCEPT those listed
           }
         : () => ({
-            field: 'model',
+            field: "model",
             value: [
               ...getCurrentOllamaModels(),
               ...getCurrentVLLMModels(),
@@ -360,92 +384,94 @@ export const AgentBlock: BlockConfig<AgentResponse> = {
           }),
     },
     {
-      id: 'memoryType',
-      title: 'Memory',
-      type: 'dropdown',
-      placeholder: 'Select memory...',
+      id: "memoryType",
+      title: "Memory",
+      type: "dropdown",
+      placeholder: "Select memory...",
       options: [
-        { label: 'None', id: 'none' },
-        { label: 'Conversation', id: 'conversation' },
-        { label: 'Sliding window (messages)', id: 'sliding_window' },
-        { label: 'Sliding window (tokens)', id: 'sliding_window_tokens' },
+        { label: "None", id: "none" },
+        { label: "Conversation", id: "conversation" },
+        { label: "Sliding window (messages)", id: "sliding_window" },
+        { label: "Sliding window (tokens)", id: "sliding_window_tokens" },
       ],
-      defaultValue: 'none',
+      defaultValue: "none",
     },
     {
-      id: 'conversationId',
-      title: 'Conversation ID',
-      type: 'short-input',
-      placeholder: 'e.g., user-123, session-abc, customer-456',
+      id: "conversationId",
+      title: "Conversation ID",
+      type: "short-input",
+      placeholder: "e.g., user-123, session-abc, customer-456",
       required: {
-        field: 'memoryType',
-        value: ['conversation', 'sliding_window', 'sliding_window_tokens'],
+        field: "memoryType",
+        value: ["conversation", "sliding_window", "sliding_window_tokens"],
       },
       condition: {
-        field: 'memoryType',
-        value: ['conversation', 'sliding_window', 'sliding_window_tokens'],
+        field: "memoryType",
+        value: ["conversation", "sliding_window", "sliding_window_tokens"],
       },
     },
     {
-      id: 'slidingWindowSize',
-      title: 'Sliding Window Size',
-      type: 'short-input',
-      placeholder: 'Enter number of messages (e.g., 10)...',
+      id: "slidingWindowSize",
+      title: "Sliding Window Size",
+      type: "short-input",
+      placeholder: "Enter number of messages (e.g., 10)...",
       condition: {
-        field: 'memoryType',
-        value: ['sliding_window'],
+        field: "memoryType",
+        value: ["sliding_window"],
       },
     },
     {
-      id: 'slidingWindowTokens',
-      title: 'Max Tokens',
-      type: 'short-input',
-      placeholder: 'Enter max tokens (e.g., 4000)...',
+      id: "slidingWindowTokens",
+      title: "Max Tokens",
+      type: "short-input",
+      placeholder: "Enter max tokens (e.g., 4000)...",
       condition: {
-        field: 'memoryType',
-        value: ['sliding_window_tokens'],
+        field: "memoryType",
+        value: ["sliding_window_tokens"],
       },
     },
     {
-      id: 'temperature',
-      title: 'Temperature',
-      type: 'slider',
+      id: "temperature",
+      title: "Temperature",
+      type: "slider",
       min: 0,
       max: 1,
       defaultValue: 0.3,
       condition: () => ({
-        field: 'model',
+        field: "model",
         value: (() => {
-          const allModels = Object.keys(getAllModelProviders())
+          const allModels = Object.keys(getAllModelProviders());
           return allModels.filter(
-            (model) => supportsTemperature(model) && getMaxTemperature(model) === 1
-          )
+            (model) =>
+              supportsTemperature(model) && getMaxTemperature(model) === 1
+          );
         })(),
       }),
     },
     {
-      id: 'temperature',
-      title: 'Temperature',
-      type: 'slider',
+      id: "temperature",
+      title: "Temperature",
+      type: "slider",
       min: 0,
       max: 2,
       defaultValue: 0.3,
       condition: () => ({
-        field: 'model',
+        field: "model",
         value: (() => {
-          const allModels = Object.keys(getAllModelProviders())
+          const allModels = Object.keys(getAllModelProviders());
           return allModels.filter(
-            (model) => supportsTemperature(model) && getMaxTemperature(model) === 2
-          )
+            (model) =>
+              supportsTemperature(model) && getMaxTemperature(model) === 2
+          );
         })(),
       }),
     },
     {
-      id: 'responseFormat',
-      title: 'Response Format',
-      type: 'code',
-      placeholder: 'Enter JSON schema...',
-      language: 'json',
+      id: "responseFormat",
+      title: "Response Format",
+      type: "code",
+      placeholder: "Enter JSON schema...",
+      language: "json",
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -534,31 +560,31 @@ Example 3 (Array Input):
     }
 }
 `,
-        placeholder: 'Describe the JSON schema structure you need...',
-        generationType: 'json-schema',
+        placeholder: "Describe the JSON schema structure you need...",
+        generationType: "json-schema",
       },
     },
   ],
   tools: {
     access: [
-      'openai_chat',
-      'anthropic_chat',
-      'google_chat',
-      'xai_chat',
-      'deepseek_chat',
-      'deepseek_reasoner',
+      "openai_chat",
+      "anthropic_chat",
+      "google_chat",
+      "xai_chat",
+      "deepseek_chat",
+      "deepseek_reasoner",
     ],
     config: {
       tool: (params: Record<string, any>) => {
-        const model = params.model || 'claude-sonnet-4-5'
+        const model = params.model || "claude-sonnet-4-5";
         if (!model) {
-          throw new Error('No model selected')
+          throw new Error("No model selected");
         }
-        const tool = getAllModelProviders()[model]
+        const tool = getAllModelProviders()[model];
         if (!tool) {
-          throw new Error(`Invalid model selected: ${model}`)
+          throw new Error(`Invalid model selected: ${model}`);
         }
-        return tool
+        return tool;
       },
       params: (params: Record<string, any>) => {
         // If tools array is provided, handle tool usage control
@@ -567,126 +593,149 @@ Example 3 (Array Input):
           const transformedTools = params.tools
             // Filter out tools set to 'none' - they should never be passed to the provider
             .filter((tool: any) => {
-              const usageControl = tool.usageControl || 'auto'
-              return usageControl !== 'none'
+              const usageControl = tool.usageControl || "auto";
+              return usageControl !== "none";
             })
             .map((tool: any) => {
               const toolConfig = {
                 id:
-                  tool.type === 'custom-tool'
+                  tool.type === "custom-tool"
                     ? tool.schema?.function?.name
                     : tool.operation || getToolIdFromBlock(tool.type),
                 name: tool.title,
-                description: tool.type === 'custom-tool' ? tool.schema?.function?.description : '',
+                description:
+                  tool.type === "custom-tool"
+                    ? tool.schema?.function?.description
+                    : "",
                 params: tool.params || {},
-                parameters: tool.type === 'custom-tool' ? tool.schema?.function?.parameters : {},
-                usageControl: tool.usageControl || 'auto',
+                parameters:
+                  tool.type === "custom-tool"
+                    ? tool.schema?.function?.parameters
+                    : {},
+                usageControl: tool.usageControl || "auto",
                 type: tool.type,
-              }
-              return toolConfig
-            })
+              };
+              return toolConfig;
+            });
 
           // Log which tools are being passed and which are filtered out
           const filteredOutTools = params.tools
-            .filter((tool: any) => (tool.usageControl || 'auto') === 'none')
-            .map((tool: any) => tool.title)
+            .filter((tool: any) => (tool.usageControl || "auto") === "none")
+            .map((tool: any) => tool.title);
 
           if (filteredOutTools.length > 0) {
-            logger.info('Filtered out tools set to none', { tools: filteredOutTools.join(', ') })
+            logger.info("Filtered out tools set to none", {
+              tools: filteredOutTools.join(", "),
+            });
           }
 
-          return { ...params, tools: transformedTools }
+          return { ...params, tools: transformedTools };
         }
-        return params
+        return params;
       },
     },
   },
   inputs: {
     messages: {
-      type: 'json',
+      type: "json",
       description:
         'Array of message objects with role and content: [{ role: "system", content: "..." }, { role: "user", content: "..." }]',
     },
     memoryType: {
-      type: 'string',
+      type: "string",
       description:
-        'Type of memory to use: none, conversation, sliding_window, or sliding_window_tokens',
+        "Type of memory to use: none, conversation, sliding_window, or sliding_window_tokens",
     },
     conversationId: {
-      type: 'string',
+      type: "string",
       description:
-        'Specific conversation ID to retrieve memories from (when memoryType is conversation_id)',
+        "Specific conversation ID to retrieve memories from (when memoryType is conversation_id)",
     },
     slidingWindowSize: {
-      type: 'string',
+      type: "string",
       description:
         'Number of recent messages to include (when memoryType is sliding_window, e.g., "10")',
     },
     slidingWindowTokens: {
-      type: 'string',
+      type: "string",
       description:
         'Maximum number of tokens for token-based sliding window memory (when memoryType is sliding_window_tokens, e.g., "4000")',
     },
-    model: { type: 'string', description: 'AI model to use' },
-    apiKey: { type: 'string', description: 'Provider API key' },
-    azureEndpoint: { type: 'string', description: 'Azure OpenAI endpoint URL' },
-    azureApiVersion: { type: 'string', description: 'Azure API version' },
-    vertexProject: { type: 'string', description: 'Google Cloud project ID for Vertex AI' },
-    vertexLocation: { type: 'string', description: 'Google Cloud location for Vertex AI' },
+    model: { type: "string", description: "AI model to use" },
+    apiKey: { type: "string", description: "Provider API key" },
+    azureEndpoint: { type: "string", description: "Azure OpenAI endpoint URL" },
+    azureApiVersion: { type: "string", description: "Azure API version" },
+    vertexProject: {
+      type: "string",
+      description: "Google Cloud project ID for Vertex AI",
+    },
+    vertexLocation: {
+      type: "string",
+      description: "Google Cloud location for Vertex AI",
+    },
     responseFormat: {
-      type: 'json',
-      description: 'JSON response format schema',
+      type: "json",
+      description: "JSON response format schema",
       schema: {
-        type: 'object',
+        type: "object",
         properties: {
           name: {
-            type: 'string',
-            description: 'A name for your schema (optional)',
+            type: "string",
+            description: "A name for your schema (optional)",
           },
           schema: {
-            type: 'object',
-            description: 'The JSON Schema definition',
+            type: "object",
+            description: "The JSON Schema definition",
             properties: {
               type: {
-                type: 'string',
-                enum: ['object'],
+                type: "string",
+                enum: ["object"],
                 description: 'Must be "object" for a valid JSON Schema',
               },
               properties: {
-                type: 'object',
-                description: 'Object containing property definitions',
+                type: "object",
+                description: "Object containing property definitions",
               },
               required: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Array of required property names',
+                type: "array",
+                items: { type: "string" },
+                description: "Array of required property names",
               },
               additionalProperties: {
-                type: 'boolean',
-                description: 'Whether additional properties are allowed',
+                type: "boolean",
+                description: "Whether additional properties are allowed",
               },
             },
-            required: ['type', 'properties'],
+            required: ["type", "properties"],
           },
           strict: {
-            type: 'boolean',
-            description: 'Whether to enforce strict schema validation',
+            type: "boolean",
+            description: "Whether to enforce strict schema validation",
             default: true,
           },
         },
-        required: ['schema'],
+        required: ["schema"],
       },
     },
-    temperature: { type: 'number', description: 'Response randomness level' },
-    reasoningEffort: { type: 'string', description: 'Reasoning effort level for GPT-5 models' },
-    verbosity: { type: 'string', description: 'Verbosity level for GPT-5 models' },
-    thinkingLevel: { type: 'string', description: 'Thinking level for Gemini 3 models' },
-    tools: { type: 'json', description: 'Available tools configuration' },
+    temperature: { type: "number", description: "Response randomness level" },
+    reasoningEffort: {
+      type: "string",
+      description: "Reasoning effort level for GPT-5 models",
+    },
+    verbosity: {
+      type: "string",
+      description: "Verbosity level for GPT-5 models",
+    },
+    thinkingLevel: {
+      type: "string",
+      description: "Thinking level for Gemini 3 models",
+    },
+    tools: { type: "json", description: "Available tools configuration" },
   },
   outputs: {
-    content: { type: 'string', description: 'Generated response content' },
-    model: { type: 'string', description: 'Model used for generation' },
-    tokens: { type: 'any', description: 'Token usage statistics' },
-    toolCalls: { type: 'any', description: 'Tool calls made' },
+    content: { type: "string", description: "Generated response content" },
+    model: { type: "string", description: "Model used for generation" },
+    tokens: { type: "any", description: "Token usage statistics" },
+    toolCalls: { type: "any", description: "Tool calls made" },
   },
-}
+};

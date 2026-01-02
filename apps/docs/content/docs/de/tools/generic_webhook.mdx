@@ -4,13 +4,10 @@ description: Empfangen Sie Webhooks von jedem Dienst durch Konfiguration eines
   benutzerdefinierten Webhooks.
 ---
 
-import { BlockInfoCard } from "@/components/ui/block-info-card"
-import { Image } from '@/components/ui/image'
+import { BlockInfoCard } from "@/components/ui/block-info-card";
+import { Image } from "@/components/ui/image";
 
-<BlockInfoCard 
-  type="generic_webhook"
-  color="#10B981"
-/>
+<BlockInfoCard type="generic_webhook" color="#10B981" />
 
 <div className="flex justify-center">
   <Image
@@ -33,7 +30,7 @@ Der generische Webhook-Block ermöglicht den Empfang von Webhooks von jedem exte
 Ohne ein definiertes Eingabeformat leitet der Webhook den gesamten Anforderungstext unverändert weiter:
 
 ```bash
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret" \
   -d '{
@@ -45,6 +42,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ```
 
 Greifen Sie in nachgelagerten Blöcken auf die Daten zu mit:
+
 - `<webhook1.message>` → "Test webhook trigger"
 - `<webhook1.data.key>` → "value"
 
@@ -65,7 +63,7 @@ Definieren Sie ein Eingabeschema, um typisierte Felder zu erhalten und erweitert
 **Webhook-Anfrage:**
 
 ```bash
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret" \
   -d '{
@@ -89,6 +87,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 Der Webhook unterstützt zwei Dateieingabeformate:
 
 #### 1. Base64-kodierte Dateien
+
 Zum direkten Hochladen von Dateiinhalten:
 
 ```json
@@ -109,6 +108,7 @@ Zum direkten Hochladen von Dateiinhalten:
 - **Speicherung**: Dateien werden in sicheren Ausführungsspeicher hochgeladen
 
 #### 2. URL-Referenzen
+
 Zum Übergeben vorhandener Datei-URLs:
 
 ```json
@@ -142,6 +142,7 @@ Dateien werden in `UserFile`Objekte mit den folgenden Eigenschaften verarbeitet:
 ```
 
 **Zugriff in Blöcken:**
+
 - `<webhook1.documents[0].url>` → Download-URL
 - `<webhook1.documents[0].name>` → "invoice.pdf"
 - `<webhook1.documents[0].size>` → 524288
@@ -155,7 +156,7 @@ echo "Hello World" | base64
 # SGVsbG8gV29ybGQK
 
 # Send webhook with file
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret" \
   -d '{
@@ -176,6 +177,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ### Authentifizierung konfigurieren (Optional)
 
 In der Webhook-Konfiguration:
+
 1. Aktiviere "Authentifizierung erforderlich"
 2. Setze einen geheimen Token
 3. Wähle den Header-Typ:
@@ -186,13 +188,13 @@ In der Webhook-Konfiguration:
 
 ```bash
 # With custom header
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret-token" \
   -d '{"message": "Authenticated request"}'
 
 # With bearer token
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-secret-token" \
   -d '{"message": "Authenticated request"}'
@@ -201,6 +203,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ## Best Practices
 
 1. **Eingabeformat für Struktur verwenden**: Definiere ein Eingabeformat, wenn du das erwartete Schema kennst. Dies bietet:
+
    - Typvalidierung
    - Bessere Autovervollständigung im Editor
    - Datei-Upload-Funktionen

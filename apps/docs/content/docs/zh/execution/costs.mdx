@@ -2,9 +2,9 @@
 title: 成本计算
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout'
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Image } from '@/components/ui/image'
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Image } from "@/components/ui/image";
 
 Sim 会自动计算所有工作流执行的成本，提供基于 AI 模型使用和执行费用的透明定价。了解这些成本有助于您优化工作流并有效管理预算。
 
@@ -22,7 +22,8 @@ totalCost = baseExecutionCharge + modelCost
 ```
 
 <Callout type="info">
-  AI 模型的价格是按每百万令牌计算的。计算时会除以 1,000,000 得出实际成本。不包含 AI 模块的工作流仅需支付基础执行费用。
+  AI 模型的价格是按每百万令牌计算的。计算时会除以 1,000,000 得出实际成本。不包含
+  AI 模块的工作流仅需支付基础执行费用。
 </Callout>
 
 ## 日志中的模型成本明细
@@ -40,6 +41,7 @@ totalCost = baseExecutionCharge + modelCost
 </div>
 
 模型成本明细显示：
+
 - **令牌使用量**：每个模型的输入和输出令牌数量
 - **成本明细**：每个模型和操作的单独成本
 - **模型分布**：使用了哪些模型以及使用次数
@@ -82,7 +84,8 @@ totalCost = baseExecutionCharge + modelCost
     | Gemini 2.5 Pro | $1.25 / $10.00 | $2.50 / $20.00 |
     | Gemini 2.5 Flash | $0.30 / $2.50 | $0.60 / $5.00 |
 
-    *2 倍系数涵盖了基础设施和 API 管理成本。* 
+    *2 倍系数涵盖了基础设施和 API 管理成本。*
+
   </Tab>
 
   <Tab>
@@ -98,6 +101,7 @@ totalCost = baseExecutionCharge + modelCost
     | VLLM | 本地模型 | 免费 |
 
     *直接向提供商支付，无额外加价*
+
   </Tab>
 </Tabs>
 
@@ -133,12 +137,13 @@ GET /api/users/me/usage-limits
 ```
 
 **认证：**
+
 - 在 `X-API-Key` 标头中包含您的 API 密钥
 
 **示例请求：**
 
 ```bash
-curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" https://sim.ai/api/users/me/usage-limits
+curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" https://ethana.ai/api/users/me/usage-limits
 ```
 
 **示例响应：**
@@ -172,11 +177,13 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" htt
 ```
 
 **速率限制字段：**
+
 - `requestsPerMinute`：持续速率限制（令牌以此速率补充）
 - `maxBurst`：您可以累积的最大令牌数（突发容量）
 - `remaining`：当前可用令牌数（最多可达 `maxBurst`）
 
 **响应字段：**
+
 - `currentPeriodCost` 反映当前计费周期的使用情况
 - `limit` 来源于个人限制（免费/专业）或组织池限制（团队/企业）
 - `plan` 是与您的用户关联的最高优先级的活动计划
@@ -185,12 +192,12 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" htt
 
 不同的订阅计划有不同的使用限制：
 
-| 方案 | 每月使用限额 | 速率限制（每分钟） |
-|------|-------------------|-------------------------|
-| **Free** | $20 | 5 sync，10 async |
-| **Pro** | $100 | 10 sync，50 async |
-| **Team** | $500（共享） | 50 sync，100 async |
-| **Enterprise** | 定制 | 定制 |
+| 方案           | 每月使用限额 | 速率限制（每分钟） |
+| -------------- | ------------ | ------------------ |
+| **Free**       | $20          | 5 sync，10 async   |
+| **Pro**        | $100         | 10 sync，50 async  |
+| **Team**       | $500（共享） | 50 sync，100 async |
+| **Enterprise** | 定制         | 定制               |
 
 ## 计费模式
 
@@ -199,17 +206,20 @@ Sim 使用 **基础订阅 + 超额** 的计费模式：
 ### 工作原理
 
 **专业计划（$20/月）：**
+
 - 每月订阅包含 $20 的使用额度
 - 使用低于 $20 → 无额外费用
 - 使用超过 $20 → 月底支付超额部分
 - 示例：$35 使用 = $20（订阅）+ $15（超额）
 
 **团队计划（$40/每席位/月）：**
+
 - 团队成员之间共享使用额度
 - 超额费用根据团队总使用量计算
 - 组织所有者收到一张账单
 
 **企业计划：**
+
 - 固定月费，无超额费用
 - 根据协议自定义使用限制
 
@@ -218,6 +228,7 @@ Sim 使用 **基础订阅 + 超额** 的计费模式：
 当未计费的超额费用达到 $50 时，Sim 会自动计费全额未计费金额。
 
 **示例：**
+
 - 第 10 天：$70 超额 → 立即计费 $70
 - 第 15 天：额外使用 $35（总计 $105）→ 已计费，无需操作
 - 第 20 天：再使用 $50（总计 $155，未计费 $85）→ 立即计费 $85
@@ -234,7 +245,7 @@ Sim 使用 **基础订阅 + 超额** 的计费模式：
 
 ## 下一步
 
-- 在[设置 → 订阅](https://sim.ai/settings/subscription)中查看您当前的使用情况
+- 在[设置 → 订阅](https://ethana.ai/settings/subscription)中查看您当前的使用情况
 - 了解[日志记录](/execution/logging)以跟踪执行详情
 - 探索[外部 API](/execution/api)以进行程序化成本监控
 - 查看[工作流优化技术](/blocks)以降低成本

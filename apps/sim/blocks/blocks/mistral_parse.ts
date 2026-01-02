@@ -1,69 +1,70 @@
-import { MistralIcon } from '@/components/icons'
-import { AuthMode, type BlockConfig, type SubBlockType } from '@/blocks/types'
-import type { MistralParserOutput } from '@/tools/mistral/types'
+import { MistralIcon } from "@/components/icons";
+import { AuthMode, type BlockConfig, type SubBlockType } from "@/blocks/types";
+import type { MistralParserOutput } from "@/tools/mistral/types";
 
 export const MistralParseBlock: BlockConfig<MistralParserOutput> = {
-  type: 'mistral_parse',
-  name: 'Mistral Parser',
-  description: 'Extract text from PDF documents',
+  type: "mistral_parse",
+  name: "Mistral Parser",
+  description: "Extract text from PDF documents",
   authMode: AuthMode.ApiKey,
   longDescription: `Integrate Mistral Parse into the workflow. Can extract text from uploaded PDF documents, or from a URL.`,
-  docsLink: 'https://docs.sim.ai/tools/mistral_parse',
-  category: 'tools',
-  bgColor: '#000000',
+  docsLink: "https://docs.ethana.ai/tools/mistral_parse",
+  category: "tools",
+  bgColor: "#000000",
   icon: MistralIcon,
   subBlocks: [
     // Show input method selection
     {
-      id: 'inputMethod',
-      title: 'Select Input Method',
-      type: 'dropdown' as SubBlockType,
+      id: "inputMethod",
+      title: "Select Input Method",
+      type: "dropdown" as SubBlockType,
       options: [
-        { id: 'url', label: 'PDF Document URL' },
-        { id: 'upload', label: 'Upload PDF Document' },
+        { id: "url", label: "PDF Document URL" },
+        { id: "upload", label: "Upload PDF Document" },
       ],
     },
 
     // URL input - conditional on inputMethod
     {
-      id: 'filePath',
-      title: 'PDF Document URL',
-      type: 'short-input' as SubBlockType,
-      placeholder: 'Enter full URL to a PDF document (https://example.com/document.pdf)',
+      id: "filePath",
+      title: "PDF Document URL",
+      type: "short-input" as SubBlockType,
+      placeholder:
+        "Enter full URL to a PDF document (https://example.com/document.pdf)",
       condition: {
-        field: 'inputMethod',
-        value: 'url',
+        field: "inputMethod",
+        value: "url",
       },
     },
 
     // File upload option
     {
-      id: 'fileUpload',
-      title: 'Upload PDF',
-      type: 'file-upload' as SubBlockType,
-      acceptedTypes: 'application/pdf',
+      id: "fileUpload",
+      title: "Upload PDF",
+      type: "file-upload" as SubBlockType,
+      acceptedTypes: "application/pdf",
       condition: {
-        field: 'inputMethod',
-        value: 'upload',
+        field: "inputMethod",
+        value: "upload",
       },
       maxSize: 50, // 50MB max via direct upload
     },
 
     {
-      id: 'resultType',
-      title: 'Output Format',
-      type: 'dropdown',
+      id: "resultType",
+      title: "Output Format",
+      type: "dropdown",
       options: [
-        { id: 'markdown', label: 'Markdown (Formatted)' },
-        { id: 'text', label: 'Plain Text' },
-        { id: 'json', label: 'JSON (Raw)' },
+        { id: "markdown", label: "Markdown (Formatted)" },
+        { id: "text", label: "Plain Text" },
+        { id: "json", label: "JSON (Raw)" },
       ],
     },
     {
-      id: 'pages',
-      title: 'Specific Pages',
-      type: 'short-input',
-      placeholder: 'e.g. 0,1,2 (leave empty for all pages)',
+      id: "pages",
+      title: "Specific Pages",
+      type: "short-input",
+      placeholder: "e.g. 0,1,2 (leave empty for all pages)",
     },
     /* 
      * Image-related parameters - temporarily disabled
@@ -88,88 +89,88 @@ export const MistralParseBlock: BlockConfig<MistralParserOutput> = {
     },
     */
     {
-      id: 'apiKey',
-      title: 'API Key',
-      type: 'short-input' as SubBlockType,
-      placeholder: 'Enter your Mistral API key',
+      id: "apiKey",
+      title: "API Key",
+      type: "short-input" as SubBlockType,
+      placeholder: "Enter your Mistral API key",
       password: true,
       required: true,
     },
   ],
   tools: {
-    access: ['mistral_parser'],
+    access: ["mistral_parser"],
     config: {
-      tool: () => 'mistral_parser',
+      tool: () => "mistral_parser",
       params: (params) => {
         // Basic validation
-        if (!params || !params.apiKey || params.apiKey.trim() === '') {
-          throw new Error('Mistral API key is required')
+        if (!params || !params.apiKey || params.apiKey.trim() === "") {
+          throw new Error("Mistral API key is required");
         }
 
         // Build parameters object - file processing is now handled at the tool level
         const parameters: any = {
           apiKey: params.apiKey.trim(),
-          resultType: params.resultType || 'markdown',
-        }
+          resultType: params.resultType || "markdown",
+        };
 
         // Set filePath or fileUpload based on input method
-        const inputMethod = params.inputMethod || 'url'
-        if (inputMethod === 'url') {
-          if (!params.filePath || params.filePath.trim() === '') {
-            throw new Error('PDF Document URL is required')
+        const inputMethod = params.inputMethod || "url";
+        if (inputMethod === "url") {
+          if (!params.filePath || params.filePath.trim() === "") {
+            throw new Error("PDF Document URL is required");
           }
-          parameters.filePath = params.filePath.trim()
-        } else if (inputMethod === 'upload') {
+          parameters.filePath = params.filePath.trim();
+        } else if (inputMethod === "upload") {
           if (!params.fileUpload) {
-            throw new Error('Please upload a PDF document')
+            throw new Error("Please upload a PDF document");
           }
           // Pass the entire fileUpload object to the tool
-          parameters.fileUpload = params.fileUpload
+          parameters.fileUpload = params.fileUpload;
         }
 
         // Convert pages input from string to array of numbers if provided
-        let pagesArray: number[] | undefined
-        if (params.pages && params.pages.trim() !== '') {
+        let pagesArray: number[] | undefined;
+        if (params.pages && params.pages.trim() !== "") {
           try {
             pagesArray = params.pages
-              .split(',')
+              .split(",")
               .map((p: string) => p.trim())
               .filter((p: string) => p.length > 0)
               .map((p: string) => {
-                const num = Number.parseInt(p, 10)
+                const num = Number.parseInt(p, 10);
                 if (Number.isNaN(num) || num < 0) {
-                  throw new Error(`Invalid page number: ${p}`)
+                  throw new Error(`Invalid page number: ${p}`);
                 }
-                return num
-              })
+                return num;
+              });
 
             if (pagesArray && pagesArray.length === 0) {
-              pagesArray = undefined
+              pagesArray = undefined;
             }
           } catch (error: any) {
-            throw new Error(`Page number format error: ${error.message}`)
+            throw new Error(`Page number format error: ${error.message}`);
           }
         }
 
         // Add optional parameters
         if (pagesArray && pagesArray.length > 0) {
-          parameters.pages = pagesArray
+          parameters.pages = pagesArray;
         }
 
-        return parameters
+        return parameters;
       },
     },
   },
   inputs: {
-    inputMethod: { type: 'string', description: 'Input method selection' },
-    filePath: { type: 'string', description: 'PDF document URL' },
-    fileUpload: { type: 'json', description: 'Uploaded PDF file' },
-    apiKey: { type: 'string', description: 'Mistral API key' },
-    resultType: { type: 'string', description: 'Output format type' },
-    pages: { type: 'string', description: 'Page selection' },
+    inputMethod: { type: "string", description: "Input method selection" },
+    filePath: { type: "string", description: "PDF document URL" },
+    fileUpload: { type: "json", description: "Uploaded PDF file" },
+    apiKey: { type: "string", description: "Mistral API key" },
+    resultType: { type: "string", description: "Output format type" },
+    pages: { type: "string", description: "Page selection" },
   },
   outputs: {
-    content: { type: 'string', description: 'Extracted content' },
-    metadata: { type: 'json', description: 'Processing metadata' },
+    content: { type: "string", description: "Extracted content" },
+    metadata: { type: "json", description: "Processing metadata" },
   },
-}
+};

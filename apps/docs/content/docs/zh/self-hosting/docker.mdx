@@ -3,14 +3,14 @@ title: Docker
 description: 使用 Docker Compose 部署 Sim Studio
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## 快速开始
 
 ```bash
 # Clone and start
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -135,7 +135,8 @@ OLLAMA_URL=http://192.168.1.100:11434 docker compose -f docker-compose.prod.yml 
 ```
 
 <Callout type="warning">
-  在 Docker 内，`localhost` 指的是容器，而不是您的主机。请使用 `host.docker.internal` 或您的主机 IP。
+  在 Docker 内，`localhost` 指的是容器，而不是您的主机。请使用
+  `host.docker.internal` 或您的主机 IP。
 </Callout>
 
 ## 命令

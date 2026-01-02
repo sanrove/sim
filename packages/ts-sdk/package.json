@@ -32,7 +32,7 @@
     "automation",
     "typescript"
   ],
-  "author": "Sim",
+  "author": "Ethana",
   "license": "Apache-2.0",
   "dependencies": {
     "node-fetch": "^3.3.2"
@@ -51,11 +51,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/simstudioai/sim.git",
+    "url": "https://github.com/.git",
     "directory": "packages/ts-sdk"
   },
-  "homepage": "https://sim.ai",
+  "homepage": "https://ethana.ai",
   "bugs": {
-    "url": "https://github.com/simstudioai/sim/issues"
+    "url": "https://github.com//issues"
   }
 }

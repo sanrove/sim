@@ -1,6 +1,6 @@
 # Sim CLI
 
-Sim CLI allows you to run [Sim](https://sim.ai) using Docker with a single command.
+Sim CLI allows you to run [Sim](https://ethana.ai) using Docker with a single command.
 
 ## Installation
 
@@ -33,4 +33,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
-This project is licensed under the Apache-2.0 License. 
+This project is licensed under the Apache-2.0 License.

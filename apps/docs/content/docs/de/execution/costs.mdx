@@ -2,9 +2,9 @@
 title: Kostenberechnung
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout'
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Image } from '@/components/ui/image'
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Image } from "@/components/ui/image";
 
 Sim berechnet automatisch die Kosten für alle Workflow-Ausführungen und bietet transparente Preise basierend auf der Nutzung von KI-Modellen und Ausführungsgebühren. Das Verständnis dieser Kosten hilft Ihnen, Workflows zu optimieren und Ihr Budget effektiv zu verwalten.
 
@@ -22,7 +22,9 @@ totalCost = baseExecutionCharge + modelCost
 ```
 
 <Callout type="info">
-  KI-Modellpreise werden pro Million Token berechnet. Die Berechnung teilt durch 1.000.000, um die tatsächlichen Kosten zu ermitteln. Workflows ohne KI-Blöcke verursachen nur die Basis-Ausführungsgebühr.
+  KI-Modellpreise werden pro Million Token berechnet. Die Berechnung teilt durch
+  1.000.000, um die tatsächlichen Kosten zu ermitteln. Workflows ohne KI-Blöcke
+  verursachen nur die Basis-Ausführungsgebühr.
 </Callout>
 
 ## Modellaufschlüsselung in Logs
@@ -40,6 +42,7 @@ Für Workflows mit KI-Blöcken können Sie detaillierte Kosteninformationen in d
 </div>
 
 Die Modellaufschlüsselung zeigt:
+
 - **Token-Nutzung**: Eingabe- und Ausgabe-Token-Anzahl für jedes Modell
 - **Kostenaufschlüsselung**: Einzelkosten pro Modell und Operation
 - **Modellverteilung**: Welche Modelle verwendet wurden und wie oft
@@ -83,6 +86,7 @@ Die Modellaufschlüsselung zeigt:
     | Gemini 2.5 Flash | 0,30 $ / 2,50 $ | 0,60 $ / 5,00 $ |
 
     *Der 2x-Multiplikator deckt Infrastruktur- und API-Verwaltungskosten ab.*
+
   </Tab>
 
   <Tab>
@@ -98,11 +102,13 @@ Die Modellaufschlüsselung zeigt:
     | VLLM | Lokale Modelle | Kostenlos |
 
     *Bezahlen Sie Anbieter direkt ohne Aufschlag*
+
   </Tab>
 </Tabs>
 
 <Callout type="warning">
-  Die angezeigten Preise entsprechen den Tarifen vom 10. September 2025. Überprüfen Sie die Dokumentation der Anbieter für aktuelle Preise.
+  Die angezeigten Preise entsprechen den Tarifen vom 10. September 2025.
+  Überprüfen Sie die Dokumentation der Anbieter für aktuelle Preise.
 </Callout>
 
 ## Strategien zur Kostenoptimierung
@@ -133,12 +139,13 @@ GET /api/users/me/usage-limits
 ```
 
 **Authentifizierung:**
+
 - Fügen Sie Ihren API-Schlüssel im `X-API-Key` Header hinzu
 
 **Beispielanfrage:**
 
 ```bash
-curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" https://sim.ai/api/users/me/usage-limits
+curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" https://ethana.ai/api/users/me/usage-limits
 ```
 
 **Beispielantwort:**
@@ -172,11 +179,13 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" htt
 ```
 
 **Rate-Limit-Felder:**
+
 - `requestsPerMinute`: Dauerhafte Rate-Begrenzung (Tokens werden mit dieser Rate aufgefüllt)
 - `maxBurst`: Maximale Tokens, die Sie ansammeln können (Burst-Kapazität)
 - `remaining`: Aktuell verfügbare Tokens (können bis zu `maxBurst` sein)
 
 **Antwortfelder:**
+
 - `currentPeriodCost` spiegelt die Nutzung in der aktuellen Abrechnungsperiode wider
 - `limit` wird von individuellen Limits (Free/Pro) oder gepoolten Organisationslimits (Team/Enterprise) abgeleitet
 - `plan` ist der aktive Plan mit der höchsten Priorität, der mit Ihrem Benutzer verknüpft ist
@@ -185,12 +194,12 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" htt
 
 Verschiedene Abonnementpläne haben unterschiedliche Nutzungslimits:
 
-| Plan | Monatliches Nutzungslimit | Ratenlimits (pro Minute) |
-|------|-------------------|-------------------------|
-| **Free** | 20 $ | 5 synchron, 10 asynchron |
-| **Pro** | 100 $ | 10 synchron, 50 asynchron |
-| **Team** | 500 $ (gepoolt) | 50 synchron, 100 asynchron |
-| **Enterprise** | Individuell | Individuell |
+| Plan           | Monatliches Nutzungslimit | Ratenlimits (pro Minute)   |
+| -------------- | ------------------------- | -------------------------- |
+| **Free**       | 20 $                      | 5 synchron, 10 asynchron   |
+| **Pro**        | 100 $                     | 10 synchron, 50 asynchron  |
+| **Team**       | 500 $ (gepoolt)           | 50 synchron, 100 asynchron |
+| **Enterprise** | Individuell               | Individuell                |
 
 ## Abrechnungsmodell
 
@@ -199,17 +208,20 @@ Sim verwendet ein **Basisabonnement + Mehrverbrauch**-Abrechnungsmodell:
 ### Wie es funktioniert
 
 **Pro-Plan ($20/Monat):**
+
 - Monatliches Abonnement beinhaltet $20 Nutzung
 - Nutzung unter $20 → Keine zusätzlichen Kosten
 - Nutzung über $20 → Zahlen Sie den Mehrverbrauch am Monatsende
 - Beispiel: $35 Nutzung = $20 (Abonnement) + $15 (Mehrverbrauch)
 
 **Team-Plan ($40/Benutzer/Monat):**
+
 - Gepoolte Nutzung für alle Teammitglieder
 - Mehrverbrauch wird aus der Gesamtnutzung des Teams berechnet
 - Organisationsinhaber erhält eine Rechnung
 
 **Enterprise-Pläne:**
+
 - Fester monatlicher Preis, kein Mehrverbrauch
 - Individuelle Nutzungslimits gemäß Vereinbarung
 
@@ -218,6 +230,7 @@ Sim verwendet ein **Basisabonnement + Mehrverbrauch**-Abrechnungsmodell:
 Wenn der nicht abgerechnete Mehrverbrauch $50 erreicht, berechnet Sim automatisch den gesamten nicht abgerechneten Betrag.
 
 **Beispiel:**
+
 - Tag 10: $70 Mehrverbrauch → Sofortige Abrechnung von $70
 - Tag 15: Zusätzliche $35 Nutzung ($105 insgesamt) → Bereits abgerechnet, keine Aktion
 - Tag 20: Weitere $50 Nutzung ($155 insgesamt, $85 nicht abgerechnet) → Sofortige Abrechnung von $85
@@ -234,7 +247,7 @@ Dies verteilt große Überziehungsgebühren über den Monat, anstatt eine große
 
 ## Nächste Schritte
 
-- Überprüfen Sie Ihre aktuelle Nutzung unter [Einstellungen → Abonnement](https://sim.ai/settings/subscription)
+- Überprüfen Sie Ihre aktuelle Nutzung unter [Einstellungen → Abonnement](https://ethana.ai/settings/subscription)
 - Erfahren Sie mehr über [Protokollierung](/execution/logging), um Ausführungsdetails zu verfolgen
 - Erkunden Sie die [Externe API](/execution/api) für programmatische Kostenüberwachung
 - Sehen Sie sich [Workflow-Optimierungstechniken](/blocks) an, um Kosten zu reduzieren

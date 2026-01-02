@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server'
-import { getAllPostMeta } from '@/lib/blog/registry'
+import { NextResponse } from "next/server";
+import { getAllPostMeta } from "@/lib/blog/registry";
 
-export const revalidate = 3600
+export const revalidate = 3600;
 
 export async function GET() {
-  const posts = await getAllPostMeta()
-  const items = posts.slice(0, 50)
-  const site = 'https://sim.ai'
+  const posts = await getAllPostMeta();
+  const items = posts.slice(0, 50);
+  const site = "https://ethana.ai";
 
   const xml = `<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
@@ -24,18 +24,23 @@ export async function GET() {
       <pubDate>${new Date(p.date).toUTCString()}</pubDate>
       <description><![CDATA[${p.description}]]></description>
       ${(p.authors || [p.author])
-        .map((a) => `<author><![CDATA[${a.name}${a.url ? ` (${a.url})` : ''}]]></author>`)
-        .join('\n')}
+        .map(
+          (a) =>
+            `<author><![CDATA[${a.name}${
+              a.url ? ` (${a.url})` : ""
+            }]]></author>`
+        )
+        .join("\n")}
     </item>`
       )
-      .join('')}
+      .join("")}
   </channel>
-</rss>`
+</rss>`;
 
   return new NextResponse(xml, {
     headers: {
-      'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
     },
-  })
+  });
 }

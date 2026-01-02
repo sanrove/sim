@@ -304,7 +304,7 @@ export class DeployWorkflowClientTool extends BaseClientTool {
         const appUrl =
           typeof window !== "undefined"
             ? window.location.origin
-            : process.env.NEXT_PUBLIC_APP_URL || "https://app.sim.ai";
+            : process.env.NEXT_PUBLIC_APP_URL || "https://app.ethana.ai";
         const endpoint = `${appUrl}/api/workflows/${workflowId}/execute`;
         const apiKeyPlaceholder = "$ETHANA_AGENT_BUILDER_KEY";
 

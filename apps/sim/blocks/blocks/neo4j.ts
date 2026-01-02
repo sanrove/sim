@@ -1,89 +1,89 @@
-import { Neo4jIcon } from '@/components/icons'
-import type { BlockConfig } from '@/blocks/types'
-import type { Neo4jResponse } from '@/tools/neo4j/types'
+import { Neo4jIcon } from "@/components/icons";
+import type { BlockConfig } from "@/blocks/types";
+import type { Neo4jResponse } from "@/tools/neo4j/types";
 
 export const Neo4jBlock: BlockConfig<Neo4jResponse> = {
-  type: 'neo4j',
-  name: 'Neo4j',
-  description: 'Connect to Neo4j graph database',
+  type: "neo4j",
+  name: "Neo4j",
+  description: "Connect to Neo4j graph database",
   longDescription:
-    'Integrate Neo4j graph database into the workflow. Can query, create, merge, update, and delete nodes and relationships.',
-  docsLink: 'https://docs.sim.ai/tools/neo4j',
-  category: 'tools',
-  bgColor: '#FFFFFF',
+    "Integrate Neo4j graph database into the workflow. Can query, create, merge, update, and delete nodes and relationships.",
+  docsLink: "https://docs.ethana.ai/tools/neo4j",
+  category: "tools",
+  bgColor: "#FFFFFF",
   icon: Neo4jIcon,
   subBlocks: [
     {
-      id: 'operation',
-      title: 'Operation',
-      type: 'dropdown',
+      id: "operation",
+      title: "Operation",
+      type: "dropdown",
       options: [
-        { label: 'Query (MATCH)', id: 'query' },
-        { label: 'Create Nodes/Relationships', id: 'create' },
-        { label: 'Merge (Find or Create)', id: 'merge' },
-        { label: 'Update Properties (SET)', id: 'update' },
-        { label: 'Delete Nodes/Relationships', id: 'delete' },
-        { label: 'Execute Cypher', id: 'execute' },
+        { label: "Query (MATCH)", id: "query" },
+        { label: "Create Nodes/Relationships", id: "create" },
+        { label: "Merge (Find or Create)", id: "merge" },
+        { label: "Update Properties (SET)", id: "update" },
+        { label: "Delete Nodes/Relationships", id: "delete" },
+        { label: "Execute Cypher", id: "execute" },
       ],
-      value: () => 'query',
+      value: () => "query",
     },
     {
-      id: 'host',
-      title: 'Host',
-      type: 'short-input',
-      placeholder: 'localhost or your.neo4j.host',
+      id: "host",
+      title: "Host",
+      type: "short-input",
+      placeholder: "localhost or your.neo4j.host",
       required: true,
       password: true,
     },
     {
-      id: 'port',
-      title: 'Port',
-      type: 'short-input',
-      placeholder: '7687',
-      value: () => '7687',
+      id: "port",
+      title: "Port",
+      type: "short-input",
+      placeholder: "7687",
+      value: () => "7687",
       required: true,
     },
     {
-      id: 'database',
-      title: 'Database Name',
-      type: 'short-input',
-      placeholder: 'neo4j',
-      value: () => 'neo4j',
+      id: "database",
+      title: "Database Name",
+      type: "short-input",
+      placeholder: "neo4j",
+      value: () => "neo4j",
       required: true,
     },
     {
-      id: 'username',
-      title: 'Username',
-      type: 'short-input',
-      placeholder: 'neo4j',
-      value: () => 'neo4j',
+      id: "username",
+      title: "Username",
+      type: "short-input",
+      placeholder: "neo4j",
+      value: () => "neo4j",
       required: true,
     },
     {
-      id: 'password',
-      title: 'Password',
-      type: 'short-input',
+      id: "password",
+      title: "Password",
+      type: "short-input",
       password: true,
-      placeholder: 'Your database password',
+      placeholder: "Your database password",
       required: true,
     },
     {
-      id: 'encryption',
-      title: 'Encryption',
-      type: 'dropdown',
+      id: "encryption",
+      title: "Encryption",
+      type: "dropdown",
       options: [
-        { label: 'Disabled', id: 'disabled' },
-        { label: 'Enabled (TLS/SSL)', id: 'enabled' },
+        { label: "Disabled", id: "disabled" },
+        { label: "Enabled (TLS/SSL)", id: "enabled" },
       ],
-      value: () => 'disabled',
+      value: () => "disabled",
     },
     {
-      id: 'cypherQuery',
-      title: 'Cypher Query',
-      type: 'code',
-      placeholder: 'MATCH (n:Person) WHERE n.age > 21 RETURN n LIMIT 10',
+      id: "cypherQuery",
+      title: "Cypher Query",
+      type: "code",
+      placeholder: "MATCH (n:Person) WHERE n.age > 21 RETURN n LIMIT 10",
       required: true,
-      condition: { field: 'operation', value: 'query' },
+      condition: { field: "operation", value: "query" },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -157,17 +157,17 @@ MATCH (p:Person) WHERE p.age > $minAge AND p.age < $maxAge AND p.country = $coun
 Use the Parameters field for dynamic values to improve security and query performance.
 
 Return ONLY the Cypher query - no explanations.`,
-        placeholder: 'Describe what you want to query...',
-        generationType: 'neo4j-cypher',
+        placeholder: "Describe what you want to query...",
+        generationType: "neo4j-cypher",
       },
     },
     {
-      id: 'cypherQuery',
-      title: 'Cypher CREATE Statement',
-      type: 'code',
+      id: "cypherQuery",
+      title: "Cypher CREATE Statement",
+      type: "code",
       placeholder: 'CREATE (n:Person {name: "Alice", age: 30})',
       required: true,
-      condition: { field: 'operation', value: 'create' },
+      condition: { field: "operation", value: "create" },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -220,18 +220,18 @@ Batch create: UNWIND $items AS item CREATE (n:Product {name: item.name, price: i
 Use the Parameters field with CREATE for dynamic values and security.
 
 Return ONLY the Cypher CREATE statement.`,
-        placeholder: 'Describe what you want to create...',
-        generationType: 'neo4j-cypher',
+        placeholder: "Describe what you want to create...",
+        generationType: "neo4j-cypher",
       },
     },
     {
-      id: 'cypherQuery',
-      title: 'Cypher MERGE Statement',
-      type: 'code',
+      id: "cypherQuery",
+      title: "Cypher MERGE Statement",
+      type: "code",
       placeholder:
         'MERGE (n:Person {email: "alice@example.com"}) ON CREATE SET n.created = timestamp() RETURN n',
       required: true,
-      condition: { field: 'operation', value: 'merge' },
+      condition: { field: "operation", value: "merge" },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -270,17 +270,18 @@ Merge person: MERGE (n:Person {email: "alice@example.com"}) ON CREATE SET n.crea
 Merge relationship: MERGE (p:Person {name: "Alice"})-[:KNOWS]->(f:Person {name: "Bob"})
 
 Return ONLY the Cypher MERGE statement.`,
-        placeholder: 'Describe what you want to merge...',
-        generationType: 'neo4j-cypher',
+        placeholder: "Describe what you want to merge...",
+        generationType: "neo4j-cypher",
       },
     },
     {
-      id: 'cypherQuery',
-      title: 'Cypher UPDATE Statement',
-      type: 'code',
-      placeholder: 'MATCH (n:Person {name: "Alice"}) SET n.age = 31, n.updated = timestamp()',
+      id: "cypherQuery",
+      title: "Cypher UPDATE Statement",
+      type: "code",
+      placeholder:
+        'MATCH (n:Person {name: "Alice"}) SET n.age = 31, n.updated = timestamp()',
       required: true,
-      condition: { field: 'operation', value: 'update' },
+      condition: { field: "operation", value: "update" },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -335,17 +336,17 @@ Merge properties safely: MATCH (n:Person {id: $userId}) SET n += {status: "activ
 Use SET n += {...} to merge properties safely. Avoid SET n = {...} unless you explicitly want to replace ALL properties.
 
 Return ONLY the Cypher update statement.`,
-        placeholder: 'Describe what you want to update...',
-        generationType: 'neo4j-cypher',
+        placeholder: "Describe what you want to update...",
+        generationType: "neo4j-cypher",
       },
     },
     {
-      id: 'cypherQuery',
-      title: 'Cypher DELETE Statement',
-      type: 'code',
+      id: "cypherQuery",
+      title: "Cypher DELETE Statement",
+      type: "code",
       placeholder: 'MATCH (n:Person {name: "Alice"}) DETACH DELETE n',
       required: true,
-      condition: { field: 'operation', value: 'delete' },
+      condition: { field: "operation", value: "delete" },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -389,17 +390,17 @@ Delete relationship: MATCH (p:Person)-[r:KNOWS]->(f:Person) WHERE p.name = "Alic
 Delete old data: MATCH (n:TempData) WHERE n.created < timestamp() - 2592000000 DETACH DELETE n
 
 Return ONLY the Cypher DELETE statement.`,
-        placeholder: 'Describe what you want to delete...',
-        generationType: 'neo4j-cypher',
+        placeholder: "Describe what you want to delete...",
+        generationType: "neo4j-cypher",
       },
     },
     {
-      id: 'cypherQuery',
-      title: 'Cypher Query',
-      type: 'code',
-      placeholder: 'MATCH (n:Person) RETURN n LIMIT 10',
+      id: "cypherQuery",
+      title: "Cypher Query",
+      type: "code",
+      placeholder: "MATCH (n:Person) RETURN n LIMIT 10",
       required: true,
-      condition: { field: 'operation', value: 'execute' },
+      condition: { field: "operation", value: "execute" },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -459,14 +460,14 @@ MATCH (p:Person) WHERE p.age > $minAge WITH p ORDER BY p.age DESC LIMIT $limit M
 MATCH (p:Person) RETURN p.name, [(p)-[:KNOWS]->(friend) WHERE friend.age > 25 | friend.name] as adultFriends
 
 Return ONLY the Cypher query.`,
-        placeholder: 'Describe your query...',
-        generationType: 'neo4j-cypher',
+        placeholder: "Describe your query...",
+        generationType: "neo4j-cypher",
       },
     },
     {
-      id: 'parameters',
-      title: 'Parameters',
-      type: 'code',
+      id: "parameters",
+      title: "Parameters",
+      type: "code",
       placeholder: '{"name": "Alice", "minAge": 21}',
       wandConfig: {
         enabled: true,
@@ -576,121 +577,132 @@ Parameters: {"fromId": "user1", "toId": "user2", "year": 2024}
 5. **Reuse parameter names** - Same parameters work across similar queries for plan caching
 
 Return ONLY valid JSON.`,
-        placeholder: 'Describe the parameter values...',
-        generationType: 'neo4j-parameters',
+        placeholder: "Describe the parameter values...",
+        generationType: "neo4j-parameters",
       },
     },
   ],
   tools: {
     access: [
-      'neo4j_query',
-      'neo4j_create',
-      'neo4j_merge',
-      'neo4j_update',
-      'neo4j_delete',
-      'neo4j_execute',
+      "neo4j_query",
+      "neo4j_create",
+      "neo4j_merge",
+      "neo4j_update",
+      "neo4j_delete",
+      "neo4j_execute",
     ],
     config: {
       tool: (params) => {
         switch (params.operation) {
-          case 'query':
-            return 'neo4j_query'
-          case 'create':
-            return 'neo4j_create'
-          case 'merge':
-            return 'neo4j_merge'
-          case 'update':
-            return 'neo4j_update'
-          case 'delete':
-            return 'neo4j_delete'
-          case 'execute':
-            return 'neo4j_execute'
+          case "query":
+            return "neo4j_query";
+          case "create":
+            return "neo4j_create";
+          case "merge":
+            return "neo4j_merge";
+          case "update":
+            return "neo4j_update";
+          case "delete":
+            return "neo4j_delete";
+          case "execute":
+            return "neo4j_execute";
           default:
-            throw new Error(`Invalid Neo4j operation: ${params.operation}`)
+            throw new Error(`Invalid Neo4j operation: ${params.operation}`);
         }
       },
       params: (params) => {
-        const { operation, parameters, ...rest } = params
+        const { operation, parameters, ...rest } = params;
 
-        let parsedParameters
-        if (typeof parameters === 'string') {
-          const trimmed = parameters.trim()
-          if (trimmed === '') {
-            parsedParameters = undefined
+        let parsedParameters;
+        if (typeof parameters === "string") {
+          const trimmed = parameters.trim();
+          if (trimmed === "") {
+            parsedParameters = undefined;
           } else {
             try {
-              parsedParameters = JSON.parse(trimmed)
+              parsedParameters = JSON.parse(trimmed);
             } catch (parseError) {
               const errorMsg =
-                parseError instanceof Error ? parseError.message : 'Unknown JSON error'
+                parseError instanceof Error
+                  ? parseError.message
+                  : "Unknown JSON error";
               throw new Error(
                 `Invalid JSON parameters format: ${errorMsg}. Please check your JSON syntax.`
-              )
+              );
             }
           }
-        } else if (parameters && typeof parameters === 'object') {
-          parsedParameters = parameters
+        } else if (parameters && typeof parameters === "object") {
+          parsedParameters = parameters;
         } else {
-          parsedParameters = undefined
+          parsedParameters = undefined;
         }
 
         const connectionConfig = {
           host: rest.host,
-          port: typeof rest.port === 'string' ? Number.parseInt(rest.port, 10) : rest.port || 7687,
-          database: rest.database || 'neo4j',
-          username: rest.username || 'neo4j',
+          port:
+            typeof rest.port === "string"
+              ? Number.parseInt(rest.port, 10)
+              : rest.port || 7687,
+          database: rest.database || "neo4j",
+          username: rest.username || "neo4j",
           password: rest.password,
-          encryption: rest.encryption || 'disabled',
-        }
+          encryption: rest.encryption || "disabled",
+        };
 
-        const result: any = { ...connectionConfig }
+        const result: any = { ...connectionConfig };
 
         if (rest.cypherQuery) {
-          result.cypherQuery = rest.cypherQuery
+          result.cypherQuery = rest.cypherQuery;
         }
 
         if (parsedParameters !== undefined && parsedParameters !== null) {
-          result.parameters = parsedParameters
+          result.parameters = parsedParameters;
         } else {
-          result.parameters = undefined
+          result.parameters = undefined;
         }
 
         if (rest.detach !== undefined) {
-          result.detach = rest.detach === 'true' || rest.detach === true
+          result.detach = rest.detach === "true" || rest.detach === true;
         }
 
-        return result
+        return result;
       },
     },
   },
   inputs: {
-    operation: { type: 'string', description: 'Database operation to perform' },
-    host: { type: 'string', description: 'Neo4j host' },
-    port: { type: 'string', description: 'Neo4j port (Bolt protocol)' },
-    database: { type: 'string', description: 'Database name' },
-    username: { type: 'string', description: 'Neo4j username' },
-    password: { type: 'string', description: 'Neo4j password' },
-    encryption: { type: 'string', description: 'Connection encryption mode' },
-    cypherQuery: { type: 'string', description: 'Cypher query to execute' },
-    parameters: { type: 'json', description: 'Query parameters as JSON object' },
-    detach: { type: 'boolean', description: 'Use DETACH DELETE for delete operations' },
+    operation: { type: "string", description: "Database operation to perform" },
+    host: { type: "string", description: "Neo4j host" },
+    port: { type: "string", description: "Neo4j port (Bolt protocol)" },
+    database: { type: "string", description: "Database name" },
+    username: { type: "string", description: "Neo4j username" },
+    password: { type: "string", description: "Neo4j password" },
+    encryption: { type: "string", description: "Connection encryption mode" },
+    cypherQuery: { type: "string", description: "Cypher query to execute" },
+    parameters: {
+      type: "json",
+      description: "Query parameters as JSON object",
+    },
+    detach: {
+      type: "boolean",
+      description: "Use DETACH DELETE for delete operations",
+    },
   },
   outputs: {
     message: {
-      type: 'string',
-      description: 'Success or error message describing the operation outcome',
+      type: "string",
+      description: "Success or error message describing the operation outcome",
     },
     records: {
-      type: 'array',
-      description: 'Array of records returned from the query',
+      type: "array",
+      description: "Array of records returned from the query",
     },
     recordCount: {
-      type: 'number',
-      description: 'Number of records returned or affected',
+      type: "number",
+      description: "Number of records returned or affected",
     },
     summary: {
-      type: 'json',
-      description: 'Execution summary with timing and database change counters',
+      type: "json",
+      description: "Execution summary with timing and database change counters",
     },
   },
-}
+};

@@ -3,14 +3,14 @@ title: Docker
 description: Docker Composeを使用してSim Studioをデプロイする
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## クイックスタート
 
 ```bash
 # Clone and start
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -39,7 +39,7 @@ EOF
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-### 3. SSLの設定
+### 3. SSL の設定
 
 <Tabs items={['Caddy (推奨)', 'Nginx + Certbot']}>
   <Tab value="Caddy (推奨)">
@@ -122,9 +122,9 @@ docker compose -f docker-compose.ollama.yml --profile cpu --profile setup up -d
 docker compose -f docker-compose.ollama.yml exec ollama ollama pull llama3.2
 ```
 
-### 外部Ollama
+### 外部 Ollama
 
-Ollamaがホストマシン上で実行されている場合（Dockerではない）：
+Ollama がホストマシン上で実行されている場合（Docker ではない）：
 
 ```bash
 # macOS/Windows

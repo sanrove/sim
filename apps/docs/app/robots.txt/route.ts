@@ -1,7 +1,7 @@
-export const revalidate = false
+export const revalidate = false;
 
 export async function GET() {
-  const baseUrl = 'https://docs.sim.ai'
+  const baseUrl = "https://docs.ethana.ai";
 
   const robotsTxt = `# Robots.txt for Sim Documentation
 # Generated on ${new Date().toISOString()}
@@ -90,11 +90,11 @@ Sitemap: ${baseUrl}/sitemap.xml
 # ${baseUrl}/fr - Français
 # ${baseUrl}/de - Deutsch
 # ${baseUrl}/ja - 日本語
-# ${baseUrl}/zh - 简体中文`
+# ${baseUrl}/zh - 简体中文`;
 
   return new Response(robotsTxt, {
     headers: {
-      'Content-Type': 'text/plain',
+      "Content-Type": "text/plain",
     },
-  })
+  });
 }

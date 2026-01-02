@@ -232,12 +232,12 @@ const nextConfig: NextConfig = {
     redirects.push(
       {
         source: "/building/:path*",
-        destination: "https://sim.ai/studio/:path*",
+        destination: "https://ethana.ai/studio/:path*",
         permanent: true,
       },
       {
         source: "/blog/:path*",
-        destination: "https://sim.ai/studio/:path*",
+        destination: "https://ethana.ai/studio/:path*",
         permanent: true,
       }
     );
@@ -261,13 +261,13 @@ const nextConfig: NextConfig = {
       redirects.push(
         {
           source: "/((?!api|_next|_vercel|favicon|static|ingest|.*\\..*).*)",
-          destination: "https://www.sim.ai/$1",
+          destination: "https://www.ethana.ai/$1",
           permanent: true,
           has: [{ type: "host" as const, value: "simstudio.ai" }],
         },
         {
           source: "/((?!api|_next|_vercel|favicon|static|ingest|.*\\..*).*)",
-          destination: "https://www.sim.ai/$1",
+          destination: "https://www.ethana.ai/$1",
           permanent: true,
           has: [{ type: "host" as const, value: "www.simstudio.ai" }],
         }

@@ -33,7 +33,7 @@ from simstudio import SimStudioClient
 # Initialize the client
 client = SimStudioClient(
     api_key="your-api-key-here",
-    base_url="https://sim.ai"  # optional, defaults to https://sim.ai
+    base_url="https://ethana.ai"  # optional, defaults to https://ethana.ai
 )
 
 # Execute a workflow
@@ -51,7 +51,7 @@ except Exception as error:
 #### Konstruktor
 
 ```python
-SimStudioClient(api_key: str, base_url: str = "https://sim.ai")
+SimStudioClient(api_key: str, base_url: str = "https://ethana.ai")
 ```
 
 **Parameter:**
@@ -658,7 +658,7 @@ def stream_workflow():
 
     def generate():
         response = requests.post(
-            'https://sim.ai/api/workflows/WORKFLOW_ID/execute',
+            'https://ethana.ai/api/workflows/WORKFLOW_ID/execute',
             headers={
                 'Content-Type': 'application/json',
                 'X-API-Key': os.getenv('ETHANA_AGENT_BUILDER_KEY')
@@ -713,7 +713,7 @@ Konfiguriere den Client mit Umgebungsvariablen:
     # Development configuration
     client = SimStudioClient(
         api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")
-        base_url=os.getenv("SIM_BASE_URL", "https://sim.ai")
+        base_url=os.getenv("SIM_BASE_URL", "https://ethana.ai")
     )
     ```
 
@@ -731,7 +731,7 @@ Konfiguriere den Client mit Umgebungsvariablen:
 
     client = SimStudioClient(
         api_key=api_key,
-        base_url=os.getenv("SIM_BASE_URL", "https://sim.ai")
+        base_url=os.getenv("SIM_BASE_URL", "https://ethana.ai")
     )
     ```
 
@@ -742,7 +742,7 @@ Konfiguriere den Client mit Umgebungsvariablen:
 
 <Steps>
   <Step title="Bei Sim anmelden">
-    Navigiere zu [Sim](https://sim.ai) und melde dich bei deinem Konto an.
+    Navigiere zu [Sim](https://ethana.ai) und melde dich bei deinem Konto an.
   </Step>
   <Step title="Öffne deinen Workflow">
     Navigiere zu dem Workflow, den du programmatisch ausführen möchtest.
