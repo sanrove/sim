@@ -18,6 +18,12 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.user.id
+    const organizationId = (session as any)?.session?.activeOrganizationId
+
+    if (!organizationId) {
+      logger.warn(`No active organization for user ${userId}`)
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
 
     const keys = await db
       .select({
@@ -29,7 +35,13 @@ export async function GET(request: NextRequest) {
         expiresAt: apiKey.expiresAt,
       })
       .from(apiKey)
-      .where(and(eq(apiKey.userId, userId), eq(apiKey.type, 'personal')))
+      .where(
+        and(
+          eq(apiKey.userId, userId),
+          eq(apiKey.type, 'personal'),
+          eq(apiKey.organizationId, organizationId)
+        )
+      )
       .orderBy(apiKey.createdAt)
 
     const maskedKeys = await Promise.all(
@@ -59,6 +71,13 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id
+    const organizationId = (session as any)?.session?.activeOrganizationId
+
+    if (!organizationId) {
+      logger.warn(`No active organization for user ${userId}`)
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
+
     const body = await request.json()
 
     const { name: rawName } = body
@@ -74,7 +93,14 @@ export async function POST(request: NextRequest) {
     const existingKey = await db
       .select()
       .from(apiKey)
-      .where(and(eq(apiKey.userId, userId), eq(apiKey.name, name), eq(apiKey.type, 'personal')))
+      .where(
+        and(
+          eq(apiKey.userId, userId),
+          eq(apiKey.name, name),
+          eq(apiKey.type, 'personal'),
+          eq(apiKey.organizationId, organizationId)
+        )
+      )
       .limit(1)
 
     if (existingKey.length > 0) {
@@ -97,6 +123,7 @@ export async function POST(request: NextRequest) {
       .values({
         id: nanoid(),
         userId,
+        organizationId,
         workspaceId: null,
         name,
         key: encryptedKey,
