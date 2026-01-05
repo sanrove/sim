@@ -116,6 +116,63 @@ function handleBodySizeLimitError(error: unknown, requestId: string, context: st
 }
 
 /**
+ * Creates a serializable version of ExecutionContext by removing non-JSON-safe properties
+ * like Maps, Sets, and circular references (workflow schema objects)
+ * @param context - The execution context to serialize
+ * @returns A plain object that can be safely stringified
+ */
+function serializeExecutionContext(context?: ExecutionContext): Record<string, any> | undefined {
+  if (!context) return undefined
+
+  return {
+    workflowId: context.workflowId,
+    workspaceId: context.workspaceId,
+    executionId: context.executionId,
+    userId: context.userId,
+    isDeployedContext: context.isDeployedContext,
+    environmentVariables: context.environmentVariables,
+    workflowVariables: context.workflowVariables,
+    stream: context.stream,
+    selectedOutputs: context.selectedOutputs,
+    // Omit non-serializable properties:
+    // - blockStates (ReadonlyMap)
+    // - executedBlocks (ReadonlySet)
+    // - decisions (Maps)
+    // - completedLoops (Set)
+    // - loopExecutions (Map)
+    // - parallelExecutions (Map)
+    // - parallelBlockMapping (Map)
+    // - activeExecutionPath (Set)
+    // - workflow (may contain Drizzle schema objects)
+    // - callback functions
+  }
+}
+
+/**
+ * Safely stringifies an object, catching circular reference errors
+ * @param obj - The object to stringify
+ * @param requestId - Request ID for logging
+ * @param context - Context string for logging
+ * @returns JSON string or throws a user-friendly error
+ */
+function safeStringify(obj: any, requestId: string, context: string): string {
+  try {
+    return JSON.stringify(obj)
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('circular')) {
+      logger.error(`[${requestId}] Circular reference detected in ${context}:`, {
+        error: error.message,
+        keys: Object.keys(obj || {}),
+      })
+      throw new Error(
+        `Unable to serialize data for ${context}. The data contains circular references or non-serializable objects.`
+      )
+    }
+    throw error
+  }
+}
+
+/**
  * System parameters that should be filtered out when extracting tool arguments
  * These are internal parameters used by the execution framework, not tool inputs
  */
@@ -278,7 +335,8 @@ export async function executeTool(
         const tokenHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
         if (typeof window === 'undefined') {
           try {
-            const internalToken = await generateInternalToken()
+            const userId = contextParams._context?.userId || executionContext?.userId
+            const internalToken = await generateInternalToken(userId)
             tokenHeaders.Authorization = `Bearer ${internalToken}`
           } catch (_e) {
             // Swallow token generation errors; the request will fail and be reported upstream
@@ -561,23 +619,25 @@ function isErrorResponse(
  * @param isInternalRoute - Whether the target URL is an internal route
  * @param requestId - Request ID for logging
  * @param context - Context string for logging (e.g., toolId or 'proxy')
+ * @param userId - Optional userId to embed in token for tenant resolution
  */
 async function addInternalAuthIfNeeded(
   headers: Headers | Record<string, string>,
   isInternalRoute: boolean,
   requestId: string,
-  context: string
+  context: string,
+  userId?: string
 ): Promise<void> {
   if (typeof window === 'undefined') {
     if (isInternalRoute) {
       try {
-        const internalToken = await generateInternalToken()
+        const internalToken = await generateInternalToken(userId)
         if (headers instanceof Headers) {
           headers.set('Authorization', `Bearer ${internalToken}`)
         } else {
           headers.Authorization = `Bearer ${internalToken}`
         }
-        logger.info(`[${requestId}] Added internal auth token for ${context}`)
+        logger.info(`[${requestId}] Added internal auth token for ${context}`, { hasUserId: !!userId })
       } catch (error) {
         logger.error(`[${requestId}] Failed to generate internal token for ${context}:`, error)
       }
@@ -609,8 +669,12 @@ async function handleInternalRequest(
 
     if (isInternalRoute) {
       const workflowId = params._context?.workflowId
+      const workspaceId = params._context?.workspaceId
       if (workflowId) {
         fullUrlObj.searchParams.set('workflowId', workflowId)
+      }
+      if (workspaceId) {
+        fullUrlObj.searchParams.set('workspaceId', workspaceId)
       }
     }
 
@@ -644,7 +708,8 @@ async function handleInternalRequest(
     }
 
     const headers = new Headers(requestParams.headers)
-    await addInternalAuthIfNeeded(headers, isInternalRoute, requestId, toolId)
+    const userId = params._context?.userId
+    await addInternalAuthIfNeeded(headers, isInternalRoute, requestId, toolId, userId)
 
     // Check request body size before sending to detect potential size limit issues
     validateRequestBodySize(requestParams.body, requestId, toolId)
@@ -862,7 +927,15 @@ async function handleProxyRequest(
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     await addInternalAuthIfNeeded(headers, true, requestId, `proxy:${toolId}`)
 
-    const body = JSON.stringify({ toolId, params, executionContext })
+    const body = safeStringify(
+      { 
+        toolId, 
+        params, 
+        executionContext: serializeExecutionContext(executionContext) 
+      },
+      requestId,
+      `proxy:${toolId}`
+    )
 
     // Check request body size before sending
     validateRequestBodySize(body, requestId, `proxy:${toolId}`)
@@ -1027,7 +1100,7 @@ async function executeMcpTool(
       requestBody.toolSchema = toolSchema
     }
 
-    const body = JSON.stringify(requestBody)
+    const body = safeStringify(requestBody, actualRequestId, `mcp:${toolId}`)
 
     // Check request body size before sending
     validateRequestBodySize(body, actualRequestId, `mcp:${toolId}`)
