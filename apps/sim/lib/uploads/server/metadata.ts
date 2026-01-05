@@ -1,6 +1,7 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase } from '@sim/db'
 import { workspaceFiles } from '@sim/db/schema'
 import { and, eq } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { createLogger } from '@/lib/logs/console/logger'
 import type { StorageContext } from '../shared/types'
 
@@ -27,6 +28,7 @@ export interface FileMetadataInsertOptions {
   contentType: string
   size: number
   id?: string // Optional - will generate UUID if not provided
+  tenantDb?: PostgresJsDatabase<any> // Optional tenant database
 }
 
 export interface FileMetadataQueryOptions {
@@ -42,9 +44,10 @@ export interface FileMetadataQueryOptions {
 export async function insertFileMetadata(
   options: FileMetadataInsertOptions
 ): Promise<FileMetadataRecord> {
-  const { key, userId, workspaceId, context, originalName, contentType, size, id } = options
+  const { key, userId, workspaceId, context, originalName, contentType, size, id, tenantDb } = options
+  const database = tenantDb || db
 
-  const existing = await db
+  const existing = await database
     .select()
     .from(workspaceFiles)
     .where(eq(workspaceFiles.key, key))
@@ -67,7 +70,7 @@ export async function insertFileMetadata(
   const fileId = id || (await import('uuid')).v4()
 
   try {
-    await db.insert(workspaceFiles).values({
+    await database.insert(workspaceFiles).values({
       id: fileId,
       key,
       userId,
@@ -95,7 +98,7 @@ export async function insertFileMetadata(
       (error as any)?.code === '23505' ||
       (error instanceof Error && error.message.includes('unique'))
     ) {
-      const existingAfterError = await db
+      const existingAfterError = await database
         .select()
         .from(workspaceFiles)
         .where(eq(workspaceFiles.key, key))
