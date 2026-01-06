@@ -25,9 +25,8 @@ export async function POST(request: NextRequest) {
     const authResult = await checkHybridAuth(request, { requireWorkflowId: false })
 
     if (!authResult.success || !authResult.userId) {
-      const errorMessage = workflowId ? 'Workflow not found' : authResult.error || 'Unauthorized'
-      const statusCode = workflowId ? 404 : 401
-      return NextResponse.json({ success: false, error: errorMessage }, { status: statusCode })
+      const errorMessage = authResult.error || 'Unauthorized'
+      return NextResponse.json({ success: false, error: errorMessage }, { status: 401 })
     }
 
     const userId = authResult.userId

@@ -37,6 +37,7 @@ const ExecuteWorkflowSchema = z.object({
   useDraftState: z.boolean().optional(),
   input: z.any().optional(),
   isClientSession: z.boolean().optional(),
+  workspaceId: z.string().optional(),
   workflowStateOverride: z
     .object({
       blocks: z.record(z.any()),
@@ -211,6 +212,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       useDraftState,
       input: validatedInput,
       isClientSession = false,
+      workspaceId: providedWorkspaceId,
       workflowStateOverride,
     } = validation.data
 
@@ -279,6 +281,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       loggingSession,
       organizationId: auth.organizationId,
       tenantId: auth.tenantId,
+      providedWorkspaceId,
     })
 
     if (!preprocessResult.success) {
@@ -291,11 +294,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const actorUserId = preprocessResult.actorUserId!
     const workflow = preprocessResult.workflowRecord!
 
-    if (!workflow.workspaceId) {
+    // Use provided workspaceId as fallback if workflow doesn't have one
+    const workspaceId = workflow.workspaceId || providedWorkspaceId
+    
+    if (!workspaceId) {
       logger.error(`[${requestId}] Workflow ${workflowId} has no workspaceId`)
       return NextResponse.json({ error: 'Workflow has no associated workspace' }, { status: 500 })
     }
-    const workspaceId = workflow.workspaceId
 
     // Get tenant database if available
     let tenantDb: any = undefined
