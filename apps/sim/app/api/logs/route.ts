@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import {
   pausedExecutions,
   permissions,
@@ -35,6 +35,27 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.user.id
+
+    // Get tenant database
+    let tenantDb: any = db
+    try {
+      // Get user's organization to determine tenant
+      const [userOrg] = await db
+        .select({ tenantId: organization.tenantId })
+        .from(organization)
+        .innerJoin(permissions, eq(permissions.entityId, organization.id))
+        .where(and(eq(permissions.userId, userId), eq(permissions.entityType, 'organization')))
+        .limit(1)
+
+      if (userOrg?.tenantId) {
+        tenantDb = await getTenantDatabase(userOrg.tenantId)
+        logger.debug(`[${requestId}] Using tenant database for logs query`, {
+          tenantId: userOrg.tenantId,
+        })
+      }
+    } catch (error) {
+      logger.warn(`[${requestId}] Failed to get tenant database, using default`, { error })
+    }
 
     try {
       const { searchParams } = new URL(request.url)
@@ -105,7 +126,7 @@ export async function GET(request: NextRequest) {
 
       const workspaceFilter = eq(workflowExecutionLogs.workspaceId, params.workspaceId)
 
-      const baseQuery = db
+      const baseQuery = tenantDb
         .select(selectColumns)
         .from(workflowExecutionLogs)
         .leftJoin(
@@ -183,7 +204,7 @@ export async function GET(request: NextRequest) {
         .limit(params.limit)
         .offset(params.offset)
 
-      const countQuery = db
+      const countQuery = tenantDb
         .select({ count: sql<number>`count(*)` })
         .from(workflowExecutionLogs)
         .leftJoin(

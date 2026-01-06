@@ -49,40 +49,60 @@ export const searchTool: ToolConfig<DuckDuckGoSearchParams, DuckDuckGoSearchResp
   transformResponse: async (response: Response) => {
     const data = await response.json()
 
-    // Map related topics
-    const relatedTopics = (data.RelatedTopics || []).map((topic: any) => ({
-      FirstURL: topic.FirstURL,
-      Text: topic.Text,
-      Result: topic.Result,
+    // Helper to map a single topic
+    const mapTopic = (topic: any) => ({
+      FirstURL: topic.FirstURL || '',
+      Text: topic.Text || '',
+      Result: topic.Result || '',
       Icon: topic.Icon
         ? {
-            URL: topic.Icon.URL,
-            Height: topic.Icon.Height,
-            Width: topic.Icon.Width,
+            URL: topic.Icon.URL || '',
+            Height: topic.Icon.Height || '',
+            Width: topic.Icon.Width || '',
           }
         : undefined,
-    }))
+    })
+
+    // Map related topics - handle both flat topics and nested category groups
+    const relatedTopics: any[] = []
+    for (const item of data.RelatedTopics || []) {
+      if (item.Topics && Array.isArray(item.Topics)) {
+        // This is a category group (e.g., "Art, entertainment, and media")
+        for (const nestedTopic of item.Topics) {
+          if (nestedTopic.FirstURL) {
+            relatedTopics.push({
+              ...mapTopic(nestedTopic),
+              Category: item.Name || '',
+            })
+          }
+        }
+      } else if (item.FirstURL) {
+        // This is a flat topic
+        relatedTopics.push(mapTopic(item))
+      }
+    }
 
     // Map results (external links)
-    const results = (data.Results || []).map((result: any) => ({
-      FirstURL: result.FirstURL,
-      Text: result.Text,
-      Result: result.Result,
-      Icon: result.Icon
-        ? {
-            URL: result.Icon.URL,
-            Height: result.Icon.Height,
-            Width: result.Icon.Width,
-          }
-        : undefined,
-    }))
+    const results = (data.Results || []).map((result: any) => mapTopic(result))
+
+    // Build abstract - use the first related topic's text if abstract is empty (disambiguation)
+    let abstract = data.Abstract || ''
+    let abstractText = data.AbstractText || ''
+    
+    // For disambiguation queries (Type: D), create a summary from related topics
+    if (!abstract && data.Type === 'D' && relatedTopics.length > 0) {
+      const topTopics = relatedTopics.slice(0, 5)
+      abstract = `Multiple meanings found for "${data.Heading}": ` + 
+        topTopics.map(t => t.Text.split(' ').slice(0, 10).join(' ')).join('; ')
+      abstractText = abstract
+    }
 
     return {
       success: true,
       output: {
         heading: data.Heading || '',
-        abstract: data.Abstract || '',
-        abstractText: data.AbstractText || '',
+        abstract,
+        abstractText,
         abstractSource: data.AbstractSource || '',
         abstractURL: data.AbstractURL || '',
         image: data.Image || '',

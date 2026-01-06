@@ -69,7 +69,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const isChatExecution = result.metadata?.source === 'chat'
 
       const triggerType = isChatExecution ? 'chat' : 'manual'
-      const loggingSession = new LoggingSession(id, executionId, triggerType, requestId)
+      const loggingSession = new LoggingSession(
+        id,
+        executionId,
+        triggerType,
+        requestId,
+        undefined, // tenantId - could be extracted from tenantDb if needed
+        tenantDb
+      )
 
       const userId = accessValidation.workflow.userId
       const workspaceId = accessValidation.workflow.workspaceId

@@ -33,8 +33,8 @@ export function createEnvironmentObject(
   }
 }
 
-export async function loadWorkflowStateForExecution(workflowId: string): Promise<WorkflowState> {
-  const normalizedData = await loadWorkflowFromNormalizedTables(workflowId)
+export async function loadWorkflowStateForExecution(workflowId: string, tenantDb?: any): Promise<WorkflowState> {
+  const normalizedData = await loadWorkflowFromNormalizedTables(workflowId, tenantDb)
 
   if (!normalizedData) {
     throw new Error(
@@ -56,9 +56,10 @@ export async function loadWorkflowStateForExecution(workflowId: string): Promise
  * the exact state that was executed (not the live editor state).
  */
 export async function loadDeployedWorkflowStateForLogging(
-  workflowId: string
+  workflowId: string,
+  tenantDb?: any
 ): Promise<WorkflowState> {
-  const deployedData = await loadDeployedWorkflowState(workflowId)
+  const deployedData = await loadDeployedWorkflowState(workflowId, tenantDb)
 
   return {
     blocks: deployedData.blocks || {},

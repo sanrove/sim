@@ -83,6 +83,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
     environment: ExecutionEnvironment
     workflowState: WorkflowState
     deploymentVersionId?: string
+    tenantDb?: any
   }): Promise<{
     workflowLog: WorkflowExecutionLog
     snapshot: WorkflowExecutionSnapshot
@@ -95,12 +96,15 @@ export class ExecutionLogger implements IExecutionLoggerService {
       environment,
       workflowState,
       deploymentVersionId,
+      tenantDb,
     } = params
+
+    const dbToUse = tenantDb || db
 
     logger.debug(`Starting workflow execution ${executionId} for workflow ${workflowId}`)
 
     // Check if execution log already exists (idempotency check)
-    const existingLog = await db
+    const existingLog = await dbToUse
       .select()
       .from(workflowExecutionLogs)
       .where(eq(workflowExecutionLogs.executionId, executionId))
@@ -110,7 +114,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
       logger.debug(
         `Execution log already exists for ${executionId}, skipping duplicate INSERT (idempotent)`
       )
-      const snapshot = await snapshotService.getSnapshot(existingLog[0].stateSnapshotId)
+      const snapshot = await snapshotService.getSnapshot(existingLog[0].stateSnapshotId, dbToUse)
       if (!snapshot) {
         throw new Error(`Snapshot ${existingLog[0].stateSnapshotId} not found for existing log`)
       }
@@ -134,12 +138,13 @@ export class ExecutionLogger implements IExecutionLoggerService {
 
     const snapshotResult = await snapshotService.createSnapshotWithDeduplication(
       workflowId,
-      workflowState
+      workflowState,
+      dbToUse
     )
 
     const startTime = new Date()
 
-    const [workflowLog] = await db
+    const [workflowLog] = await dbToUse
       .insert(workflowExecutionLogs)
       .values({
         id: uuidv4(),
@@ -210,6 +215,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
     isResume?: boolean
     level?: 'info' | 'error'
     status?: 'completed' | 'failed' | 'cancelled'
+    tenantDb?: any
   }): Promise<WorkflowExecutionLog> {
     const {
       executionId,
@@ -222,14 +228,17 @@ export class ExecutionLogger implements IExecutionLoggerService {
       isResume,
       level: levelOverride,
       status: statusOverride,
+      tenantDb,
     } = params
+
+    const dbToUse = tenantDb || db
 
     logger.debug(`Completing workflow execution ${executionId}`, { isResume })
 
     // If this is a resume, fetch the existing log to merge data
     let existingLog: any = null
     if (isResume) {
-      const [existing] = await db
+      const [existing] = await dbToUse
         .select()
         .from(workflowExecutionLogs)
         .where(eq(workflowExecutionLogs.executionId, executionId))
@@ -309,7 +318,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
         ? new Date(endedAt).getTime() - new Date(existingLog.startedAt).getTime()
         : totalDurationMs
 
-    const [updatedLog] = await db
+    const [updatedLog] = await dbToUse
       .update(workflowExecutionLogs)
       .set({
         level,
@@ -337,9 +346,9 @@ export class ExecutionLogger implements IExecutionLoggerService {
     }
 
     try {
-      const [wf] = await db.select().from(workflow).where(eq(workflow.id, updatedLog.workflowId))
+      const [wf] = await dbToUse.select().from(workflow).where(eq(workflow.id, updatedLog.workflowId))
       if (wf) {
-        const [usr] = await db
+        const [usr] = await dbToUse
           .select({ id: userTable.id, email: userTable.email, name: userTable.name })
           .from(userTable)
           .where(eq(userTable.id, wf.userId))
@@ -361,7 +370,8 @@ export class ExecutionLogger implements IExecutionLoggerService {
               updatedLog.workflowId,
               costSummary,
               updatedLog.trigger as ExecutionTrigger['type'],
-              executionId
+              executionId,
+              dbToUse
             )
 
             const limit = before.usageData.limit
@@ -526,8 +536,11 @@ export class ExecutionLogger implements IExecutionLoggerService {
       >
     },
     trigger: ExecutionTrigger['type'],
-    executionId?: string
+    executionId?: string,
+    tenantDb?: any
   ): Promise<void> {
+    const dbToUse = tenantDb || db
+    
     if (!isBillingEnabled) {
       logger.debug('Billing is disabled, skipping user stats cost update')
       return
@@ -540,7 +553,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
 
     try {
       // Get the workflow record to get the userId
-      const [workflowRecord] = await db
+      const [workflowRecord] = await dbToUse
         .select()
         .from(workflow)
         .where(eq(workflow.id, workflowId))
@@ -554,7 +567,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
       const userId = workflowRecord.userId
       const costToStore = costSummary.totalCost
 
-      const existing = await db.select().from(userStats).where(eq(userStats.userId, userId))
+      const existing = await dbToUse.select().from(userStats).where(eq(userStats.userId, userId))
       if (existing.length === 0) {
         logger.error('User stats record not found - should be created during onboarding', {
           userId,
@@ -589,7 +602,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
           break
       }
 
-      await db.update(userStats).set(updateFields).where(eq(userStats.userId, userId))
+      await dbToUse.update(userStats).set(updateFields).where(eq(userStats.userId, userId))
 
       logger.debug('Updated user stats record with cost data', {
         userId,

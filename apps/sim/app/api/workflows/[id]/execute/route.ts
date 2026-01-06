@@ -264,11 +264,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     ) {
       loggingTriggerType = triggerType as LoggingTriggerType
     }
+    
+    // Get tenant database early so it can be passed to logging session
+    let tenantDb: any = undefined
+    if (auth.tenantId) {
+      try {
+        const { getTenantDatabase } = await import('@sim/db')
+        tenantDb = await getTenantDatabase(auth.tenantId)
+        logger.info(`[${requestId}] Using tenant database for workflow execution`, {
+          tenantId: auth.tenantId,
+        })
+      } catch (error) {
+        logger.warn(`[${requestId}] Failed to get tenant database, using default`, {
+          error,
+          tenantId: auth.tenantId,
+        })
+      }
+    }
+    
     const loggingSession = new LoggingSession(
       workflowId,
       executionId,
       loggingTriggerType,
-      requestId
+      requestId,
+      auth.tenantId,
+      tenantDb
     )
 
     const preprocessResult = await preprocessExecution({
@@ -300,23 +320,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!workspaceId) {
       logger.error(`[${requestId}] Workflow ${workflowId} has no workspaceId`)
       return NextResponse.json({ error: 'Workflow has no associated workspace' }, { status: 500 })
-    }
-
-    // Get tenant database if available
-    let tenantDb: any = undefined
-    if (auth.tenantId) {
-      try {
-        const { getTenantDatabase } = await import('@sim/db')
-        tenantDb = await getTenantDatabase(auth.tenantId)
-        logger.info(`[${requestId}] Using tenant database for workflow execution`, {
-          tenantId: auth.tenantId,
-        })
-      } catch (error) {
-        logger.warn(`[${requestId}] Failed to get tenant database, using default`, {
-          error,
-          tenantId: auth.tenantId,
-        })
-      }
     }
 
     logger.info(`[${requestId}] Preprocessing passed`, {
