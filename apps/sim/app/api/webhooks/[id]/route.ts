@@ -152,7 +152,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         resolvedProviderConfig = await resolveEnvVarsInObject(
           providerConfig,
           session.user.id,
-          webhookDataForResolve[0].workspaceId || undefined
+          webhookDataForResolve[0].workspaceId || undefined,
+          tenantDb
         )
       }
     }
