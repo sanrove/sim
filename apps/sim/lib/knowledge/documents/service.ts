@@ -1,8 +1,9 @@
 import crypto, { randomUUID } from 'crypto'
-import { db } from '@sim/db'
+import { db, getTenantDatabase } from '@sim/db'
 import { document, embedding, knowledgeBase, knowledgeBaseTagDefinitions } from '@sim/db/schema'
 import { tasks } from '@trigger.dev/sdk'
 import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { env } from '@/lib/core/config/env'
 import { getStorageMethod, isRedisStorage } from '@/lib/core/storage'
 import { processDocument } from '@/lib/knowledge/documents/document-processor'
@@ -687,14 +688,16 @@ export async function createDocumentRecords(
   }>,
   knowledgeBaseId: string,
   requestId: string,
-  userId?: string
+  userId?: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<DocumentData[]> {
+  const database = tenantDb || db
   // Check storage limits before creating documents
   if (userId) {
     const totalSize = documents.reduce((sum, doc) => sum + doc.fileSize, 0)
 
     // Get knowledge base owner
-    const kb = await db
+    const kb = await database
       .select({ userId: knowledgeBase.userId })
       .from(knowledgeBase)
       .where(eq(knowledgeBase.id, knowledgeBaseId))
@@ -705,7 +708,7 @@ export async function createDocumentRecords(
     }
   }
 
-  return await db.transaction(async (tx) => {
+  return await database.transaction(async (tx) => {
     const now = new Date()
     const documentRecords = []
     const returnData: DocumentData[] = []
@@ -817,7 +820,8 @@ export async function getDocuments(
     sortBy?: DocumentSortField
     sortOrder?: SortOrder
   },
-  requestId: string
+  requestId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<{
   documents: Array<{
     id: string
@@ -872,6 +876,8 @@ export async function getDocuments(
     sortOrder = 'asc',
   } = options
 
+  const database = tenantDb || db
+
   // Build where conditions
   const whereConditions = [
     eq(document.knowledgeBaseId, knowledgeBaseId),
@@ -892,7 +898,7 @@ export async function getDocuments(
   }
 
   // Get total count for pagination
-  const totalResult = await db
+  const totalResult = await database
     .select({ count: sql<number>`COUNT(*)` })
     .from(document)
     .where(and(...whereConditions))
@@ -925,7 +931,7 @@ export async function getDocuments(
   const secondaryOrderBy =
     sortBy === 'filename' ? desc(document.uploadedAt) : asc(document.filename)
 
-  const documents = await db
+  const documents = await database
     .select({
       id: document.id,
       filename: document.filename,

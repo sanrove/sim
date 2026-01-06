@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { db, getTenantDatabase, organization } from '@sim/db'
+import { eq } from 'drizzle-orm'
 import { getSession } from '@/lib/auth'
 import {
   bulkDocumentOperation,
@@ -16,6 +18,21 @@ import { getUserId } from '@/app/api/auth/oauth/utils'
 import { checkKnowledgeBaseAccess, checkKnowledgeBaseWriteAccess } from '@/app/api/knowledge/utils'
 
 const logger = createLogger('DocumentsAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const CreateDocumentSchema = z.object({
   filename: z.string().min(1, 'Filename is required'),
@@ -76,7 +93,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const accessCheck = await checkKnowledgeBaseAccess(knowledgeBaseId, session.user.id)
+    const tenantDb = await getTenantDbFromSession(session)
+
+    const accessCheck = await checkKnowledgeBaseAccess(knowledgeBaseId, session.user.id, tenantDb)
 
     if (!accessCheck.hasAccess) {
       if ('notFound' in accessCheck && accessCheck.notFound) {
@@ -127,7 +146,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         ...(sortBy && { sortBy }),
         ...(sortOrder && { sortOrder }),
       },
-      requestId
+      requestId,
+      tenantDb
     )
 
     return NextResponse.json({
@@ -170,7 +190,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: errorMessage }, { status: statusCode })
     }
 
-    const accessCheck = await checkKnowledgeBaseWriteAccess(knowledgeBaseId, userId)
+    // Get tenant database
+    const session = await getSession()
+    const tenantDb = await getTenantDbFromSession(session)
+
+    const accessCheck = await checkKnowledgeBaseWriteAccess(knowledgeBaseId, userId, tenantDb)
 
     if (!accessCheck.hasAccess) {
       if ('notFound' in accessCheck && accessCheck.notFound) {
@@ -191,7 +215,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           validatedData.documents,
           knowledgeBaseId,
           requestId,
-          userId
+          userId,
+          tenantDb
         )
 
         logger.info(
@@ -316,7 +341,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const accessCheck = await checkKnowledgeBaseWriteAccess(knowledgeBaseId, session.user.id)
+    const tenantDb = await getTenantDbFromSession(session)
+
+    const accessCheck = await checkKnowledgeBaseWriteAccess(knowledgeBaseId, session.user.id, tenantDb)
 
     if (!accessCheck.hasAccess) {
       if ('notFound' in accessCheck && accessCheck.notFound) {
