@@ -140,6 +140,8 @@ export interface PreprocessExecutionResult {
   actorUserId?: string // The user ID that will be billed
   workflowRecord?: WorkflowRecord
   userSubscription?: SubscriptionInfo | null
+  tenantId?: string // The resolved tenant ID
+  tenantDb?: any // The tenant database connection
   rateLimitInfo?: {
     allowed: boolean
     remaining: number
@@ -535,6 +537,8 @@ export async function preprocessExecution(
     actorUserId,
     workflowRecord,
     userSubscription,
+    tenantId,
+    tenantDb,
     rateLimitInfo,
   }
 }

@@ -316,6 +316,7 @@ export async function executeWorkflowCore(
       executionId,
       workspaceId: providedWorkspaceId,
       userId,
+      tenantId: metadata.tenantId,
       isDeployedContext: triggerType !== 'manual',
       onBlockStart,
       onBlockComplete,

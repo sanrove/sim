@@ -6,6 +6,7 @@ export interface ContextExtensions {
   workspaceId?: string
   executionId?: string
   userId?: string
+  tenantId?: string
   stream?: boolean
   selectedOutputs?: string[]
   edges?: Array<{ source: string; target: string }>
