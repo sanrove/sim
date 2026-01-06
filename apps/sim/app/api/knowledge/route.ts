@@ -1,11 +1,28 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { db, getTenantDatabase, organization } from '@sim/db'
+import { eq } from 'drizzle-orm'
 import { getSession } from '@/lib/auth'
 import { generateRequestId } from '@/lib/core/utils/request'
 import { createKnowledgeBase, getKnowledgeBases } from '@/lib/knowledge/service'
 import { createLogger } from '@/lib/logs/console/logger'
 
 const logger = createLogger('KnowledgeBaseAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 /**
  * Schema for creating a knowledge base
@@ -57,10 +74,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const tenantDb = await getTenantDbFromSession(session)
+
     const { searchParams } = new URL(req.url)
     const workspaceId = searchParams.get('workspaceId')
 
-    const knowledgeBasesWithCounts = await getKnowledgeBases(session.user.id, workspaceId)
+    const knowledgeBasesWithCounts = await getKnowledgeBases(session.user.id, workspaceId, tenantDb)
 
     return NextResponse.json({
       success: true,
@@ -82,6 +101,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const tenantDb = await getTenantDbFromSession(session)
+
     const body = await req.json()
 
     try {
@@ -92,7 +113,7 @@ export async function POST(req: NextRequest) {
         userId: session.user.id,
       }
 
-      const newKnowledgeBase = await createKnowledgeBase(createData, requestId)
+      const newKnowledgeBase = await createKnowledgeBase(createData, requestId, tenantDb)
 
       logger.info(
         `[${requestId}] Knowledge base created: ${newKnowledgeBase.id} for user ${session.user.id}`

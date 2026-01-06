@@ -67,7 +67,8 @@ async function insertFileMetadataHelper(
   context: StorageContext,
   fileName: string,
   contentType: string,
-  fileSize: number
+  fileSize: number,
+  tenantDb?: any
 ): Promise<void> {
   const { insertFileMetadata } = await import('../server/metadata')
   await insertFileMetadata({
@@ -78,6 +79,7 @@ async function insertFileMetadataHelper(
     originalName: metadata.originalName || fileName,
     contentType,
     size: fileSize,
+    tenantDb,
   })
 }
 
@@ -85,7 +87,7 @@ async function insertFileMetadataHelper(
  * Upload a file to the configured storage provider with context-aware configuration
  */
 export async function uploadFile(options: UploadFileOptions): Promise<FileInfo> {
-  const { file, fileName, contentType, context, preserveKey, customKey, metadata } = options
+  const { file, fileName, contentType, context, preserveKey, customKey, metadata, tenantDb } = options
 
   logger.info(`Uploading file to ${context} storage: ${fileName}`)
 
@@ -112,7 +114,8 @@ export async function uploadFile(options: UploadFileOptions): Promise<FileInfo> 
         context,
         fileName,
         contentType,
-        file.length
+        file.length,
+        tenantDb
       )
     }
 
@@ -138,7 +141,8 @@ export async function uploadFile(options: UploadFileOptions): Promise<FileInfo> 
         context,
         fileName,
         contentType,
-        file.length
+        file.length,
+        tenantDb
       )
     }
 
@@ -164,7 +168,8 @@ export async function uploadFile(options: UploadFileOptions): Promise<FileInfo> 
       context,
       fileName,
       contentType,
-      file.length
+      file.length,
+      tenantDb
     )
   }
 

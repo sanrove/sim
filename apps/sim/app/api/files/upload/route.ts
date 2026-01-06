@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { db, getTenantDatabase, organization } from '@sim/db'
+import { eq } from 'drizzle-orm'
 import { createLogger } from '@/lib/logs/console/logger'
 import { sanitizeFileName } from '@/executor/constants'
 import '@/lib/uploads/core/setup.server'
@@ -12,6 +14,21 @@ import {
   createOptionsResponse,
   InvalidRequestError,
 } from '@/app/api/files/utils'
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const ALLOWED_EXTENSIONS = new Set([
   // Documents
@@ -139,10 +156,12 @@ export async function POST(request: NextRequest) {
         }
 
         if (workspaceId) {
+          const tenantDb = await getTenantDbFromSession(session)
           const permission = await getUserEntityPermissions(
             session.user.id,
             'workspace',
-            workspaceId
+            workspaceId,
+            tenantDb
           )
           if (permission === null) {
             return NextResponse.json(
@@ -169,6 +188,9 @@ export async function POST(request: NextRequest) {
           metadata.workspaceId = workspaceId
         }
 
+        // Get tenant database for file metadata insertion
+        const tenantDb = await getTenantDbFromSession(session)
+
         const fileInfo = await storageService.uploadFile({
           file: buffer,
           fileName: storageKey,
@@ -177,6 +199,7 @@ export async function POST(request: NextRequest) {
           preserveKey: true,
           customKey: storageKey,
           metadata,
+          tenantDb,
         })
 
         const finalPath = usingCloudStorage

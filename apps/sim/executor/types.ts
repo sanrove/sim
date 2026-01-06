@@ -149,6 +149,7 @@ export interface ExecutionContext {
   workspaceId?: string
   executionId?: string
   userId?: string
+  tenantId?: string
   isDeployedContext?: boolean
 
   blockStates: ReadonlyMap<string, BlockState>

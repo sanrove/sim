@@ -33,6 +33,7 @@ export interface UploadFileOptions {
   preserveKey?: boolean
   customKey?: string
   metadata?: Record<string, string>
+  tenantDb?: any // PostgresJsDatabase from drizzle-orm
 }
 
 export interface DownloadFileOptions {

@@ -37,6 +37,7 @@ const ExecuteWorkflowSchema = z.object({
   useDraftState: z.boolean().optional(),
   input: z.any().optional(),
   isClientSession: z.boolean().optional(),
+  workspaceId: z.string().optional(),
   workflowStateOverride: z
     .object({
       blocks: z.record(z.any()),
@@ -211,6 +212,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       useDraftState,
       input: validatedInput,
       isClientSession = false,
+      workspaceId: providedWorkspaceId,
       workflowStateOverride,
     } = validation.data
 
@@ -262,42 +264,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     ) {
       loggingTriggerType = triggerType as LoggingTriggerType
     }
-    const loggingSession = new LoggingSession(
-      workflowId,
-      executionId,
-      loggingTriggerType,
-      requestId
-    )
-
-    const preprocessResult = await preprocessExecution({
-      workflowId,
-      userId,
-      triggerType: loggingTriggerType,
-      executionId,
-      requestId,
-      checkDeployment: !shouldUseDraftState,
-      loggingSession,
-      organizationId: auth.organizationId,
-      tenantId: auth.tenantId,
-    })
-
-    if (!preprocessResult.success) {
-      return NextResponse.json(
-        { error: preprocessResult.error!.message },
-        { status: preprocessResult.error!.statusCode }
-      )
-    }
-
-    const actorUserId = preprocessResult.actorUserId!
-    const workflow = preprocessResult.workflowRecord!
-
-    if (!workflow.workspaceId) {
-      logger.error(`[${requestId}] Workflow ${workflowId} has no workspaceId`)
-      return NextResponse.json({ error: 'Workflow has no associated workspace' }, { status: 500 })
-    }
-    const workspaceId = workflow.workspaceId
-
-    // Get tenant database if available
+    
+    // Get tenant database early so it can be passed to logging session
     let tenantDb: any = undefined
     if (auth.tenantId) {
       try {
@@ -312,6 +280,46 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           tenantId: auth.tenantId,
         })
       }
+    }
+    
+    const loggingSession = new LoggingSession(
+      workflowId,
+      executionId,
+      loggingTriggerType,
+      requestId,
+      auth.tenantId,
+      tenantDb
+    )
+
+    const preprocessResult = await preprocessExecution({
+      workflowId,
+      userId,
+      triggerType: loggingTriggerType,
+      executionId,
+      requestId,
+      checkDeployment: !shouldUseDraftState,
+      loggingSession,
+      organizationId: auth.organizationId,
+      tenantId: auth.tenantId,
+      providedWorkspaceId,
+    })
+
+    if (!preprocessResult.success) {
+      return NextResponse.json(
+        { error: preprocessResult.error!.message },
+        { status: preprocessResult.error!.statusCode }
+      )
+    }
+
+    const actorUserId = preprocessResult.actorUserId!
+    const workflow = preprocessResult.workflowRecord!
+
+    // Use provided workspaceId as fallback if workflow doesn't have one
+    const workspaceId = workflow.workspaceId || providedWorkspaceId
+    
+    if (!workspaceId) {
+      logger.error(`[${requestId}] Workflow ${workflowId} has no workspaceId`)
+      return NextResponse.json({ error: 'Workflow has no associated workspace' }, { status: 500 })
     }
 
     logger.info(`[${requestId}] Preprocessing passed`, {
@@ -421,6 +429,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           startTime: new Date().toISOString(),
           isClientSession,
           workflowStateOverride: effectiveWorkflowStateOverride,
+          tenantId: auth.tenantId,
           tenantDb,
         }
 
@@ -692,6 +701,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             startTime: new Date().toISOString(),
             isClientSession,
             workflowStateOverride: effectiveWorkflowStateOverride,
+            tenantId: auth.tenantId,
             tenantDb,
           }
 
