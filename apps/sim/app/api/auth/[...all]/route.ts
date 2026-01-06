@@ -52,6 +52,24 @@ async function checkSSOSession(request: NextRequest) {
   }
 }
 
+// Delete SSO session from database
+async function deleteSSOSession(request: NextRequest): Promise<boolean> {
+  const cookieToken = request.cookies.get('better-auth.session_token')?.value
+  if (!cookieToken) return false
+  
+  // Hash the cookie token with SHA-256 (matching our SSO session creation)
+  const tokenHash = crypto.createHash('sha256').update(cookieToken).digest('hex')
+  
+  try {
+    // Delete the session from database
+    await db.delete(session).where(eq(session.token, tokenHash))
+    return true
+  } catch (error) {
+    console.error('Error deleting SSO session:', error)
+    return false
+  }
+}
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const path = url.pathname.replace('/api/auth/', '')
@@ -72,4 +90,35 @@ export async function GET(request: NextRequest) {
   return betterAuthGET(request)
 }
 
-export const POST = betterAuthPOST
+export async function POST(request: NextRequest) {
+  const url = new URL(request.url)
+  const path = url.pathname.replace('/api/auth/', '')
+
+  // Handle sign-out for SSO sessions
+  if (path === 'sign-out') {
+    // First, try to delete SSO session from database
+    await deleteSSOSession(request)
+    
+    // Create response that clears the cookie
+    const response = await betterAuthPOST(request)
+    
+    // Ensure cookie is cleared by setting it with maxAge 0
+    const newResponse = new NextResponse(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    })
+    
+    newResponse.cookies.set('better-auth.session_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    })
+    
+    return newResponse
+  }
+
+  return betterAuthPOST(request)
+}

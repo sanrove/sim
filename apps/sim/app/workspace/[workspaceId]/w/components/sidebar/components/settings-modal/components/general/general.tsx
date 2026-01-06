@@ -180,12 +180,35 @@ export function General({ onOpenChange }: GeneralProps) {
   }
 
   const handleSignOut = async () => {
+    const ethanaUrl = getEnv('NEXT_PUBLIC_ETHANA_URL') || 'http://localhost:3000'
+    
     try {
-      await Promise.all([signOut(), clearUserData()])
-      router.push('/login?fromLogout=true')
+      // Clear local user data first
+      await clearUserData()
+      
+      // Call the signOut function and wait for it to complete
+      // This will invalidate the session on the server
+      await signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            // Redirect to Ethana after successful sign out
+            window.location.href = ethanaUrl
+          },
+          onError: () => {
+            // Redirect to Ethana even on error
+            window.location.href = ethanaUrl
+          }
+        }
+      })
+      
+      // Fallback redirect in case callbacks don't fire
+      setTimeout(() => {
+        window.location.href = ethanaUrl
+      }, 1000)
     } catch (error) {
       logger.error('Error signing out:', { error })
-      router.push('/login?fromLogout=true')
+      // Still redirect to Ethana even on error
+      window.location.href = ethanaUrl
     }
   }
 
