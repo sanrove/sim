@@ -91,6 +91,8 @@ export async function executeWorkflowJob(payload: WorkflowExecutionPayload) {
       useDraftState: false,
       startTime: new Date().toISOString(),
       isClientSession: false,
+      tenantId: preprocessResult.tenantId,
+      tenantDb: preprocessResult.tenantDb,
     }
 
     const snapshot = new ExecutionSnapshot(

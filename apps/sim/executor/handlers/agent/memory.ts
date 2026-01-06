@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { db } from "@sim/db";
+import { db, getTenantDatabase } from "@sim/db";
 import { memory } from "@sim/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { createLogger } from "@/lib/logs/console/logger";
@@ -22,8 +22,10 @@ export class Memory {
 
     const workspaceId = this.requireWorkspaceId(ctx);
     this.validateConversationId(inputs.conversationId);
+    const database = await this.getDatabase(ctx);
 
     const messages = await this.fetchMemory(
+      database,
       workspaceId,
       String(inputs.conversationId!)
     );
@@ -65,10 +67,11 @@ export class Memory {
     const workspaceId = this.requireWorkspaceId(ctx);
     this.validateConversationId(inputs.conversationId);
     this.validateContent(message.content);
+    const database = await this.getDatabase(ctx);
 
     const key = String(inputs.conversationId!);
 
-    await this.appendMessage(workspaceId, key, message);
+    await this.appendMessage(database, workspaceId, key, message);
 
     logger.debug("Appended message to memory", {
       workspaceId,
@@ -94,6 +97,7 @@ export class Memory {
     }
 
     this.validateConversationId(inputs.conversationId);
+    const database = await this.getDatabase(ctx);
 
     const key = String(inputs.conversationId!);
 
@@ -116,7 +120,7 @@ export class Memory {
       );
     }
 
-    await this.seedMemoryRecord(workspaceId, key, messagesToStore);
+    await this.seedMemoryRecord(database, workspaceId, key, messagesToStore);
 
     logger.debug("Seeded memory", {
       workspaceId,
@@ -160,6 +164,28 @@ export class Memory {
       throw new Error("workspaceId is required for memory operations");
     }
     return ctx.workspaceId;
+  }
+
+  private async getDatabase(ctx: ExecutionContext) {
+    if (ctx.tenantId) {
+      try {
+        logger.debug("Getting tenant database", { tenantId: ctx.tenantId });
+        const tenantDb = await getTenantDatabase(ctx.tenantId);
+        logger.debug("Successfully retrieved tenant database", { tenantId: ctx.tenantId });
+        return tenantDb;
+      } catch (error) {
+        logger.error("Failed to get tenant database, falling back to default", {
+          tenantId: ctx.tenantId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return db;
+      }
+    }
+    logger.warn("No tenantId in context, using default database", {
+      workspaceId: ctx.workspaceId,
+      executionId: ctx.executionId,
+    });
+    return db;
   }
 
   private applyWindow(messages: Message[], limit: number): Message[] {
@@ -219,10 +245,11 @@ export class Memory {
   }
 
   private async fetchMemory(
+    database: any,
     workspaceId: string,
     key: string
   ): Promise<Message[]> {
-    const result = await db
+    const result = await database
       .select({ data: memory.data })
       .from(memory)
       .where(and(eq(memory.workspaceId, workspaceId), eq(memory.key, key)))
@@ -240,49 +267,100 @@ export class Memory {
   }
 
   private async seedMemoryRecord(
+    database: any,
     workspaceId: string,
     key: string,
     messages: Message[]
   ): Promise<void> {
     const now = new Date();
+    const id = randomUUID();
 
-    await db
-      .insert(memory)
-      .values({
-        id: randomUUID(),
+    try {
+      logger.debug("Attempting to seed memory record", {
         workspaceId,
         key,
-        data: messages,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .onConflictDoNothing();
+        messageCount: messages.length,
+        id,
+      });
+
+      await database
+        .insert(memory)
+        .values({
+          id,
+          workspaceId,
+          key,
+          data: messages,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing();
+
+      logger.debug("Successfully seeded memory record", {
+        workspaceId,
+        key,
+      });
+    } catch (error) {
+      logger.error("Failed to seed memory record", {
+        workspaceId,
+        key,
+        id,
+        messageCount: messages.length,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }
 
   private async appendMessage(
+    database: any,
     workspaceId: string,
     key: string,
     message: Message
   ): Promise<void> {
     const now = new Date();
+    const id = randomUUID();
 
-    await db
-      .insert(memory)
-      .values({
-        id: randomUUID(),
+    try {
+      logger.debug("Attempting to append message to memory", {
         workspaceId,
         key,
-        data: [message],
-        createdAt: now,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: [memory.workspaceId, memory.key],
-        set: {
-          data: sql`${memory.data} || ${JSON.stringify([message])}::jsonb`,
-          updatedAt: now,
-        },
+        messageRole: message.role,
+        id,
       });
+
+      await database
+        .insert(memory)
+        .values({
+          id,
+          workspaceId,
+          key,
+          data: [message],
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: [memory.workspaceId, memory.key],
+          set: {
+            data: sql`${memory.data} || ${JSON.stringify([message])}::jsonb`,
+            updatedAt: now,
+          },
+        });
+
+      logger.debug("Successfully appended message to memory", {
+        workspaceId,
+        key,
+      });
+    } catch (error) {
+      logger.error("Failed to append message to memory", {
+        workspaceId,
+        key,
+        id,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }
 
   private parsePositiveInt(
