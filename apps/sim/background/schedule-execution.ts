@@ -1,4 +1,4 @@
-import { db, workflow, workflowSchedule } from '@sim/db'
+import { db, getTenantDatabase, organization, workflow, workflowSchedule } from '@sim/db'
 import { task } from '@trigger.dev/sdk'
 import { Cron } from 'croner'
 import { eq } from 'drizzle-orm'
@@ -80,10 +80,11 @@ async function releaseScheduleLock(
 
 async function calculateNextRunFromDeployment(
   payload: ScheduleExecutionPayload,
-  requestId: string
+  requestId: string,
+  tenantDb?: any
 ) {
   try {
-    const deployedData = await loadDeployedWorkflowState(payload.workflowId)
+    const deployedData = await loadDeployedWorkflowState(payload.workflowId, tenantDb)
     return calculateNextRunTime(payload, deployedData.blocks as Record<string, BlockState>)
   } catch (error) {
     logger.warn(
@@ -189,6 +190,7 @@ async function runWorkflowExecution({
   requestId,
   executionId,
   EnvVarsSchema,
+  tenantDb,
 }: {
   payload: ScheduleExecutionPayload
   workflowRecord: WorkflowRecord
@@ -197,10 +199,11 @@ async function runWorkflowExecution({
   requestId: string
   executionId: string
   EnvVarsSchema: ZodRecord<ZodString, ZodString>
+  tenantDb?: any
 }): Promise<RunWorkflowResult> {
   try {
     logger.debug(`[${requestId}] Loading deployed workflow ${payload.workflowId}`)
-    const deployedData = await loadDeployedWorkflowState(payload.workflowId)
+    const deployedData = await loadDeployedWorkflowState(payload.workflowId, tenantDb)
 
     const blocks = deployedData.blocks
     const { deploymentVersionId } = deployedData
@@ -228,7 +231,8 @@ async function runWorkflowExecution({
 
     const { personalEncrypted, workspaceEncrypted } = await getPersonalAndWorkspaceEnv(
       personalEnvUserId,
-      workspaceId
+      workspaceId,
+      tenantDb
     )
 
     const variables = EnvVarsSchema.parse({
@@ -529,6 +533,22 @@ export async function executeScheduleJob(payload: ScheduleExecutionPayload) {
       return
     }
 
+    // Get tenant database if workflow is in a tenant organization
+    let tenantDb: any = undefined
+    if (preprocessResult.tenantId) {
+      try {
+        tenantDb = await getTenantDatabase(preprocessResult.tenantId)
+        logger.info(`[${requestId}] Using tenant database for schedule execution`, {
+          tenantId: preprocessResult.tenantId,
+        })
+      } catch (error) {
+        logger.warn(`[${requestId}] Failed to get tenant database, using default`, {
+          error,
+          tenantId: preprocessResult.tenantId,
+        })
+      }
+    }
+
     logger.info(`[${requestId}] Executing scheduled workflow ${payload.workflowId}`)
 
     try {
@@ -540,6 +560,7 @@ export async function executeScheduleJob(payload: ScheduleExecutionPayload) {
         requestId,
         executionId,
         EnvVarsSchema,
+        tenantDb,
       })
 
       if (executionResult.status === 'skip') {

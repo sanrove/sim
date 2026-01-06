@@ -291,7 +291,8 @@ export async function POST(request: NextRequest) {
     const resolvedProviderConfig = await resolveEnvVarsInObject(
       finalProviderConfig,
       userId,
-      workflowRecord.workspaceId || undefined
+      workflowRecord.workspaceId || undefined,
+      tenantDb
     )
 
     // Create external subscriptions before saving to DB to prevent orphaned records

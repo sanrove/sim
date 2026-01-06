@@ -44,7 +44,8 @@ export async function getEnvironmentVariableKeys(userId: string): Promise<{
 
 export async function getPersonalAndWorkspaceEnv(
   userId: string,
-  workspaceId?: string
+  workspaceId?: string,
+  tenantDb?: any
 ): Promise<{
   personalEncrypted: Record<string, string>
   workspaceEncrypted: Record<string, string>
@@ -52,10 +53,13 @@ export async function getPersonalAndWorkspaceEnv(
   workspaceDecrypted: Record<string, string>
   conflicts: string[]
 }> {
+  // Use tenant database for workspace environment if provided, otherwise use master db
+  const database = tenantDb || db
+  
   const [personalRows, workspaceRows] = await Promise.all([
     db.select().from(environment).where(eq(environment.userId, userId)).limit(1),
     workspaceId
-      ? db
+      ? database
           .select()
           .from(workspaceEnvironment)
           .where(eq(workspaceEnvironment.workspaceId, workspaceId))
@@ -99,11 +103,13 @@ export async function getPersonalAndWorkspaceEnv(
 
 export async function getEffectiveDecryptedEnv(
   userId: string,
-  workspaceId?: string
+  workspaceId?: string,
+  tenantDb?: any
 ): Promise<Record<string, string>> {
   const { personalDecrypted, workspaceDecrypted } = await getPersonalAndWorkspaceEnv(
     userId,
-    workspaceId
+    workspaceId,
+    tenantDb
   )
   return { ...personalDecrypted, ...workspaceDecrypted }
 }

@@ -169,7 +169,7 @@ export async function executeWorkflowCore(
     }
 
     const { personalEncrypted, workspaceEncrypted, personalDecrypted, workspaceDecrypted } =
-      await getPersonalAndWorkspaceEnv(personalEnvUserId, providedWorkspaceId)
+      await getPersonalAndWorkspaceEnv(personalEnvUserId, providedWorkspaceId, metadata.tenantDb)
 
     // Use encrypted values for logging (don't log decrypted secrets)
     const variables = EnvVarsSchema.parse({ ...personalEncrypted, ...workspaceEncrypted })
