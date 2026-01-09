@@ -2276,6 +2276,17 @@ export const auth = betterAuth({
   },
 });
 
+/**
+ * Get the current session and automatically set up tenant context
+ * 
+ * This function:
+ * 1. Gets the session (SSO or standard auth)
+ * 2. Resolves the tenant from the active organization
+ * 3. Sets up the tenant context so `db` automatically routes to tenant DB
+ * 
+ * After calling getSession(), all subsequent `db` operations in the same
+ * request will automatically use the tenant database.
+ */
 export async function getSession() {
   if (isAuthDisabled) {
     await ensureAnonymousUserExists();
@@ -2285,13 +2296,58 @@ export async function getSession() {
   // Check for SSO session first
   const ssoSession = await checkSSOSession();
   if (ssoSession) {
+    // Set up tenant context from SSO session
+    await setupTenantContext(ssoSession);
     return ssoSession;
   }
 
   const hdrs = await headers();
-  return await auth.api.getSession({
+  const session = await auth.api.getSession({
     headers: hdrs,
   });
+  
+  // Set up tenant context from session
+  if (session) {
+    await setupTenantContext(session);
+  }
+  
+  return session;
+}
+
+/**
+ * Set up tenant context based on session's active organization
+ * This enables automatic tenant DB routing for all subsequent db operations
+ */
+async function setupTenantContext(session: any) {
+  const { setCurrentTenant, getTenantDatabase, clearCurrentTenant } = await import("@sim/db");
+  
+  try {
+    const orgId = session?.session?.activeOrganizationId;
+    if (!orgId) {
+      clearCurrentTenant();
+      return;
+    }
+    
+    // Query master DB for organization (use masterDb explicitly)
+    const { masterDb, organization } = await import("@sim/db");
+    const orgRecord = await masterDb.query.organization.findFirst({
+      where: eq(organization.id, orgId),
+    });
+    
+    if (!orgRecord?.name?.startsWith("ModelFlow-")) {
+      clearCurrentTenant();
+      return;
+    }
+    
+    const tenantId = orgRecord.name.replace("ModelFlow-", "");
+    const tenantDb = await getTenantDatabase(tenantId);
+    setCurrentTenant(tenantId, tenantDb);
+    
+    logger.debug("[Auth] Tenant context set", { tenantId, orgId });
+  } catch (error) {
+    logger.error("[Auth] Failed to set up tenant context", { error });
+    clearCurrentTenant();
+  }
 }
 
 // Check for custom SSO session (created by ethana-sso)

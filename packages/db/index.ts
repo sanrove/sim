@@ -1,19 +1,18 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from './schema'
+import { initMasterDb, getCurrentDb } from './tenant-context'
 
 export * from './schema'
 export * from './tenant-db'
+export * from './tenant-context'
 
 /**
- * Default database connection (for backward compatibility)
- * 
- * NOTE: For per-tenant isolation, use getTenantDatabase(tenantId) from tenant-db.ts instead
- * This default connection is only used for:
+ * Master database connection
+ * Used for:
+ * - Auth/session operations (user, session, organization, member tables)
  * - Migration purposes
- * - Legacy code that hasn't been updated to use per-tenant databases
- * 
- * For SSO and new features, ALWAYS use getTenantDatabase(tenantId)
+ * - Operations that explicitly need master DB
  */
 const connectionString = process.env.DATABASE_URL!
 if (!connectionString) {
@@ -28,4 +27,28 @@ const postgresClient = postgres(connectionString, {
   onnotice: () => {},
 })
 
-export const db = drizzle(postgresClient, { schema })
+const masterDb = drizzle(postgresClient, { schema })
+
+// Initialize master DB in tenant context
+initMasterDb(masterDb)
+
+/**
+ * Default database export - TENANT-AWARE PROXY
+ * 
+ * This proxy automatically routes to:
+ * - Tenant DB: if setCurrentTenant() was called for this request
+ * - Master DB: if no tenant context is set
+ * 
+ * For explicit master DB access, use `masterDb` export.
+ * For explicit tenant DB access, use `getTenantDatabase(tenantId)`.
+ */
+export const db = new Proxy(masterDb, {
+  get(target, prop, receiver) {
+    // Get the appropriate database based on current context
+    const currentDb = getCurrentDb()
+    return Reflect.get(currentDb, prop, receiver)
+  }
+})
+
+// Also export masterDb for explicit master database access
+export { masterDb }
