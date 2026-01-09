@@ -1,11 +1,11 @@
-import { db } from '@sim/db'
-import { account, mcpServers } from '@sim/db/schema'
-import { and, eq, inArray, isNull } from 'drizzle-orm'
-import { createLogger } from '@/lib/logs/console/logger'
-import { createMcpToolId } from '@/lib/mcp/utils'
-import { refreshTokenIfNeeded } from '@/app/api/auth/oauth/utils'
-import { getAllBlocks } from '@/blocks'
-import type { BlockOutput } from '@/blocks/types'
+import { db } from "@sim/db";
+import { account, mcpServers } from "@sim/db/schema";
+import { and, eq, inArray, isNull } from "drizzle-orm";
+import { createLogger } from "@/lib/logs/console/logger";
+import { createMcpToolId } from "@/lib/mcp/utils";
+import { refreshTokenIfNeeded } from "@/app/api/auth/oauth/utils";
+import { getAllBlocks } from "@/blocks";
+import type { BlockOutput } from "@/blocks/types";
 import {
   AGENT,
   BlockType,
@@ -13,32 +13,44 @@ import {
   HTTP,
   REFERENCE,
   stripCustomToolPrefix,
-} from '@/executor/constants'
-import { memoryService } from '@/executor/handlers/agent/memory'
+} from "@/executor/constants";
+import { memoryService } from "@/executor/handlers/agent/memory";
 import type {
   AgentInputs,
   Message,
   StreamingConfig,
   ToolInput,
-} from '@/executor/handlers/agent/types'
-import type { BlockHandler, ExecutionContext, StreamingExecution } from '@/executor/types'
-import { collectBlockData } from '@/executor/utils/block-data'
-import { buildAPIUrl, buildAuthHeaders, extractAPIErrorMessage } from '@/executor/utils/http'
-import { stringifyJSON } from '@/executor/utils/json'
-import { executeProviderRequest } from '@/providers'
-import { getApiKey, getProviderFromModel, transformBlockTool } from '@/providers/utils'
-import type { SerializedBlock } from '@/serializer/types'
-import { executeTool } from '@/tools'
-import { getTool, getToolAsync } from '@/tools/utils'
+} from "@/executor/handlers/agent/types";
+import type {
+  BlockHandler,
+  ExecutionContext,
+  StreamingExecution,
+} from "@/executor/types";
+import { collectBlockData } from "@/executor/utils/block-data";
+import {
+  buildAPIUrl,
+  buildAuthHeaders,
+  extractAPIErrorMessage,
+} from "@/executor/utils/http";
+import { stringifyJSON } from "@/executor/utils/json";
+import { executeProviderRequest } from "@/providers";
+import {
+  getApiKey,
+  getProviderFromModel,
+  transformBlockTool,
+} from "@/providers/utils";
+import type { SerializedBlock } from "@/serializer/types";
+import { executeTool } from "@/tools";
+import { getTool, getToolAsync } from "@/tools/utils";
 
-const logger = createLogger('AgentBlockHandler')
+const logger = createLogger("AgentBlockHandler");
 
 /**
  * Handler for Agent blocks that process LLM requests with optional tools.
  */
 export class AgentBlockHandler implements BlockHandler {
   canHandle(block: SerializedBlock): boolean {
-    return block.metadata?.id === BlockType.AGENT
+    return block.metadata?.id === BlockType.AGENT;
   }
 
   async execute(
@@ -46,16 +58,51 @@ export class AgentBlockHandler implements BlockHandler {
     block: SerializedBlock,
     inputs: AgentInputs
   ): Promise<BlockOutput | StreamingExecution> {
-    // Filter out unavailable MCP tools early so they don't appear in logs/inputs
-    const filteredTools = await this.filterUnavailableMcpTools(ctx, inputs.tools || [])
-    const filteredInputs = { ...inputs, tools: filteredTools }
+    logger.info(`[AgentHandler] Starting agent execution`, {
+      blockId: block.id,
+      hasInputTools: !!inputs.tools,
+      inputToolsCount: inputs.tools?.length || 0,
+      inputToolsTypes: inputs.tools?.map((t) => t.type) || [],
+      inputToolsIsArray: Array.isArray(inputs.tools),
+      inputToolsKeys: inputs.tools ? Object.keys(inputs.tools) : [],
+      inputToolsActualValue: inputs.tools,
+      workspaceId: ctx.workspaceId,
+      workflowId: ctx.workflowId,
+      hasTenantDb: !!(ctx.metadata as any)?.tenantDb,
+    });
 
-    const responseFormat = this.parseResponseFormat(filteredInputs.responseFormat)
-    const model = filteredInputs.model || AGENT.DEFAULT_MODEL
-    const providerId = getProviderFromModel(model)
-    const formattedTools = await this.formatTools(ctx, filteredInputs.tools || [])
-    const streamingConfig = this.getStreamingConfig(ctx, block)
-    const messages = await this.buildMessages(ctx, filteredInputs)
+    // Filter out unavailable MCP tools early so they don't appear in logs/inputs
+    const filteredTools = await this.filterUnavailableMcpTools(
+      ctx,
+      inputs.tools || []
+    );
+    const filteredInputs = { ...inputs, tools: filteredTools };
+
+    logger.info(`[AgentHandler] After filtering MCP tools`, {
+      blockId: block.id,
+      originalToolsCount: inputs.tools?.length || 0,
+      filteredToolsCount: filteredTools.length,
+      filteredToolsTypes: filteredTools.map((t) => t.type),
+    });
+
+    const responseFormat = this.parseResponseFormat(
+      filteredInputs.responseFormat
+    );
+    const model = filteredInputs.model || AGENT.DEFAULT_MODEL;
+    const providerId = getProviderFromModel(model);
+    const formattedTools = await this.formatTools(
+      ctx,
+      filteredInputs.tools || []
+    );
+
+    logger.info(`[AgentHandler] After formatting tools`, {
+      blockId: block.id,
+      formattedToolsCount: formattedTools.length,
+      formattedToolNames: formattedTools.map((t) => t.name),
+    });
+
+    const streamingConfig = this.getStreamingConfig(ctx, block);
+    const messages = await this.buildMessages(ctx, filteredInputs);
 
     const providerRequest = this.buildProviderRequest({
       ctx,
@@ -66,7 +113,7 @@ export class AgentBlockHandler implements BlockHandler {
       formattedTools,
       responseFormat,
       streaming: streamingConfig.shouldUseStreaming ?? false,
-    })
+    });
 
     const result = await this.executeProviderRequest(
       ctx,
@@ -74,92 +121,137 @@ export class AgentBlockHandler implements BlockHandler {
       block,
       responseFormat,
       filteredInputs
-    )
+    );
 
     if (this.isStreamingExecution(result)) {
-      if (filteredInputs.memoryType && filteredInputs.memoryType !== 'none') {
+      if (filteredInputs.memoryType && filteredInputs.memoryType !== "none") {
         return this.wrapStreamForMemoryPersistence(
           ctx,
           filteredInputs,
           result as StreamingExecution
-        )
+        );
       }
-      return result
+      return result;
     }
 
-    if (filteredInputs.memoryType && filteredInputs.memoryType !== 'none') {
-      await this.persistResponseToMemory(ctx, filteredInputs, result as BlockOutput)
+    if (filteredInputs.memoryType && filteredInputs.memoryType !== "none") {
+      await this.persistResponseToMemory(
+        ctx,
+        filteredInputs,
+        result as BlockOutput
+      );
     }
 
-    return result
+    return result;
   }
 
   private parseResponseFormat(responseFormat?: string | object): any {
-    if (!responseFormat || responseFormat === '') return undefined
+    if (!responseFormat || responseFormat === "") return undefined;
 
-    if (typeof responseFormat === 'object' && responseFormat !== null) {
-      const formatObj = responseFormat as any
+    if (typeof responseFormat === "object" && responseFormat !== null) {
+      const formatObj = responseFormat as any;
       if (!formatObj.schema && !formatObj.name) {
         return {
-          name: 'response_schema',
+          name: "response_schema",
           schema: responseFormat,
           strict: true,
-        }
+        };
       }
-      return responseFormat
+      return responseFormat;
     }
 
-    if (typeof responseFormat === 'string') {
-      const trimmedValue = responseFormat.trim()
+    if (typeof responseFormat === "string") {
+      const trimmedValue = responseFormat.trim();
 
-      if (trimmedValue.startsWith(REFERENCE.START) && trimmedValue.includes(REFERENCE.END)) {
-        return undefined
+      if (
+        trimmedValue.startsWith(REFERENCE.START) &&
+        trimmedValue.includes(REFERENCE.END)
+      ) {
+        return undefined;
       }
 
       try {
-        const parsed = JSON.parse(trimmedValue)
+        const parsed = JSON.parse(trimmedValue);
 
-        if (parsed && typeof parsed === 'object' && !parsed.schema && !parsed.name) {
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          !parsed.schema &&
+          !parsed.name
+        ) {
           return {
-            name: 'response_schema',
+            name: "response_schema",
             schema: parsed,
             strict: true,
-          }
+          };
         }
-        return parsed
+        return parsed;
       } catch (error: any) {
-        logger.warn('Failed to parse response format as JSON, using default behavior:', {
-          error: error.message,
-          value: trimmedValue,
-        })
-        return undefined
+        logger.warn(
+          "Failed to parse response format as JSON, using default behavior:",
+          {
+            error: error.message,
+            value: trimmedValue,
+          }
+        );
+        return undefined;
       }
     }
 
-    logger.warn('Unexpected response format type, using default behavior:', {
+    logger.warn("Unexpected response format type, using default behavior:", {
       type: typeof responseFormat,
       value: responseFormat,
-    })
-    return undefined
+    });
+    return undefined;
   }
 
   private async filterUnavailableMcpTools(
     ctx: ExecutionContext,
     tools: ToolInput[]
   ): Promise<ToolInput[]> {
-    if (!Array.isArray(tools) || tools.length === 0) return tools
+    logger.debug(`[AgentHandler] Starting MCP tools filter`, {
+      totalTools: tools.length,
+      toolTypes: tools.map((t) => t.type),
+      workspaceId: ctx.workspaceId,
+    });
 
-    const mcpTools = tools.filter((t) => t.type === 'mcp')
-    if (mcpTools.length === 0) return tools
+    if (!Array.isArray(tools) || tools.length === 0) return tools;
 
-    const serverIds = [...new Set(mcpTools.map((t) => t.params?.serverId).filter(Boolean))]
-    if (serverIds.length === 0) return tools
+    const mcpTools = tools.filter((t) => t.type === "mcp");
+    logger.debug(`[AgentHandler] Found MCP tools`, {
+      mcpToolsCount: mcpTools.length,
+      totalTools: tools.length,
+    });
 
-    const availableServerIds = new Set<string>()
+    if (mcpTools.length === 0) return tools;
+
+    const serverIds = [
+      ...new Set(mcpTools.map((t) => t.params?.serverId).filter(Boolean)),
+    ];
+    logger.debug(`[AgentHandler] Extracted server IDs from MCP tools`, {
+      serverIds,
+      mcpToolsCount: mcpTools.length,
+    });
+
+    if (serverIds.length === 0) return tools;
+
+    const availableServerIds = new Set<string>();
     if (ctx.workspaceId && serverIds.length > 0) {
       try {
-        const servers = await db
-          .select({ id: mcpServers.id, connectionStatus: mcpServers.connectionStatus })
+        // Use tenant database if available, otherwise fall back to main db
+        const dbInstance = (ctx.metadata as any)?.tenantDb || db;
+        logger.info(`[AgentHandler] Checking MCP server availability`, {
+          workspaceId: ctx.workspaceId,
+          serverIds,
+          usingTenantDb: !!(ctx.metadata as any)?.tenantDb,
+          tenantId: ctx.tenantId,
+        });
+
+        const servers = await dbInstance
+          .select({
+            id: mcpServers.id,
+            connectionStatus: mcpServers.connectionStatus,
+          })
           .from(mcpServers)
           .where(
             and(
@@ -167,118 +259,166 @@ export class AgentBlockHandler implements BlockHandler {
               inArray(mcpServers.id, serverIds),
               isNull(mcpServers.deletedAt)
             )
-          )
+          );
+
+        logger.info(`[AgentHandler] MCP servers query result`, {
+          foundServers: servers.length,
+          servers: servers.map((s) => ({
+            id: s.id,
+            status: s.connectionStatus,
+          })),
+        });
 
         for (const server of servers) {
-          if (server.connectionStatus === 'connected') {
-            availableServerIds.add(server.id)
+          if (server.connectionStatus === "connected") {
+            availableServerIds.add(server.id);
           }
         }
+
+        logger.info(`[AgentHandler] MCP server availability check completed`, {
+          totalServers: serverIds.length,
+          connectedServers: availableServerIds.size,
+          workspaceId: ctx.workspaceId,
+          usingTenantDb: !!(ctx.metadata as any)?.tenantDb,
+          availableServerIds: Array.from(availableServerIds),
+        });
       } catch (error) {
-        logger.warn('Failed to check MCP server availability, including all tools:', error)
+        logger.warn(
+          "Failed to check MCP server availability, including all tools:",
+          error
+        );
         for (const serverId of serverIds) {
-          availableServerIds.add(serverId)
+          availableServerIds.add(serverId);
         }
       }
     }
 
-    return tools.filter((tool) => {
-      if (tool.type !== 'mcp') return true
-      const serverId = tool.params?.serverId
-      if (!serverId) return false
-      return availableServerIds.has(serverId)
-    })
+    const filtered = tools.filter((tool) => {
+      if (tool.type !== "mcp") return true;
+      const serverId = tool.params?.serverId;
+      if (!serverId) return false;
+      return availableServerIds.has(serverId);
+    });
+
+    logger.info(`[AgentHandler] Tools after availability filtering`, {
+      originalCount: tools.length,
+      filteredCount: filtered.length,
+      removedCount: tools.length - filtered.length,
+    });
+
+    return filtered;
   }
 
-  private async formatTools(ctx: ExecutionContext, inputTools: ToolInput[]): Promise<any[]> {
-    if (!Array.isArray(inputTools)) return []
+  private async formatTools(
+    ctx: ExecutionContext,
+    inputTools: ToolInput[]
+  ): Promise<any[]> {
+    if (!Array.isArray(inputTools)) return [];
 
     const filtered = inputTools.filter((tool) => {
-      const usageControl = tool.usageControl || 'auto'
-      return usageControl !== 'none'
-    })
+      const usageControl = tool.usageControl || "auto";
+      return usageControl !== "none";
+    });
 
-    const mcpTools: ToolInput[] = []
-    const otherTools: ToolInput[] = []
+    const mcpTools: ToolInput[] = [];
+    const otherTools: ToolInput[] = [];
 
     for (const tool of filtered) {
-      if (tool.type === 'mcp') {
-        mcpTools.push(tool)
+      if (tool.type === "mcp") {
+        mcpTools.push(tool);
       } else {
-        otherTools.push(tool)
+        otherTools.push(tool);
       }
     }
 
     const otherResults = await Promise.all(
       otherTools.map(async (tool) => {
         try {
-          if (tool.type === 'custom-tool' && (tool.schema || tool.customToolId)) {
-            return await this.createCustomTool(ctx, tool)
+          if (
+            tool.type === "custom-tool" &&
+            (tool.schema || tool.customToolId)
+          ) {
+            return await this.createCustomTool(ctx, tool);
           }
-          return this.transformBlockTool(ctx, tool)
+          return this.transformBlockTool(ctx, tool);
         } catch (error) {
-          logger.error(`[AgentHandler] Error creating tool:`, { tool, error })
-          return null
+          logger.error(`[AgentHandler] Error creating tool:`, { tool, error });
+          return null;
         }
       })
-    )
+    );
 
-    const mcpResults = await this.processMcpToolsBatched(ctx, mcpTools)
+    const mcpResults = await this.processMcpToolsBatched(ctx, mcpTools);
 
-    const allTools = [...otherResults, ...mcpResults]
+    const allTools = [...otherResults, ...mcpResults];
     return allTools.filter(
-      (tool): tool is NonNullable<typeof tool> => tool !== null && tool !== undefined
-    )
+      (tool): tool is NonNullable<typeof tool> =>
+        tool !== null && tool !== undefined
+    );
   }
 
-  private async createCustomTool(ctx: ExecutionContext, tool: ToolInput): Promise<any> {
-    const userProvidedParams = tool.params || {}
+  private async createCustomTool(
+    ctx: ExecutionContext,
+    tool: ToolInput
+  ): Promise<any> {
+    const userProvidedParams = tool.params || {};
 
-    let schema = tool.schema
-    let code = tool.code
-    let title = tool.title
+    let schema = tool.schema;
+    let code = tool.code;
+    let title = tool.title;
 
     if (tool.customToolId && !schema) {
-      const resolved = await this.fetchCustomToolById(ctx, tool.customToolId)
+      const resolved = await this.fetchCustomToolById(ctx, tool.customToolId);
       if (!resolved) {
-        logger.error(`Custom tool not found: ${tool.customToolId}`)
-        return null
+        logger.error(`Custom tool not found: ${tool.customToolId}`);
+        return null;
       }
-      schema = resolved.schema
-      code = resolved.code
-      title = resolved.title
+      schema = resolved.schema;
+      code = resolved.code;
+      title = resolved.title;
     }
 
     if (!schema?.function) {
-      logger.error('Custom tool missing schema:', { customToolId: tool.customToolId, title })
-      return null
+      logger.error("Custom tool missing schema:", {
+        customToolId: tool.customToolId,
+        title,
+      });
+      return null;
     }
 
-    const { filterSchemaForLLM, mergeToolParameters } = await import('@/tools/params')
+    const { filterSchemaForLLM, mergeToolParameters } = await import(
+      "@/tools/params"
+    );
 
-    const filteredSchema = filterSchemaForLLM(schema.function.parameters, userProvidedParams)
+    const filteredSchema = filterSchemaForLLM(
+      schema.function.parameters,
+      userProvidedParams
+    );
 
-    const toolId = `${AGENT.CUSTOM_TOOL_PREFIX}${title}`
+    const toolId = `${AGENT.CUSTOM_TOOL_PREFIX}${title}`;
     const base: any = {
       id: toolId,
       name: schema.function.name,
-      description: schema.function.description || '',
+      description: schema.function.description || "",
       params: userProvidedParams,
       parameters: {
         ...filteredSchema,
         type: schema.function.parameters.type,
       },
-      usageControl: tool.usageControl || 'auto',
-    }
+      usageControl: tool.usageControl || "auto",
+    };
 
     if (code) {
       base.executeFunction = async (callParams: Record<string, any>) => {
-        const mergedParams = mergeToolParameters(userProvidedParams, callParams)
+        const mergedParams = mergeToolParameters(
+          userProvidedParams,
+          callParams
+        );
 
-        const { blockData, blockNameMapping } = collectBlockData(ctx)
+        const { blockData, blockNameMapping } = collectBlockData(ctx);
 
         const result = await executeTool(
-          'function_execute',
+          "function_execute",
           {
             code,
             ...mergedParams,
@@ -296,16 +436,16 @@ export class AgentBlockHandler implements BlockHandler {
           false,
           false,
           ctx
-        )
+        );
 
         if (!result.success) {
-          throw new Error(result.error || 'Function execution failed')
+          throw new Error(result.error || "Function execution failed");
         }
-        return result.output
-      }
+        return result.output;
+      };
     }
 
-    return base
+    return base;
   }
 
   /**
@@ -315,65 +455,67 @@ export class AgentBlockHandler implements BlockHandler {
     ctx: ExecutionContext,
     customToolId: string
   ): Promise<{ schema: any; code: string; title: string } | null> {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        const { useCustomToolsStore } = await import('@/stores/custom-tools/store')
-        const tool = useCustomToolsStore.getState().getTool(customToolId)
+        const { useCustomToolsStore } = await import(
+          "@/stores/custom-tools/store"
+        );
+        const tool = useCustomToolsStore.getState().getTool(customToolId);
         if (tool) {
           return {
             schema: tool.schema,
-            code: tool.code || '',
+            code: tool.code || "",
             title: tool.title,
-          }
+          };
         }
-        logger.warn(`Custom tool not found in store: ${customToolId}`)
+        logger.warn(`Custom tool not found in store: ${customToolId}`);
       } catch (error) {
-        logger.error('Error accessing custom tools store:', { error })
+        logger.error("Error accessing custom tools store:", { error });
       }
     }
 
     try {
-      const headers = await buildAuthHeaders()
-      const params: Record<string, string> = {}
+      const headers = await buildAuthHeaders();
+      const params: Record<string, string> = {};
 
       if (ctx.workspaceId) {
-        params.workspaceId = ctx.workspaceId
+        params.workspaceId = ctx.workspaceId;
       }
       if (ctx.workflowId) {
-        params.workflowId = ctx.workflowId
+        params.workflowId = ctx.workflowId;
       }
 
-      const url = buildAPIUrl('/api/tools/custom', params)
+      const url = buildAPIUrl("/api/tools/custom", params);
       const response = await fetch(url.toString(), {
-        method: 'GET',
+        method: "GET",
         headers,
-      })
+      });
 
       if (!response.ok) {
-        logger.error(`Failed to fetch custom tools: ${response.status}`)
-        return null
+        logger.error(`Failed to fetch custom tools: ${response.status}`);
+        return null;
       }
 
-      const data = await response.json()
+      const data = await response.json();
       if (!data.data || !Array.isArray(data.data)) {
-        logger.error('Invalid custom tools API response')
-        return null
+        logger.error("Invalid custom tools API response");
+        return null;
       }
 
-      const tool = data.data.find((t: any) => t.id === customToolId)
+      const tool = data.data.find((t: any) => t.id === customToolId);
       if (!tool) {
-        logger.warn(`Custom tool not found by ID: ${customToolId}`)
-        return null
+        logger.warn(`Custom tool not found by ID: ${customToolId}`);
+        return null;
       }
 
       return {
         schema: tool.schema,
-        code: tool.code || '',
+        code: tool.code || "",
         title: tool.title,
-      }
+      };
     } catch (error) {
-      logger.error('Error fetching custom tool:', { customToolId, error })
-      return null
+      logger.error("Error fetching custom tool:", { customToolId, error });
+      return null;
     }
   }
 
@@ -385,44 +527,52 @@ export class AgentBlockHandler implements BlockHandler {
     ctx: ExecutionContext,
     mcpTools: ToolInput[]
   ): Promise<any[]> {
-    if (mcpTools.length === 0) return []
+    if (mcpTools.length === 0) return [];
 
-    const results: any[] = []
-    const toolsWithSchema: ToolInput[] = []
-    const toolsNeedingDiscovery: ToolInput[] = []
+    const results: any[] = [];
+    const toolsWithSchema: ToolInput[] = [];
+    const toolsNeedingDiscovery: ToolInput[] = [];
 
     for (const tool of mcpTools) {
-      const serverId = tool.params?.serverId
-      const toolName = tool.params?.toolName
+      const serverId = tool.params?.serverId;
+      const toolName = tool.params?.toolName;
 
       if (!serverId || !toolName) {
-        logger.error('MCP tool missing serverId or toolName:', tool)
-        continue
+        logger.error("MCP tool missing serverId or toolName:", tool);
+        continue;
       }
 
       if (tool.schema) {
-        toolsWithSchema.push(tool)
+        toolsWithSchema.push(tool);
       } else {
-        logger.warn(`MCP tool ${toolName} missing cached schema, will need discovery`)
-        toolsNeedingDiscovery.push(tool)
+        logger.warn(
+          `MCP tool ${toolName} missing cached schema, will need discovery`
+        );
+        toolsNeedingDiscovery.push(tool);
       }
     }
 
     for (const tool of toolsWithSchema) {
       try {
-        const created = await this.createMcpToolFromCachedSchema(ctx, tool)
-        if (created) results.push(created)
+        const created = await this.createMcpToolFromCachedSchema(ctx, tool);
+        if (created) results.push(created);
       } catch (error) {
-        logger.error(`Error creating MCP tool from cached schema:`, { tool, error })
+        logger.error(`Error creating MCP tool from cached schema:`, {
+          tool,
+          error,
+        });
       }
     }
 
     if (toolsNeedingDiscovery.length > 0) {
-      const discoveredResults = await this.processMcpToolsWithDiscovery(ctx, toolsNeedingDiscovery)
-      results.push(...discoveredResults)
+      const discoveredResults = await this.processMcpToolsWithDiscovery(
+        ctx,
+        toolsNeedingDiscovery
+      );
+      results.push(...discoveredResults);
     }
 
-    return results
+    return results;
   }
 
   /**
@@ -432,30 +582,32 @@ export class AgentBlockHandler implements BlockHandler {
     ctx: ExecutionContext,
     tool: ToolInput
   ): Promise<any> {
-    const { serverId, toolName, serverName, ...userProvidedParams } = tool.params || {}
+    const { serverId, toolName, serverName, ...userProvidedParams } =
+      tool.params || {};
 
-    const { filterSchemaForLLM } = await import('@/tools/params')
+    const { filterSchemaForLLM } = await import("@/tools/params");
     const filteredSchema = filterSchemaForLLM(
-      tool.schema || { type: 'object', properties: {} },
+      tool.schema || { type: "object", properties: {} },
       userProvidedParams
-    )
+    );
 
-    const toolId = createMcpToolId(serverId, toolName)
+    const toolId = createMcpToolId(serverId, toolName);
 
     return {
       id: toolId,
       name: toolName,
       description:
-        tool.schema?.description || `MCP tool ${toolName} from ${serverName || serverId}`,
+        tool.schema?.description ||
+        `MCP tool ${toolName} from ${serverName || serverId}`,
       parameters: filteredSchema,
       params: userProvidedParams,
-      usageControl: tool.usageControl || 'auto',
+      usageControl: tool.usageControl || "auto",
       executeFunction: async (callParams: Record<string, any>) => {
-        const headers = await buildAuthHeaders()
-        const execUrl = buildAPIUrl('/api/mcp/tools/execute')
+        const headers = await buildAuthHeaders();
+        const execUrl = buildAPIUrl("/api/mcp/tools/execute");
 
         const execResponse = await fetch(execUrl.toString(), {
-          method: 'POST',
+          method: "POST",
           headers,
           body: stringifyJSON({
             serverId,
@@ -465,31 +617,31 @@ export class AgentBlockHandler implements BlockHandler {
             workflowId: ctx.workflowId,
             toolSchema: tool.schema,
           }),
-        })
+        });
 
         if (!execResponse.ok) {
           throw new Error(
             `MCP tool execution failed: ${execResponse.status} ${execResponse.statusText}`
-          )
+          );
         }
 
-        const result = await execResponse.json()
+        const result = await execResponse.json();
         if (!result.success) {
-          throw new Error(result.error || 'MCP tool execution failed')
+          throw new Error(result.error || "MCP tool execution failed");
         }
 
         return {
           success: true,
           output: result.data.output || {},
           metadata: {
-            source: 'mcp',
+            source: "mcp",
             serverId,
             serverName: serverName || serverId,
             toolName,
           },
-        }
+        };
       },
-    }
+    };
   }
 
   /**
@@ -499,115 +651,156 @@ export class AgentBlockHandler implements BlockHandler {
     ctx: ExecutionContext,
     mcpTools: ToolInput[]
   ): Promise<any[]> {
-    const toolsByServer = new Map<string, ToolInput[]>()
+    const toolsByServer = new Map<string, ToolInput[]>();
     for (const tool of mcpTools) {
-      const serverId = tool.params?.serverId
+      const serverId = tool.params?.serverId;
       if (!toolsByServer.has(serverId)) {
-        toolsByServer.set(serverId, [])
+        toolsByServer.set(serverId, []);
       }
-      toolsByServer.get(serverId)!.push(tool)
+      toolsByServer.get(serverId)!.push(tool);
     }
 
     const serverDiscoveryResults = await Promise.all(
       Array.from(toolsByServer.entries()).map(async ([serverId, tools]) => {
         try {
-          const discoveredTools = await this.discoverMcpToolsForServer(ctx, serverId)
-          return { serverId, tools, discoveredTools, error: null as Error | null }
+          const discoveredTools = await this.discoverMcpToolsForServer(
+            ctx,
+            serverId
+          );
+          return {
+            serverId,
+            tools,
+            discoveredTools,
+            error: null as Error | null,
+          };
         } catch (error) {
-          logger.error(`Failed to discover tools from server ${serverId}:`)
-          return { serverId, tools, discoveredTools: [] as any[], error: error as Error }
+          logger.error(`Failed to discover tools from server ${serverId}:`);
+          return {
+            serverId,
+            tools,
+            discoveredTools: [] as any[],
+            error: error as Error,
+          };
         }
       })
-    )
+    );
 
-    const results: any[] = []
-    for (const { serverId, tools, discoveredTools, error } of serverDiscoveryResults) {
-      if (error) continue
+    const results: any[] = [];
+    for (const {
+      serverId,
+      tools,
+      discoveredTools,
+      error,
+    } of serverDiscoveryResults) {
+      if (error) continue;
 
       for (const tool of tools) {
         try {
-          const toolName = tool.params?.toolName
-          const mcpTool = discoveredTools.find((t: any) => t.name === toolName)
+          const toolName = tool.params?.toolName;
+          const mcpTool = discoveredTools.find((t: any) => t.name === toolName);
 
           if (!mcpTool) {
-            logger.error(`MCP tool ${toolName} not found on server ${serverId}`)
-            continue
+            logger.error(
+              `MCP tool ${toolName} not found on server ${serverId}`
+            );
+            continue;
           }
 
-          const created = await this.createMcpToolFromDiscoveredData(ctx, tool, mcpTool, serverId)
-          if (created) results.push(created)
+          const created = await this.createMcpToolFromDiscoveredData(
+            ctx,
+            tool,
+            mcpTool,
+            serverId
+          );
+          if (created) results.push(created);
         } catch (error) {
-          logger.error(`Error creating MCP tool:`, { tool, error })
+          logger.error(`Error creating MCP tool:`, { tool, error });
         }
       }
     }
 
-    return results
+    return results;
   }
 
   /**
    * Discover tools from a single MCP server with retry logic.
    */
-  private async discoverMcpToolsForServer(ctx: ExecutionContext, serverId: string): Promise<any[]> {
+  private async discoverMcpToolsForServer(
+    ctx: ExecutionContext,
+    serverId: string
+  ): Promise<any[]> {
     if (!ctx.workspaceId) {
-      throw new Error('workspaceId is required for MCP tool discovery')
+      throw new Error("workspaceId is required for MCP tool discovery");
     }
     if (!ctx.workflowId) {
-      throw new Error('workflowId is required for internal JWT authentication')
+      throw new Error("workflowId is required for internal JWT authentication");
     }
 
-    const headers = await buildAuthHeaders()
-    const url = buildAPIUrl('/api/mcp/tools/discover', {
+    const headers = await buildAuthHeaders();
+    const url = buildAPIUrl("/api/mcp/tools/discover", {
       serverId,
       workspaceId: ctx.workspaceId,
       workflowId: ctx.workflowId,
-    })
+    });
 
-    const maxAttempts = 2
+    const maxAttempts = 2;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const response = await fetch(url.toString(), { method: 'GET', headers })
+        const response = await fetch(url.toString(), {
+          method: "GET",
+          headers,
+        });
 
         if (!response.ok) {
-          const errorText = await response.text()
+          const errorText = await response.text();
           if (this.isRetryableError(errorText) && attempt < maxAttempts - 1) {
             logger.warn(
-              `[AgentHandler] Session error discovering tools from ${serverId}, retrying (attempt ${attempt + 1})`
-            )
-            await new Promise((r) => setTimeout(r, 100))
-            continue
+              `[AgentHandler] Session error discovering tools from ${serverId}, retrying (attempt ${
+                attempt + 1
+              })`
+            );
+            await new Promise((r) => setTimeout(r, 100));
+            continue;
           }
-          throw new Error(`Failed to discover tools: ${response.status} ${errorText}`)
+          throw new Error(
+            `Failed to discover tools: ${response.status} ${errorText}`
+          );
         }
 
-        const data = await response.json()
+        const data = await response.json();
         if (!data.success) {
-          throw new Error(data.error || 'Failed to discover MCP tools')
+          throw new Error(data.error || "Failed to discover MCP tools");
         }
 
-        return data.data.tools
+        return data.data.tools;
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error)
+        const errorMsg = error instanceof Error ? error.message : String(error);
         if (this.isRetryableError(errorMsg) && attempt < maxAttempts - 1) {
           logger.warn(
-            `[AgentHandler] Retryable error discovering tools from ${serverId} (attempt ${attempt + 1}):`,
+            `[AgentHandler] Retryable error discovering tools from ${serverId} (attempt ${
+              attempt + 1
+            }):`,
             error
-          )
-          await new Promise((r) => setTimeout(r, 100))
-          continue
+          );
+          await new Promise((r) => setTimeout(r, 100));
+          continue;
         }
-        throw error
+        throw error;
       }
     }
 
     throw new Error(
       `Failed to discover tools from server ${serverId} after ${maxAttempts} attempts`
-    )
+    );
   }
 
   private isRetryableError(errorMsg: string): boolean {
-    const lowerMsg = errorMsg.toLowerCase()
-    return lowerMsg.includes('session') || lowerMsg.includes('400') || lowerMsg.includes('404')
+    const lowerMsg = errorMsg.toLowerCase();
+    return (
+      lowerMsg.includes("session") ||
+      lowerMsg.includes("400") ||
+      lowerMsg.includes("404")
+    );
   }
 
   private async createMcpToolFromDiscoveredData(
@@ -616,29 +809,31 @@ export class AgentBlockHandler implements BlockHandler {
     mcpTool: any,
     serverId: string
   ): Promise<any> {
-    const { toolName, ...userProvidedParams } = tool.params || {}
+    const { toolName, ...userProvidedParams } = tool.params || {};
 
-    const { filterSchemaForLLM } = await import('@/tools/params')
+    const { filterSchemaForLLM } = await import("@/tools/params");
     const filteredSchema = filterSchemaForLLM(
-      mcpTool.inputSchema || { type: 'object', properties: {} },
+      mcpTool.inputSchema || { type: "object", properties: {} },
       userProvidedParams
-    )
+    );
 
-    const toolId = createMcpToolId(serverId, toolName)
+    const toolId = createMcpToolId(serverId, toolName);
 
     return {
       id: toolId,
       name: toolName,
-      description: mcpTool.description || `MCP tool ${toolName} from ${mcpTool.serverName}`,
+      description:
+        mcpTool.description ||
+        `MCP tool ${toolName} from ${mcpTool.serverName}`,
       parameters: filteredSchema,
       params: userProvidedParams,
-      usageControl: tool.usageControl || 'auto',
+      usageControl: tool.usageControl || "auto",
       executeFunction: async (callParams: Record<string, any>) => {
-        const headers = await buildAuthHeaders()
-        const execUrl = buildAPIUrl('/api/mcp/tools/execute')
+        const headers = await buildAuthHeaders();
+        const execUrl = buildAPIUrl("/api/mcp/tools/execute");
 
         const execResponse = await fetch(execUrl.toString(), {
-          method: 'POST',
+          method: "POST",
           headers,
           body: stringifyJSON({
             serverId,
@@ -648,31 +843,31 @@ export class AgentBlockHandler implements BlockHandler {
             workflowId: ctx.workflowId,
             toolSchema: mcpTool.inputSchema,
           }),
-        })
+        });
 
         if (!execResponse.ok) {
           throw new Error(
             `MCP tool execution failed: ${execResponse.status} ${execResponse.statusText}`
-          )
+          );
         }
 
-        const result = await execResponse.json()
+        const result = await execResponse.json();
         if (!result.success) {
-          throw new Error(result.error || 'MCP tool execution failed')
+          throw new Error(result.error || "MCP tool execution failed");
         }
 
         return {
           success: true,
           output: result.data.output || {},
           metadata: {
-            source: 'mcp',
+            source: "mcp",
             serverId,
             serverName: mcpTool.serverName,
             toolName,
           },
-        }
+        };
       },
-    }
+    };
   }
 
   private async transformBlockTool(ctx: ExecutionContext, tool: ToolInput) {
@@ -681,66 +876,85 @@ export class AgentBlockHandler implements BlockHandler {
       getAllBlocks,
       getToolAsync: (toolId: string) => getToolAsync(toolId, ctx.workflowId),
       getTool,
-    })
+    });
 
     if (transformedTool) {
-      transformedTool.usageControl = tool.usageControl || 'auto'
+      transformedTool.usageControl = tool.usageControl || "auto";
     }
-    return transformedTool
+    return transformedTool;
   }
 
-  private getStreamingConfig(ctx: ExecutionContext, block: SerializedBlock): StreamingConfig {
+  private getStreamingConfig(
+    ctx: ExecutionContext,
+    block: SerializedBlock
+  ): StreamingConfig {
     const isBlockSelectedForOutput =
       ctx.selectedOutputs?.some((outputId) => {
-        if (outputId === block.id) return true
-        const firstUnderscoreIndex = outputId.indexOf('_')
+        if (outputId === block.id) return true;
+        const firstUnderscoreIndex = outputId.indexOf("_");
         return (
-          firstUnderscoreIndex !== -1 && outputId.substring(0, firstUnderscoreIndex) === block.id
-        )
-      }) ?? false
+          firstUnderscoreIndex !== -1 &&
+          outputId.substring(0, firstUnderscoreIndex) === block.id
+        );
+      }) ?? false;
 
-    const hasOutgoingConnections = ctx.edges?.some((edge) => edge.source === block.id) ?? false
-    const shouldUseStreaming = Boolean(ctx.stream) && isBlockSelectedForOutput
+    const hasOutgoingConnections =
+      ctx.edges?.some((edge) => edge.source === block.id) ?? false;
+    const shouldUseStreaming = Boolean(ctx.stream) && isBlockSelectedForOutput;
 
-    return { shouldUseStreaming, isBlockSelectedForOutput, hasOutgoingConnections }
+    return {
+      shouldUseStreaming,
+      isBlockSelectedForOutput,
+      hasOutgoingConnections,
+    };
   }
 
   private async buildMessages(
     ctx: ExecutionContext,
     inputs: AgentInputs
   ): Promise<Message[] | undefined> {
-    const messages: Message[] = []
-    const memoryEnabled = inputs.memoryType && inputs.memoryType !== 'none'
+    const messages: Message[] = [];
+    const memoryEnabled = inputs.memoryType && inputs.memoryType !== "none";
 
     // 1. Extract and validate messages from messages-input subblock
-    const inputMessages = this.extractValidMessages(inputs.messages)
-    const systemMessages = inputMessages.filter((m) => m.role === 'system')
-    const conversationMessages = inputMessages.filter((m) => m.role !== 'system')
+    const inputMessages = this.extractValidMessages(inputs.messages);
+    const systemMessages = inputMessages.filter((m) => m.role === "system");
+    const conversationMessages = inputMessages.filter(
+      (m) => m.role !== "system"
+    );
 
     // 2. Handle native memory: seed on first run, then fetch and append new user input
     if (memoryEnabled && ctx.workspaceId) {
-      const memoryMessages = await memoryService.fetchMemoryMessages(ctx, inputs)
-      const hasExisting = memoryMessages.length > 0
+      const memoryMessages = await memoryService.fetchMemoryMessages(
+        ctx,
+        inputs
+      );
+      const hasExisting = memoryMessages.length > 0;
 
       if (!hasExisting && conversationMessages.length > 0) {
         const taggedMessages = conversationMessages.map((m) =>
-          m.role === 'user' ? { ...m, executionId: ctx.executionId } : m
-        )
-        await memoryService.seedMemory(ctx, inputs, taggedMessages)
-        messages.push(...taggedMessages)
+          m.role === "user" ? { ...m, executionId: ctx.executionId } : m
+        );
+        await memoryService.seedMemory(ctx, inputs, taggedMessages);
+        messages.push(...taggedMessages);
       } else {
-        messages.push(...memoryMessages)
+        messages.push(...memoryMessages);
 
         if (hasExisting && conversationMessages.length > 0) {
-          const latestUserFromInput = conversationMessages.filter((m) => m.role === 'user').pop()
+          const latestUserFromInput = conversationMessages
+            .filter((m) => m.role === "user")
+            .pop();
           if (latestUserFromInput) {
             const userMessageInThisRun = memoryMessages.some(
-              (m) => m.role === 'user' && m.executionId === ctx.executionId
-            )
+              (m) => m.role === "user" && m.executionId === ctx.executionId
+            );
             if (!userMessageInThisRun) {
-              const taggedMessage = { ...latestUserFromInput, executionId: ctx.executionId }
-              messages.push(taggedMessage)
-              await memoryService.appendToMemory(ctx, inputs, taggedMessage)
+              const taggedMessage = {
+                ...latestUserFromInput,
+                executionId: ctx.executionId,
+              };
+              messages.push(taggedMessage);
+              await memoryService.appendToMemory(ctx, inputs, taggedMessage);
             }
           }
         }
@@ -750,33 +964,34 @@ export class AgentBlockHandler implements BlockHandler {
     // 3. Process legacy memories (backward compatibility - from Memory block)
     // These may include system messages which are preserved in their position
     if (inputs.memories) {
-      messages.push(...this.processMemories(inputs.memories))
+      messages.push(...this.processMemories(inputs.memories));
     }
 
     // 4. Add conversation messages from inputs.messages (if not using native memory)
     // When memory is enabled, these are already seeded/fetched above
     if (!memoryEnabled && conversationMessages.length > 0) {
-      messages.push(...conversationMessages)
+      messages.push(...conversationMessages);
     }
 
     // 5. Handle legacy systemPrompt (backward compatibility)
     // Only add if no system message exists from any source
     if (inputs.systemPrompt) {
-      const hasSystem = systemMessages.length > 0 || messages.some((m) => m.role === 'system')
+      const hasSystem =
+        systemMessages.length > 0 || messages.some((m) => m.role === "system");
       if (!hasSystem) {
-        this.addSystemPrompt(messages, inputs.systemPrompt)
+        this.addSystemPrompt(messages, inputs.systemPrompt);
       }
     }
 
     // 6. Handle legacy userPrompt - this is NEW input each run
     if (inputs.userPrompt) {
-      this.addUserPrompt(messages, inputs.userPrompt)
+      this.addUserPrompt(messages, inputs.userPrompt);
 
       if (memoryEnabled) {
-        const userMessages = messages.filter((m) => m.role === 'user')
-        const lastUserMessage = userMessages[userMessages.length - 1]
+        const userMessages = messages.filter((m) => m.role === "user");
+        const lastUserMessage = userMessages[userMessages.length - 1];
         if (lastUserMessage) {
-          await memoryService.appendToMemory(ctx, inputs, lastUserMessage)
+          await memoryService.appendToMemory(ctx, inputs, lastUserMessage);
         }
       }
     }
@@ -784,59 +999,63 @@ export class AgentBlockHandler implements BlockHandler {
     // 7. Prefix system messages from inputs.messages at the start (runtime only)
     // These are the agent's configured system prompts
     if (systemMessages.length > 0) {
-      messages.unshift(...systemMessages)
+      messages.unshift(...systemMessages);
     }
 
-    return messages.length > 0 ? messages : undefined
+    return messages.length > 0 ? messages : undefined;
   }
 
   private extractValidMessages(messages?: Message[]): Message[] {
-    if (!messages || !Array.isArray(messages)) return []
+    if (!messages || !Array.isArray(messages)) return [];
 
     return messages.filter(
       (msg): msg is Message =>
         msg &&
-        typeof msg === 'object' &&
-        'role' in msg &&
-        'content' in msg &&
-        ['system', 'user', 'assistant'].includes(msg.role)
-    )
+        typeof msg === "object" &&
+        "role" in msg &&
+        "content" in msg &&
+        ["system", "user", "assistant"].includes(msg.role)
+    );
   }
 
   private processMemories(memories: any): Message[] {
-    if (!memories) return []
+    if (!memories) return [];
 
-    let memoryArray: any[] = []
+    let memoryArray: any[] = [];
     if (memories?.memories && Array.isArray(memories.memories)) {
-      memoryArray = memories.memories
+      memoryArray = memories.memories;
     } else if (Array.isArray(memories)) {
-      memoryArray = memories
+      memoryArray = memories;
     }
 
-    const messages: Message[] = []
+    const messages: Message[] = [];
     memoryArray.forEach((memory: any) => {
       if (memory.data && Array.isArray(memory.data)) {
         memory.data.forEach((msg: any) => {
-          if (msg.role && msg.content && ['system', 'user', 'assistant'].includes(msg.role)) {
+          if (
+            msg.role &&
+            msg.content &&
+            ["system", "user", "assistant"].includes(msg.role)
+          ) {
             messages.push({
-              role: msg.role as 'system' | 'user' | 'assistant',
+              role: msg.role as "system" | "user" | "assistant",
               content: msg.content,
-            })
+            });
           }
-        })
+        });
       } else if (
         memory.role &&
         memory.content &&
-        ['system', 'user', 'assistant'].includes(memory.role)
+        ["system", "user", "assistant"].includes(memory.role)
       ) {
         messages.push({
-          role: memory.role as 'system' | 'user' | 'assistant',
+          role: memory.role as "system" | "user" | "assistant",
           content: memory.content,
-        })
+        });
       }
-    })
+    });
 
-    return messages
+    return messages;
   }
 
   /**
@@ -844,75 +1063,86 @@ export class AgentBlockHandler implements BlockHandler {
    * Preserves existing system message if already at position 0, otherwise adds/moves it
    */
   private addSystemPrompt(messages: Message[], systemPrompt: any) {
-    let content: string
+    let content: string;
 
-    if (typeof systemPrompt === 'string') {
-      content = systemPrompt
+    if (typeof systemPrompt === "string") {
+      content = systemPrompt;
     } else {
       try {
-        content = JSON.stringify(systemPrompt, null, 2)
+        content = JSON.stringify(systemPrompt, null, 2);
       } catch (error) {
-        content = String(systemPrompt)
+        content = String(systemPrompt);
       }
     }
 
     // Find first system message
-    const firstSystemIndex = messages.findIndex((msg) => msg.role === 'system')
+    const firstSystemIndex = messages.findIndex((msg) => msg.role === "system");
 
     if (firstSystemIndex === -1) {
       // No system message exists - add at position 0
-      messages.unshift({ role: 'system', content })
+      messages.unshift({ role: "system", content });
     } else if (firstSystemIndex === 0) {
       // System message already at position 0 - replace it
       // Explicit systemPrompt parameter takes precedence over memory/messages
-      messages[0] = { role: 'system', content }
+      messages[0] = { role: "system", content };
     } else {
       // System message exists but not at position 0 - move it to position 0
       // and update with new content
-      messages.splice(firstSystemIndex, 1)
-      messages.unshift({ role: 'system', content })
+      messages.splice(firstSystemIndex, 1);
+      messages.unshift({ role: "system", content });
     }
 
     // Remove any additional system messages (keep only the first one)
     for (let i = messages.length - 1; i >= 1; i--) {
-      if (messages[i].role === 'system') {
-        messages.splice(i, 1)
-        logger.warn('Removed duplicate system message from conversation history', {
-          position: i,
-        })
+      if (messages[i].role === "system") {
+        messages.splice(i, 1);
+        logger.warn(
+          "Removed duplicate system message from conversation history",
+          {
+            position: i,
+          }
+        );
       }
     }
   }
 
   private addUserPrompt(messages: Message[], userPrompt: any) {
-    let content: string
-    if (typeof userPrompt === 'object' && userPrompt.input) {
-      content = String(userPrompt.input)
-    } else if (typeof userPrompt === 'object') {
-      content = JSON.stringify(userPrompt)
+    let content: string;
+    if (typeof userPrompt === "object" && userPrompt.input) {
+      content = String(userPrompt.input);
+    } else if (typeof userPrompt === "object") {
+      content = JSON.stringify(userPrompt);
     } else {
-      content = String(userPrompt)
+      content = String(userPrompt);
     }
 
-    messages.push({ role: 'user', content })
+    messages.push({ role: "user", content });
   }
 
   private buildProviderRequest(config: {
-    ctx: ExecutionContext
-    providerId: string
-    model: string
-    messages: Message[] | undefined
-    inputs: AgentInputs
-    formattedTools: any[]
-    responseFormat: any
-    streaming: boolean
+    ctx: ExecutionContext;
+    providerId: string;
+    model: string;
+    messages: Message[] | undefined;
+    inputs: AgentInputs;
+    formattedTools: any[];
+    responseFormat: any;
+    streaming: boolean;
   }) {
-    const { ctx, providerId, model, messages, inputs, formattedTools, responseFormat, streaming } =
-      config
+    const {
+      ctx,
+      providerId,
+      model,
+      messages,
+      inputs,
+      formattedTools,
+      responseFormat,
+      streaming,
+    } = config;
 
-    const validMessages = this.validateMessages(messages)
+    const validMessages = this.validateMessages(messages);
 
-    const { blockData, blockNameMapping } = collectBlockData(ctx)
+    const { blockData, blockNameMapping } = collectBlockData(ctx);
 
     return {
       provider: providerId,
@@ -939,7 +1169,7 @@ export class AgentBlockHandler implements BlockHandler {
       blockNameMapping,
       reasoningEffort: inputs.reasoningEffort,
       verbosity: inputs.verbosity,
-    }
+    };
   }
 
   private validateMessages(messages: Message[] | undefined): boolean {
@@ -948,14 +1178,15 @@ export class AgentBlockHandler implements BlockHandler {
       messages.length > 0 &&
       messages.every(
         (msg: any) =>
-          typeof msg === 'object' &&
+          typeof msg === "object" &&
           msg !== null &&
-          'role' in msg &&
-          typeof msg.role === 'string' &&
-          ('content' in msg ||
-            (msg.role === 'assistant' && ('function_call' in msg || 'tool_calls' in msg)))
+          "role" in msg &&
+          typeof msg.role === "string" &&
+          ("content" in msg ||
+            (msg.role === "assistant" &&
+              ("function_call" in msg || "tool_calls" in msg)))
       )
-    )
+    );
   }
 
   private async executeProviderRequest(
@@ -965,12 +1196,12 @@ export class AgentBlockHandler implements BlockHandler {
     responseFormat: any,
     inputs: AgentInputs
   ): Promise<BlockOutput | StreamingExecution> {
-    const providerId = providerRequest.provider
-    const model = providerRequest.model
-    const providerStartTime = Date.now()
+    const providerId = providerRequest.provider;
+    const model = providerRequest.model;
+    const providerStartTime = Date.now();
 
     try {
-      const isBrowser = typeof window !== 'undefined'
+      const isBrowser = typeof window !== "undefined";
 
       if (!isBrowser) {
         return this.executeServerSide(
@@ -981,7 +1212,7 @@ export class AgentBlockHandler implements BlockHandler {
           block,
           responseFormat,
           providerStartTime
-        )
+        );
       }
       return this.executeBrowserSide(
         ctx,
@@ -990,10 +1221,17 @@ export class AgentBlockHandler implements BlockHandler {
         responseFormat,
         providerStartTime,
         inputs
-      )
+      );
     } catch (error) {
-      this.handleExecutionError(error, providerStartTime, providerId, model, ctx, block)
-      throw error
+      this.handleExecutionError(
+        error,
+        providerStartTime,
+        providerId,
+        model,
+        ctx,
+        block
+      );
+      throw error;
     }
   }
 
@@ -1006,23 +1244,27 @@ export class AgentBlockHandler implements BlockHandler {
     responseFormat: any,
     providerStartTime: number
   ) {
-    let finalApiKey: string
+    let finalApiKey: string;
 
-    if (providerId === 'vertex' && providerRequest.vertexCredential) {
+    if (providerId === "vertex" && providerRequest.vertexCredential) {
       finalApiKey = await this.resolveVertexCredential(
         providerRequest.vertexCredential,
         ctx.workflowId
-      )
+      );
     } else {
-      finalApiKey = this.getApiKey(providerId, model, providerRequest.apiKey)
+      finalApiKey = this.getApiKey(providerId, model, providerRequest.apiKey);
     }
 
-    const { blockData, blockNameMapping } = collectBlockData(ctx)
+    const { blockData, blockNameMapping } = collectBlockData(ctx);
 
     const response = await executeProviderRequest(providerId, {
       model,
-      systemPrompt: 'systemPrompt' in providerRequest ? providerRequest.systemPrompt : undefined,
-      context: 'context' in providerRequest ? providerRequest.context : undefined,
+      systemPrompt:
+        "systemPrompt" in providerRequest
+          ? providerRequest.systemPrompt
+          : undefined,
+      context:
+        "context" in providerRequest ? providerRequest.context : undefined,
       tools: providerRequest.tools,
       temperature: providerRequest.temperature,
       maxTokens: providerRequest.maxTokens,
@@ -1035,14 +1277,15 @@ export class AgentBlockHandler implements BlockHandler {
       workflowId: providerRequest.workflowId,
       workspaceId: providerRequest.workspaceId,
       stream: providerRequest.stream,
-      messages: 'messages' in providerRequest ? providerRequest.messages : undefined,
+      messages:
+        "messages" in providerRequest ? providerRequest.messages : undefined,
       environmentVariables: ctx.environmentVariables || {},
       workflowVariables: ctx.workflowVariables || {},
       blockData,
       blockNameMapping,
-    })
+    });
 
-    return this.processProviderResponse(response, block, responseFormat)
+    return this.processProviderResponse(response, block, responseFormat);
   }
 
   private async executeBrowserSide(
@@ -1053,26 +1296,26 @@ export class AgentBlockHandler implements BlockHandler {
     providerStartTime: number,
     inputs: AgentInputs
   ) {
-    const url = buildAPIUrl('/api/providers')
+    const url = buildAPIUrl("/api/providers");
     const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': HTTP.CONTENT_TYPE.JSON },
+      method: "POST",
+      headers: { "Content-Type": HTTP.CONTENT_TYPE.JSON },
       body: stringifyJSON(providerRequest),
       signal: AbortSignal.timeout(AGENT.REQUEST_TIMEOUT),
-    })
+    });
 
     if (!response.ok) {
-      const errorMessage = await extractAPIErrorMessage(response)
-      throw new Error(errorMessage)
+      const errorMessage = await extractAPIErrorMessage(response);
+      throw new Error(errorMessage);
     }
 
-    const contentType = response.headers.get('Content-Type')
+    const contentType = response.headers.get("Content-Type");
     if (contentType?.includes(HTTP.CONTENT_TYPE.EVENT_STREAM)) {
-      return this.handleStreamingResponse(response, block, ctx, inputs)
+      return this.handleStreamingResponse(response, block, ctx, inputs);
     }
 
-    const result = await response.json()
-    return this.processProviderResponse(result, block, responseFormat)
+    const result = await response.json();
+    return this.processProviderResponse(result, block, responseFormat);
   }
 
   private async handleStreamingResponse(
@@ -1081,11 +1324,11 @@ export class AgentBlockHandler implements BlockHandler {
     _ctx?: ExecutionContext,
     _inputs?: AgentInputs
   ): Promise<StreamingExecution> {
-    const executionDataHeader = response.headers.get('X-Execution-Data')
+    const executionDataHeader = response.headers.get("X-Execution-Data");
 
     if (executionDataHeader) {
       try {
-        const executionData = JSON.parse(executionDataHeader)
+        const executionData = JSON.parse(executionDataHeader);
         return {
           stream: response.body!,
           execution: {
@@ -1102,56 +1345,69 @@ export class AgentBlockHandler implements BlockHandler {
             blockName: block.metadata?.name,
             blockType: block.metadata?.id,
           } as any,
-        }
+        };
       } catch (error) {
-        logger.error('Failed to parse execution data from header:', error)
+        logger.error("Failed to parse execution data from header:", error);
       }
     }
 
-    return this.createMinimalStreamingExecution(response.body!)
+    return this.createMinimalStreamingExecution(response.body!);
   }
 
-  private getApiKey(providerId: string, model: string, inputApiKey: string): string {
+  private getApiKey(
+    providerId: string,
+    model: string,
+    inputApiKey: string
+  ): string {
     try {
-      return getApiKey(providerId, model, inputApiKey)
+      return getApiKey(providerId, model, inputApiKey);
     } catch (error) {
-      logger.error('Failed to get API key:', {
+      logger.error("Failed to get API key:", {
         provider: providerId,
         model,
         error: error instanceof Error ? error.message : String(error),
         hasProvidedApiKey: !!inputApiKey,
-      })
-      throw new Error(error instanceof Error ? error.message : 'API key error')
+      });
+      throw new Error(error instanceof Error ? error.message : "API key error");
     }
   }
 
   /**
    * Resolves a Vertex AI OAuth credential to an access token
    */
-  private async resolveVertexCredential(credentialId: string, workflowId: string): Promise<string> {
-    const requestId = `vertex-${Date.now()}`
+  private async resolveVertexCredential(
+    credentialId: string,
+    workflowId: string
+  ): Promise<string> {
+    const requestId = `vertex-${Date.now()}`;
 
-    logger.info(`[${requestId}] Resolving Vertex AI credential: ${credentialId}`)
+    logger.info(
+      `[${requestId}] Resolving Vertex AI credential: ${credentialId}`
+    );
 
     // Get the credential - we need to find the owner
     // Since we're in a workflow context, we can query the credential directly
     const credential = await db.query.account.findFirst({
       where: eq(account.id, credentialId),
-    })
+    });
 
     if (!credential) {
-      throw new Error(`Vertex AI credential not found: ${credentialId}`)
+      throw new Error(`Vertex AI credential not found: ${credentialId}`);
     }
 
     // Refresh the token if needed
-    const { accessToken } = await refreshTokenIfNeeded(requestId, credential, credentialId)
+    const { accessToken } = await refreshTokenIfNeeded(
+      requestId,
+      credential,
+      credentialId
+    );
 
     if (!accessToken) {
-      throw new Error('Failed to get Vertex AI access token')
+      throw new Error("Failed to get Vertex AI access token");
     }
 
-    logger.info(`[${requestId}] Successfully resolved Vertex AI credential`)
-    return accessToken
+    logger.info(`[${requestId}] Successfully resolved Vertex AI credential`);
+    return accessToken;
   }
 
   private handleExecutionError(
@@ -1162,38 +1418,43 @@ export class AgentBlockHandler implements BlockHandler {
     ctx: ExecutionContext,
     block: SerializedBlock
   ) {
-    const executionTime = Date.now() - startTime
+    const executionTime = Date.now() - startTime;
 
-    logger.error('Error executing provider request:', {
+    logger.error("Error executing provider request:", {
       error,
       executionTime,
       provider,
       model,
       workflowId: ctx.workflowId,
       blockId: block.id,
-    })
+    });
 
-    if (!(error instanceof Error)) return
+    if (!(error instanceof Error)) return;
 
-    logger.error('Provider request error details', {
+    logger.error("Provider request error details", {
       workflowId: ctx.workflowId,
       blockId: block.id,
       errorName: error.name,
       errorMessage: error.message,
       errorStack: error.stack,
       timestamp: new Date().toISOString(),
-    })
+    });
 
-    if (error.name === 'AbortError') {
-      throw new Error('Provider request timed out - the API took too long to respond')
-    }
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    if (error.name === "AbortError") {
       throw new Error(
-        'Network error - unable to connect to provider API. Please check your internet connection.'
-      )
+        "Provider request timed out - the API took too long to respond"
+      );
     }
-    if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
-      throw new Error('Unable to connect to server - DNS or connection issue')
+    if (error.name === "TypeError" && error.message.includes("fetch")) {
+      throw new Error(
+        "Network error - unable to connect to provider API. Please check your internet connection."
+      );
+    }
+    if (
+      error.message.includes("ENOTFOUND") ||
+      error.message.includes("ECONNREFUSED")
+    ) {
+      throw new Error("Unable to connect to server - DNS or connection issue");
     }
   }
 
@@ -1203,9 +1464,13 @@ export class AgentBlockHandler implements BlockHandler {
     streamingExec: StreamingExecution
   ): StreamingExecution {
     return {
-      stream: memoryService.wrapStreamForPersistence(streamingExec.stream, ctx, inputs),
+      stream: memoryService.wrapStreamForPersistence(
+        streamingExec.stream,
+        ctx,
+        inputs
+      ),
       execution: streamingExec.execution,
-    }
+    };
   }
 
   private async persistResponseToMemory(
@@ -1213,19 +1478,22 @@ export class AgentBlockHandler implements BlockHandler {
     inputs: AgentInputs,
     result: BlockOutput
   ): Promise<void> {
-    const content = (result as any)?.content
-    if (!content || typeof content !== 'string') {
-      return
+    const content = (result as any)?.content;
+    if (!content || typeof content !== "string") {
+      return;
     }
 
     try {
-      await memoryService.appendToMemory(ctx, inputs, { role: 'assistant', content })
-      logger.debug('Persisted assistant response to memory', {
+      await memoryService.appendToMemory(ctx, inputs, {
+        role: "assistant",
+        content,
+      });
+      logger.debug("Persisted assistant response to memory", {
         workflowId: ctx.workflowId,
         conversationId: inputs.conversationId,
-      })
+      });
     } catch (error) {
-      logger.error('Failed to persist response to memory:', error)
+      logger.error("Failed to persist response to memory:", error);
     }
   }
 
@@ -1235,40 +1503,45 @@ export class AgentBlockHandler implements BlockHandler {
     responseFormat: any
   ): BlockOutput | StreamingExecution {
     if (this.isStreamingExecution(response)) {
-      return this.processStreamingExecution(response, block)
+      return this.processStreamingExecution(response, block);
     }
 
     if (response instanceof ReadableStream) {
-      return this.createMinimalStreamingExecution(response)
+      return this.createMinimalStreamingExecution(response);
     }
 
-    return this.processRegularResponse(response, responseFormat)
+    return this.processRegularResponse(response, responseFormat);
   }
 
   private isStreamingExecution(response: any): boolean {
     return (
-      response && typeof response === 'object' && 'stream' in response && 'execution' in response
-    )
+      response &&
+      typeof response === "object" &&
+      "stream" in response &&
+      "execution" in response
+    );
   }
 
   private processStreamingExecution(
     response: StreamingExecution,
     block: SerializedBlock
   ): StreamingExecution {
-    const streamingExec = response as StreamingExecution
+    const streamingExec = response as StreamingExecution;
 
     if (streamingExec.execution.output) {
-      const execution = streamingExec.execution as any
-      if (block.metadata?.name) execution.blockName = block.metadata.name
-      if (block.metadata?.id) execution.blockType = block.metadata.id
-      execution.blockId = block.id
-      execution.isStreaming = true
+      const execution = streamingExec.execution as any;
+      if (block.metadata?.name) execution.blockName = block.metadata.name;
+      if (block.metadata?.id) execution.blockType = block.metadata.id;
+      execution.blockId = block.id;
+      execution.isStreaming = true;
     }
 
-    return streamingExec
+    return streamingExec;
   }
 
-  private createMinimalStreamingExecution(stream: ReadableStream): StreamingExecution {
+  private createMinimalStreamingExecution(
+    stream: ReadableStream
+  ): StreamingExecution {
     return {
       stream,
       execution: {
@@ -1280,37 +1553,44 @@ export class AgentBlockHandler implements BlockHandler {
           startTime: new Date().toISOString(),
         },
       },
-    }
+    };
   }
 
-  private processRegularResponse(result: any, responseFormat: any): BlockOutput {
+  private processRegularResponse(
+    result: any,
+    responseFormat: any
+  ): BlockOutput {
     if (responseFormat) {
-      return this.processStructuredResponse(result, responseFormat)
+      return this.processStructuredResponse(result, responseFormat);
     }
 
-    return this.processStandardResponse(result)
+    return this.processStandardResponse(result);
   }
 
-  private processStructuredResponse(result: any, responseFormat: any): BlockOutput {
-    const content = result.content
+  private processStructuredResponse(
+    result: any,
+    responseFormat: any
+  ): BlockOutput {
+    const content = result.content;
 
     try {
-      const extractedJson = JSON.parse(content.trim())
+      const extractedJson = JSON.parse(content.trim());
       return {
         ...extractedJson,
         ...this.createResponseMetadata(result),
-      }
+      };
     } catch (error) {
-      logger.error('LLM did not adhere to structured response format:', {
-        content: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
+      logger.error("LLM did not adhere to structured response format:", {
+        content:
+          content.substring(0, 200) + (content.length > 200 ? "..." : ""),
         responseFormat: responseFormat,
-      })
+      });
 
-      const standardResponse = this.processStandardResponse(result)
+      const standardResponse = this.processStandardResponse(result);
       return Object.assign(standardResponse, {
         _responseFormatWarning:
-          'LLM did not adhere to the specified structured response format. Expected valid JSON but received malformed content. Falling back to standard format.',
-      })
+          "LLM did not adhere to the specified structured response format. Expected valid JSON but received malformed content. Falling back to standard format.",
+      });
     }
   }
 
@@ -1319,14 +1599,14 @@ export class AgentBlockHandler implements BlockHandler {
       content: result.content,
       model: result.model,
       ...this.createResponseMetadata(result),
-    }
+    };
   }
 
   private createResponseMetadata(result: {
-    tokens?: { input?: number; output?: number; total?: number }
-    toolCalls?: Array<any>
-    timing?: any
-    cost?: any
+    tokens?: { input?: number; output?: number; total?: number };
+    toolCalls?: Array<any>;
+    timing?: any;
+    cost?: any;
   }) {
     return {
       tokens: result.tokens || {
@@ -1340,11 +1620,11 @@ export class AgentBlockHandler implements BlockHandler {
       },
       providerTiming: result.timing,
       cost: result.cost,
-    }
+    };
   }
 
   private formatToolCall(tc: any) {
-    const toolName = stripCustomToolPrefix(tc.name)
+    const toolName = stripCustomToolPrefix(tc.name);
 
     return {
       ...tc,
@@ -1354,6 +1634,6 @@ export class AgentBlockHandler implements BlockHandler {
       duration: tc.duration,
       arguments: tc.arguments || tc.input || {},
       result: tc.result || tc.output,
-    }
+    };
   }
 }

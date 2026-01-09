@@ -3,179 +3,219 @@
  * This is the SINGLE source of truth for workflow execution
  */
 
-import type { Edge } from 'reactflow'
-import { z } from 'zod'
-import { getPersonalAndWorkspaceEnv } from '@/lib/environment/utils'
-import { createLogger } from '@/lib/logs/console/logger'
-import type { LoggingSession } from '@/lib/logs/execution/logging-session'
-import { buildTraceSpans } from '@/lib/logs/execution/trace-spans/trace-spans'
+import type { Edge } from "reactflow";
+import { z } from "zod";
+import { getPersonalAndWorkspaceEnv } from "@/lib/environment/utils";
+import { createLogger } from "@/lib/logs/console/logger";
+import type { LoggingSession } from "@/lib/logs/execution/logging-session";
+import { buildTraceSpans } from "@/lib/logs/execution/trace-spans/trace-spans";
 import {
   loadDeployedWorkflowState,
   loadWorkflowFromNormalizedTables,
-} from '@/lib/workflows/persistence/utils'
-import { TriggerUtils } from '@/lib/workflows/triggers/triggers'
-import { updateWorkflowRunCounts } from '@/lib/workflows/utils'
-import { Executor } from '@/executor'
-import { REFERENCE } from '@/executor/constants'
-import type { ExecutionCallbacks, ExecutionSnapshot } from '@/executor/execution/snapshot'
-import type { ExecutionResult } from '@/executor/types'
-import { createEnvVarPattern } from '@/executor/utils/reference-validation'
-import { Serializer } from '@/serializer'
-import { mergeSubblockState } from '@/stores/workflows/server-utils'
+} from "@/lib/workflows/persistence/utils";
+import { TriggerUtils } from "@/lib/workflows/triggers/triggers";
+import { updateWorkflowRunCounts } from "@/lib/workflows/utils";
+import { Executor } from "@/executor";
+import { REFERENCE } from "@/executor/constants";
+import type {
+  ExecutionCallbacks,
+  ExecutionSnapshot,
+} from "@/executor/execution/snapshot";
+import type { ExecutionResult } from "@/executor/types";
+import { createEnvVarPattern } from "@/executor/utils/reference-validation";
+import { Serializer } from "@/serializer";
+import { mergeSubblockState } from "@/stores/workflows/server-utils";
 
-const logger = createLogger('ExecutionCore')
+const logger = createLogger("ExecutionCore");
 
-const EnvVarsSchema = z.record(z.string())
+const EnvVarsSchema = z.record(z.string());
 
 export interface ExecuteWorkflowCoreOptions {
-  snapshot: ExecutionSnapshot
-  callbacks: ExecutionCallbacks
-  loggingSession: LoggingSession
-  skipLogCreation?: boolean // For resume executions - reuse existing log entry
+  snapshot: ExecutionSnapshot;
+  callbacks: ExecutionCallbacks;
+  loggingSession: LoggingSession;
+  skipLogCreation?: boolean; // For resume executions - reuse existing log entry
 }
 
 function parseVariableValueByType(value: any, type: string): any {
   if (value === null || value === undefined) {
     switch (type) {
-      case 'number':
-        return 0
-      case 'boolean':
-        return false
-      case 'array':
-        return []
-      case 'object':
-        return {}
+      case "number":
+        return 0;
+      case "boolean":
+        return false;
+      case "array":
+        return [];
+      case "object":
+        return {};
       default:
-        return ''
+        return "";
     }
   }
 
-  if (type === 'number') {
-    if (typeof value === 'number') return value
-    if (typeof value === 'string') {
-      const num = Number(value)
-      return Number.isNaN(num) ? 0 : num
+  if (type === "number") {
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const num = Number(value);
+      return Number.isNaN(num) ? 0 : num;
     }
-    return 0
+    return 0;
   }
 
-  if (type === 'boolean') {
-    if (typeof value === 'boolean') return value
-    if (typeof value === 'string') {
-      return value.toLowerCase() === 'true'
+  if (type === "boolean") {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+      return value.toLowerCase() === "true";
     }
-    return Boolean(value)
+    return Boolean(value);
   }
 
-  if (type === 'array') {
-    if (Array.isArray(value)) return value
-    if (typeof value === 'string' && value.trim()) {
+  if (type === "array") {
+    if (Array.isArray(value)) return value;
+    if (typeof value === "string" && value.trim()) {
       try {
-        return JSON.parse(value)
+        return JSON.parse(value);
       } catch {
-        return []
+        return [];
       }
     }
-    return []
+    return [];
   }
 
-  if (type === 'object') {
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) return value
-    if (typeof value === 'string' && value.trim()) {
+  if (type === "object") {
+    if (typeof value === "object" && value !== null && !Array.isArray(value))
+      return value;
+    if (typeof value === "string" && value.trim()) {
       try {
-        return JSON.parse(value)
+        return JSON.parse(value);
       } catch {
-        return {}
+        return {};
       }
     }
-    return {}
+    return {};
   }
 
   // string or plain
-  return typeof value === 'string' ? value : String(value)
+  return typeof value === "string" ? value : String(value);
 }
 
 export async function executeWorkflowCore(
   options: ExecuteWorkflowCoreOptions
 ): Promise<ExecutionResult> {
-  const { snapshot, callbacks, loggingSession, skipLogCreation } = options
-  const { metadata, workflow, input, workflowVariables, selectedOutputs } = snapshot
-  const { requestId, workflowId, userId, triggerType, executionId, triggerBlockId, useDraftState } =
-    metadata
-  const { onBlockStart, onBlockComplete, onStream, onExecutorCreated } = callbacks
+  const { snapshot, callbacks, loggingSession, skipLogCreation } = options;
+  const { metadata, workflow, input, workflowVariables, selectedOutputs } =
+    snapshot;
+  const {
+    requestId,
+    workflowId,
+    userId,
+    triggerType,
+    executionId,
+    triggerBlockId,
+    useDraftState,
+  } = metadata;
+  const { onBlockStart, onBlockComplete, onStream, onExecutorCreated } =
+    callbacks;
 
-  const providedWorkspaceId = metadata.workspaceId
+  const providedWorkspaceId = metadata.workspaceId;
   if (!providedWorkspaceId) {
-    throw new Error(`Execution metadata missing workspaceId for workflow ${workflowId}`)
+    throw new Error(
+      `Execution metadata missing workspaceId for workflow ${workflowId}`
+    );
   }
 
-  let processedInput = input || {}
+  let processedInput = input || {};
 
   try {
-    let blocks
-    let edges: Edge[]
-    let loops
-    let parallels
-    let deploymentVersionId: string | undefined
+    let blocks;
+    let edges: Edge[];
+    let loops;
+    let parallels;
+    let deploymentVersionId: string | undefined;
 
     // Use workflowStateOverride if provided (for diff workflows)
     if (metadata.workflowStateOverride) {
-      blocks = metadata.workflowStateOverride.blocks
-      edges = metadata.workflowStateOverride.edges
-      loops = metadata.workflowStateOverride.loops || {}
-      parallels = metadata.workflowStateOverride.parallels || {}
-      deploymentVersionId = metadata.workflowStateOverride.deploymentVersionId
+      blocks = metadata.workflowStateOverride.blocks;
+      edges = metadata.workflowStateOverride.edges;
+      loops = metadata.workflowStateOverride.loops || {};
+      parallels = metadata.workflowStateOverride.parallels || {};
+      deploymentVersionId = metadata.workflowStateOverride.deploymentVersionId;
 
-      logger.info(`[${requestId}] Using workflow state override (diff workflow execution)`, {
-        blocksCount: Object.keys(blocks).length,
-        edgesCount: edges.length,
-      })
+      logger.info(
+        `[${requestId}] Using workflow state override (diff workflow execution)`,
+        {
+          blocksCount: Object.keys(blocks).length,
+          edgesCount: edges.length,
+        }
+      );
     } else if (useDraftState) {
-      const draftData = await loadWorkflowFromNormalizedTables(workflowId, metadata.tenantDb)
+      const draftData = await loadWorkflowFromNormalizedTables(
+        workflowId,
+        metadata.tenantDb
+      );
 
       if (!draftData) {
-        throw new Error('Workflow not found or not yet saved')
+        throw new Error("Workflow not found or not yet saved");
       }
 
-      blocks = draftData.blocks
-      edges = draftData.edges
-      loops = draftData.loops
-      parallels = draftData.parallels
+      blocks = draftData.blocks;
+      edges = draftData.edges;
+      loops = draftData.loops;
+      parallels = draftData.parallels;
 
       logger.info(
         `[${requestId}] Using draft workflow state from normalized tables (client execution)`
-      )
+      );
     } else {
-      const deployedData = await loadDeployedWorkflowState(workflowId, metadata.tenantDb)
-      blocks = deployedData.blocks
-      edges = deployedData.edges
-      loops = deployedData.loops
-      parallels = deployedData.parallels
-      deploymentVersionId = deployedData.deploymentVersionId
+      const deployedData = await loadDeployedWorkflowState(
+        workflowId,
+        metadata.tenantDb
+      );
+      blocks = deployedData.blocks;
+      edges = deployedData.edges;
+      loops = deployedData.loops;
+      parallels = deployedData.parallels;
+      deploymentVersionId = deployedData.deploymentVersionId;
 
-      logger.info(`[${requestId}] Using deployed workflow state (deployed execution)`)
+      logger.info(
+        `[${requestId}] Using deployed workflow state (deployed execution)`
+      );
     }
 
     // Merge block states
-    const mergedStates = mergeSubblockState(blocks)
+    const mergedStates = mergeSubblockState(blocks);
 
     const personalEnvUserId =
       metadata.isClientSession && metadata.sessionUserId
         ? metadata.sessionUserId
-        : metadata.workflowUserId
+        : metadata.workflowUserId;
 
     if (!personalEnvUserId) {
-      throw new Error('Missing workflowUserId in execution metadata')
+      throw new Error("Missing workflowUserId in execution metadata");
     }
 
-    const { personalEncrypted, workspaceEncrypted, personalDecrypted, workspaceDecrypted } =
-      await getPersonalAndWorkspaceEnv(personalEnvUserId, providedWorkspaceId, metadata.tenantDb)
+    const {
+      personalEncrypted,
+      workspaceEncrypted,
+      personalDecrypted,
+      workspaceDecrypted,
+    } = await getPersonalAndWorkspaceEnv(
+      personalEnvUserId,
+      providedWorkspaceId,
+      metadata.tenantDb
+    );
 
     // Use encrypted values for logging (don't log decrypted secrets)
-    const variables = EnvVarsSchema.parse({ ...personalEncrypted, ...workspaceEncrypted })
+    const variables = EnvVarsSchema.parse({
+      ...personalEncrypted,
+      ...workspaceEncrypted,
+    });
 
     // Use already-decrypted values for execution (no redundant decryption)
-    const decryptedEnvVars: Record<string, string> = { ...personalDecrypted, ...workspaceDecrypted }
+    const decryptedEnvVars: Record<string, string> = {
+      ...personalDecrypted,
+      ...workspaceDecrypted,
+    };
 
     await loggingSession.safeStart({
       userId,
@@ -183,107 +223,126 @@ export async function executeWorkflowCore(
       variables,
       skipLogCreation,
       deploymentVersionId,
-    })
+    });
 
     // Process block states with env var substitution using pre-decrypted values
     const currentBlockStates = Object.entries(mergedStates).reduce(
       (acc, [id, block]) => {
         acc[id] = Object.entries(block.subBlocks).reduce(
           (subAcc, [key, subBlock]) => {
-            let value = subBlock.value
+            let value = subBlock.value;
 
             if (
-              typeof value === 'string' &&
+              typeof value === "string" &&
               value.includes(REFERENCE.ENV_VAR_START) &&
               value.includes(REFERENCE.ENV_VAR_END)
             ) {
-              const envVarPattern = createEnvVarPattern()
-              const matches = value.match(envVarPattern)
+              const envVarPattern = createEnvVarPattern();
+              const matches = value.match(envVarPattern);
               if (matches) {
                 for (const match of matches) {
                   const varName = match.slice(
                     REFERENCE.ENV_VAR_START.length,
                     -REFERENCE.ENV_VAR_END.length
-                  )
-                  const decryptedValue = decryptedEnvVars[varName]
+                  );
+                  const decryptedValue = decryptedEnvVars[varName];
                   if (decryptedValue !== undefined) {
-                    value = (value as string).replace(match, decryptedValue)
+                    value = (value as string).replace(match, decryptedValue);
                   }
                 }
               }
             }
 
-            subAcc[key] = value
-            return subAcc
+            subAcc[key] = value;
+            return subAcc;
           },
           {} as Record<string, any>
-        )
-        return acc
+        );
+        return acc;
       },
       {} as Record<string, Record<string, any>>
-    )
+    );
 
     // Process response format
     const processedBlockStates = Object.entries(currentBlockStates).reduce(
       (acc, [blockId, blockState]) => {
-        if (blockState.responseFormat && typeof blockState.responseFormat === 'string') {
-          const responseFormatValue = blockState.responseFormat.trim()
-          if (responseFormatValue && !responseFormatValue.startsWith(REFERENCE.START)) {
+        if (
+          blockState.responseFormat &&
+          typeof blockState.responseFormat === "string"
+        ) {
+          const responseFormatValue = blockState.responseFormat.trim();
+          if (
+            responseFormatValue &&
+            !responseFormatValue.startsWith(REFERENCE.START)
+          ) {
             try {
               acc[blockId] = {
                 ...blockState,
                 responseFormat: JSON.parse(responseFormatValue),
-              }
+              };
             } catch {
               acc[blockId] = {
                 ...blockState,
                 responseFormat: undefined,
-              }
+              };
             }
           } else {
-            acc[blockId] = blockState
+            acc[blockId] = blockState;
           }
         } else {
-          acc[blockId] = blockState
+          acc[blockId] = blockState;
         }
-        return acc
+        return acc;
       },
       {} as Record<string, Record<string, any>>
-    )
+    );
 
     // Use edges directly - trigger-to-trigger edges are prevented at creation time
-    const filteredEdges = edges
+    const filteredEdges = edges;
 
     // Check if this is a resume execution before trigger resolution
-    const resumeFromSnapshot = (metadata as any).resumeFromSnapshot === true
-    const resumePendingQueue = snapshot.state?.pendingQueue
+    const resumeFromSnapshot = (metadata as any).resumeFromSnapshot === true;
+    const resumePendingQueue = snapshot.state?.pendingQueue;
 
-    let resolvedTriggerBlockId = triggerBlockId
+    let resolvedTriggerBlockId = triggerBlockId;
 
     // For resume executions, skip trigger resolution since we have a pending queue
     if (resumeFromSnapshot && resumePendingQueue?.length) {
-      resolvedTriggerBlockId = undefined
-      logger.info(`[${requestId}] Skipping trigger resolution for resume execution`, {
-        pendingQueueLength: resumePendingQueue.length,
-      })
+      resolvedTriggerBlockId = undefined;
+      logger.info(
+        `[${requestId}] Skipping trigger resolution for resume execution`,
+        {
+          pendingQueueLength: resumePendingQueue.length,
+        }
+      );
     } else if (!triggerBlockId) {
       const executionKind =
-        triggerType === 'api' || triggerType === 'chat' ? (triggerType as 'api' | 'chat') : 'manual'
+        triggerType === "api" || triggerType === "chat"
+          ? (triggerType as "api" | "chat")
+          : "manual";
 
-      const startBlock = TriggerUtils.findStartBlock(mergedStates, executionKind, false)
+      const startBlock = TriggerUtils.findStartBlock(
+        mergedStates,
+        executionKind,
+        false
+      );
 
       if (!startBlock) {
-        const errorMsg = 'No start block found. Add a start block to this workflow.'
-        logger.error(`[${requestId}] ${errorMsg}`)
-        throw new Error(errorMsg)
+        const errorMsg =
+          "No start block found. Add a start block to this workflow.";
+        logger.error(`[${requestId}] ${errorMsg}`);
+        throw new Error(errorMsg);
       }
 
-      resolvedTriggerBlockId = startBlock.blockId
-      logger.info(`[${requestId}] Identified trigger block for ${executionKind} execution:`, {
-        blockId: resolvedTriggerBlockId,
-        blockType: startBlock.block.type,
-        path: startBlock.path,
-      })
+      resolvedTriggerBlockId = startBlock.blockId;
+      logger.info(
+        `[${requestId}] Identified trigger block for ${executionKind} execution:`,
+        {
+          blockId: resolvedTriggerBlockId,
+          blockType: startBlock.block.type,
+          path: startBlock.path,
+        }
+      );
     }
 
     // Serialize workflow
@@ -293,9 +352,9 @@ export async function executeWorkflowCore(
       loops,
       parallels,
       true
-    )
+    );
 
-    processedInput = input || {}
+    processedInput = input || {};
 
     // Create and execute workflow with callbacks
     if (resumeFromSnapshot) {
@@ -307,8 +366,15 @@ export async function executeWorkflowCore(
           : 0,
         executedBlocksCount: snapshot.state?.executedBlocks?.length ?? 0,
         useDraftState,
-      })
+      });
     }
+
+    logger.info("[ExecutionCore] Creating contextExtensions", {
+      hasMetadataTenantId: !!metadata.tenantId,
+      metadataTenantId: metadata.tenantId || "none",
+      workflowId,
+      workspaceId: providedWorkspaceId,
+    });
 
     const contextExtensions: any = {
       stream: !!onStream,
@@ -317,7 +383,7 @@ export async function executeWorkflowCore(
       workspaceId: providedWorkspaceId,
       userId,
       tenantId: metadata.tenantId,
-      isDeployedContext: triggerType !== 'manual',
+      isDeployedContext: triggerType !== "manual",
       onBlockStart,
       onBlockComplete,
       onStream,
@@ -327,7 +393,7 @@ export async function executeWorkflowCore(
       dagIncomingEdges: snapshot.state?.dagIncomingEdges,
       snapshotState: snapshot.state,
       metadata,
-    }
+    };
 
     const executorInstance = new Executor({
       workflow: serializedWorkflow,
@@ -336,57 +402,57 @@ export async function executeWorkflowCore(
       workflowInput: processedInput,
       workflowVariables,
       contextExtensions,
-    })
+    });
 
-    loggingSession.setupExecutor(executorInstance)
+    loggingSession.setupExecutor(executorInstance);
 
     // Convert initial workflow variables to their native types
     if (workflowVariables) {
       for (const [varId, variable] of Object.entries(workflowVariables)) {
-        const v = variable as any
+        const v = variable as any;
         if (v.value !== undefined && v.type) {
-          v.value = parseVariableValueByType(v.value, v.type)
+          v.value = parseVariableValueByType(v.value, v.type);
         }
       }
     }
 
     if (onExecutorCreated) {
-      onExecutorCreated(executorInstance)
+      onExecutorCreated(executorInstance);
     }
 
     const result = (await executorInstance.execute(
       workflowId,
       resolvedTriggerBlockId
-    )) as ExecutionResult
+    )) as ExecutionResult;
 
     // Build trace spans for logging from the full execution result
-    const { traceSpans, totalDuration } = buildTraceSpans(result)
+    const { traceSpans, totalDuration } = buildTraceSpans(result);
 
     // Update workflow run counts
-    if (result.success && result.status !== 'paused') {
-      await updateWorkflowRunCounts(workflowId, 1, metadata.tenantDb)
+    if (result.success && result.status !== "paused") {
+      await updateWorkflowRunCounts(workflowId, 1, metadata.tenantDb);
     }
 
-    if (result.status === 'cancelled') {
+    if (result.status === "cancelled") {
       await loggingSession.safeCompleteWithCancellation({
         endedAt: new Date().toISOString(),
         totalDurationMs: totalDuration || 0,
         traceSpans: traceSpans || [],
-      })
+      });
 
       logger.info(`[${requestId}] Workflow execution cancelled`, {
         duration: result.metadata?.duration,
-      })
+      });
 
-      return result
+      return result;
     }
 
-    if (result.status === 'paused') {
+    if (result.status === "paused") {
       logger.info(`[${requestId}] Workflow execution paused`, {
         duration: result.metadata?.duration,
-      })
+      });
 
-      return result
+      return result;
     }
 
     await loggingSession.safeComplete({
@@ -395,31 +461,33 @@ export async function executeWorkflowCore(
       finalOutput: result.output || {},
       traceSpans: traceSpans || [],
       workflowInput: processedInput,
-    })
+    });
 
     logger.info(`[${requestId}] Workflow execution completed`, {
       success: result.success,
       duration: result.metadata?.duration,
-    })
+    });
 
-    return result
+    return result;
   } catch (error: any) {
-    logger.error(`[${requestId}] Execution failed:`, error)
+    logger.error(`[${requestId}] Execution failed:`, error);
 
     // Extract execution result from error if available
-    const executionResult = (error as any)?.executionResult
-    const { traceSpans } = executionResult ? buildTraceSpans(executionResult) : { traceSpans: [] }
+    const executionResult = (error as any)?.executionResult;
+    const { traceSpans } = executionResult
+      ? buildTraceSpans(executionResult)
+      : { traceSpans: [] };
 
     await loggingSession.safeCompleteWithError({
       endedAt: new Date().toISOString(),
       totalDurationMs: executionResult?.metadata?.duration || 0,
       error: {
-        message: error.message || 'Execution failed',
+        message: error.message || "Execution failed",
         stackTrace: error.stack,
       },
       traceSpans,
-    })
+    });
 
-    throw error
+    throw error;
   }
 }

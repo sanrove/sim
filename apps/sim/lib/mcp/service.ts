@@ -2,19 +2,20 @@
  * MCP Service - Clean stateless service for MCP operations
  */
 
-import { db } from '@sim/db'
-import { mcpServers } from '@sim/db/schema'
-import { and, eq, isNull } from 'drizzle-orm'
-import { isTest } from '@/lib/core/config/feature-flags'
-import { generateRequestId } from '@/lib/core/utils/request'
-import { getEffectiveDecryptedEnv } from '@/lib/environment/utils'
-import { createLogger } from '@/lib/logs/console/logger'
-import { McpClient } from '@/lib/mcp/client'
+import { db } from "@sim/db";
+import { mcpServers } from "@sim/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { isTest } from "@/lib/core/config/feature-flags";
+import { generateRequestId } from "@/lib/core/utils/request";
+import { getEffectiveDecryptedEnv } from "@/lib/environment/utils";
+import { createLogger } from "@/lib/logs/console/logger";
+import { McpClient } from "@/lib/mcp/client";
 import {
   createMcpCacheAdapter,
   getMcpCacheType,
   type McpCacheStorageAdapter,
-} from '@/lib/mcp/storage'
+} from "@/lib/mcp/storage";
 import type {
   McpServerConfig,
   McpServerStatusConfig,
@@ -23,63 +24,70 @@ import type {
   McpToolCall,
   McpToolResult,
   McpTransport,
-} from '@/lib/mcp/types'
-import { MCP_CONSTANTS } from '@/lib/mcp/utils'
-import { REFERENCE } from '@/executor/constants'
-import { createEnvVarPattern } from '@/executor/utils/reference-validation'
+} from "@/lib/mcp/types";
+import { MCP_CONSTANTS } from "@/lib/mcp/utils";
+import { REFERENCE } from "@/executor/constants";
+import { createEnvVarPattern } from "@/executor/utils/reference-validation";
 
-const logger = createLogger('McpService')
+const logger = createLogger("McpService");
 
 class McpService {
-  private cacheAdapter: McpCacheStorageAdapter
-  private readonly cacheTimeout = MCP_CONSTANTS.CACHE_TIMEOUT // 5 minutes
+  private cacheAdapter: McpCacheStorageAdapter;
+  private readonly cacheTimeout = MCP_CONSTANTS.CACHE_TIMEOUT; // 5 minutes
 
   constructor() {
-    this.cacheAdapter = createMcpCacheAdapter()
-    logger.info(`MCP Service initialized with ${getMcpCacheType()} cache`)
+    this.cacheAdapter = createMcpCacheAdapter();
+    logger.info(`MCP Service initialized with ${getMcpCacheType()} cache`);
   }
 
   /**
    * Dispose of the service and cleanup resources
    */
   dispose(): void {
-    this.cacheAdapter.dispose()
-    logger.info('MCP Service disposed')
+    this.cacheAdapter.dispose();
+    logger.info("MCP Service disposed");
   }
 
   /**
    * Resolve environment variables in strings
    */
-  private resolveEnvVars(value: string, envVars: Record<string, string>): string {
-    const envVarPattern = createEnvVarPattern()
-    const envMatches = value.match(envVarPattern)
-    if (!envMatches) return value
+  private resolveEnvVars(
+    value: string,
+    envVars: Record<string, string>
+  ): string {
+    const envVarPattern = createEnvVarPattern();
+    const envMatches = value.match(envVarPattern);
+    if (!envMatches) return value;
 
-    let resolvedValue = value
-    const missingVars: string[] = []
+    let resolvedValue = value;
+    const missingVars: string[] = [];
 
     for (const match of envMatches) {
       const envKey = match
         .slice(REFERENCE.ENV_VAR_START.length, -REFERENCE.ENV_VAR_END.length)
-        .trim()
-      const envValue = envVars[envKey]
+        .trim();
+      const envValue = envVars[envKey];
 
       if (envValue === undefined) {
-        missingVars.push(envKey)
-        continue
+        missingVars.push(envKey);
+        continue;
       }
 
-      resolvedValue = resolvedValue.replace(match, envValue)
+      resolvedValue = resolvedValue.replace(match, envValue);
     }
 
     if (missingVars.length > 0) {
       throw new Error(
-        `Missing required environment variable${missingVars.length > 1 ? 's' : ''}: ${missingVars.join(', ')}. ` +
-          `Please set ${missingVars.length > 1 ? 'these variables' : 'this variable'} in your workspace or personal environment settings.`
-      )
+        `Missing required environment variable${
+          missingVars.length > 1 ? "s" : ""
+        }: ${missingVars.join(", ")}. ` +
+          `Please set ${
+            missingVars.length > 1 ? "these variables" : "this variable"
+          } in your workspace or personal environment settings.`
+      );
     }
 
-    return resolvedValue
+    return resolvedValue;
   }
 
   /**
@@ -91,26 +99,29 @@ class McpService {
     workspaceId?: string
   ): Promise<McpServerConfig> {
     try {
-      const envVars = await getEffectiveDecryptedEnv(userId, workspaceId)
+      const envVars = await getEffectiveDecryptedEnv(userId, workspaceId);
 
-      const resolvedConfig = { ...config }
+      const resolvedConfig = { ...config };
 
       if (resolvedConfig.url) {
-        resolvedConfig.url = this.resolveEnvVars(resolvedConfig.url, envVars)
+        resolvedConfig.url = this.resolveEnvVars(resolvedConfig.url, envVars);
       }
 
       if (resolvedConfig.headers) {
-        const resolvedHeaders: Record<string, string> = {}
+        const resolvedHeaders: Record<string, string> = {};
         for (const [key, value] of Object.entries(resolvedConfig.headers)) {
-          resolvedHeaders[key] = this.resolveEnvVars(value, envVars)
+          resolvedHeaders[key] = this.resolveEnvVars(value, envVars);
         }
-        resolvedConfig.headers = resolvedHeaders
+        resolvedConfig.headers = resolvedHeaders;
       }
 
-      return resolvedConfig
+      return resolvedConfig;
     } catch (error) {
-      logger.error('Failed to resolve environment variables for MCP server config:', error)
-      return config
+      logger.error(
+        "Failed to resolve environment variables for MCP server config:",
+        error
+      );
+      return config;
     }
   }
 
@@ -119,9 +130,10 @@ class McpService {
    */
   private async getServerConfig(
     serverId: string,
-    workspaceId: string
+    workspaceId: string,
+    dbInstance: PostgresJsDatabase<any> = db
   ): Promise<McpServerConfig | null> {
-    const [server] = await db
+    const [server] = await dbInstance
       .select()
       .from(mcpServers)
       .where(
@@ -132,17 +144,17 @@ class McpService {
           isNull(mcpServers.deletedAt)
         )
       )
-      .limit(1)
+      .limit(1);
 
     if (!server) {
-      return null
+      return null;
     }
 
     return {
       id: server.id,
       name: server.name,
       description: server.description || undefined,
-      transport: 'streamable-http' as const,
+      transport: "streamable-http" as const,
       url: server.url || undefined,
       headers: (server.headers as Record<string, string>) || {},
       timeout: server.timeout || 30000,
@@ -150,23 +162,26 @@ class McpService {
       enabled: server.enabled,
       createdAt: server.createdAt.toISOString(),
       updatedAt: server.updatedAt.toISOString(),
-    }
+    };
   }
 
   /**
    * Get all enabled servers for a workspace
    */
-  private async getWorkspaceServers(workspaceId: string): Promise<McpServerConfig[]> {
+  private async getWorkspaceServers(
+    workspaceId: string,
+    dbInstance: PostgresJsDatabase<any> = db
+  ): Promise<McpServerConfig[]> {
     const whereConditions = [
       eq(mcpServers.workspaceId, workspaceId),
       eq(mcpServers.enabled, true),
       isNull(mcpServers.deletedAt),
-    ]
+    ];
 
-    const servers = await db
+    const servers = await dbInstance
       .select()
       .from(mcpServers)
-      .where(and(...whereConditions))
+      .where(and(...whereConditions));
 
     return servers.map((server) => ({
       id: server.id,
@@ -180,7 +195,7 @@ class McpService {
       enabled: server.enabled,
       createdAt: server.createdAt.toISOString(),
       updatedAt: server.updatedAt.toISOString(),
-    }))
+    }));
   }
 
   /**
@@ -189,14 +204,14 @@ class McpService {
   private async createClient(config: McpServerConfig): Promise<McpClient> {
     const securityPolicy = {
       requireConsent: true,
-      auditLevel: 'basic' as const,
+      auditLevel: "basic" as const,
       maxToolExecutionsPerHour: 1000,
       allowedOrigins: config.url ? [new URL(config.url).origin] : undefined,
-    }
+    };
 
-    const client = new McpClient(config, securityPolicy)
-    await client.connect()
-    return client
+    const client = new McpClient(config, securityPolicy);
+    await client.connect();
+    return client;
   }
 
   /**
@@ -207,60 +222,79 @@ class McpService {
     userId: string,
     serverId: string,
     toolCall: McpToolCall,
-    workspaceId: string
+    workspaceId: string,
+    dbInstance?: PostgresJsDatabase<any>
   ): Promise<McpToolResult> {
-    const requestId = generateRequestId()
-    const maxRetries = 2
+    const requestId = generateRequestId();
+    const maxRetries = 2;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         logger.info(
-          `[${requestId}] Executing MCP tool ${toolCall.name} on server ${serverId} for user ${userId}${attempt > 0 ? ` (attempt ${attempt + 1})` : ''}`
-        )
+          `[${requestId}] Executing MCP tool ${
+            toolCall.name
+          } on server ${serverId} for user ${userId}${
+            attempt > 0 ? ` (attempt ${attempt + 1})` : ""
+          }`
+        );
 
-        const config = await this.getServerConfig(serverId, workspaceId)
+        const config = await this.getServerConfig(
+          serverId,
+          workspaceId,
+          dbInstance || db
+        );
         if (!config) {
-          throw new Error(`Server ${serverId} not found or not accessible`)
+          throw new Error(`Server ${serverId} not found or not accessible`);
         }
 
-        const resolvedConfig = await this.resolveConfigEnvVars(config, userId, workspaceId)
-        const client = await this.createClient(resolvedConfig)
+        const resolvedConfig = await this.resolveConfigEnvVars(
+          config,
+          userId,
+          workspaceId
+        );
+        const client = await this.createClient(resolvedConfig);
 
         try {
-          const result = await client.callTool(toolCall)
-          logger.info(`[${requestId}] Successfully executed tool ${toolCall.name}`)
-          return result
+          const result = await client.callTool(toolCall);
+          logger.info(
+            `[${requestId}] Successfully executed tool ${toolCall.name}`
+          );
+          return result;
         } finally {
-          await client.disconnect()
+          await client.disconnect();
         }
       } catch (error) {
         if (this.isSessionError(error) && attempt < maxRetries - 1) {
           logger.warn(
-            `[${requestId}] Session error executing tool ${toolCall.name}, retrying (attempt ${attempt + 1}):`,
+            `[${requestId}] Session error executing tool ${
+              toolCall.name
+            }, retrying (attempt ${attempt + 1}):`,
             error
-          )
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          continue
+          );
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          continue;
         }
-        throw error
+        throw error;
       }
     }
 
-    throw new Error(`Failed to execute tool ${toolCall.name} after ${maxRetries} attempts`)
+    throw new Error(
+      `Failed to execute tool ${toolCall.name} after ${maxRetries} attempts`
+    );
   }
 
   /**
    * Check if an error indicates a session-related issue that might be resolved by retry
    */
   private isSessionError(error: unknown): boolean {
-    const message = error instanceof Error ? error.message : String(error)
-    const lowerMessage = message.toLowerCase()
+    const message = error instanceof Error ? error.message : String(error);
+    const lowerMessage = message.toLowerCase();
     return (
-      lowerMessage.includes('session') ||
-      lowerMessage.includes('400') ||
-      lowerMessage.includes('404') ||
-      lowerMessage.includes('no valid session')
-    )
+      lowerMessage.includes("session") ||
+      lowerMessage.includes("400") ||
+      lowerMessage.includes("404") ||
+      lowerMessage.includes("no valid session")
+    );
   }
 
   /**
@@ -271,10 +305,11 @@ class McpService {
     workspaceId: string,
     success: boolean,
     error?: string,
-    toolCount?: number
+    toolCount?: number,
+    dbInstance: PostgresJsDatabase<any> = db
   ): Promise<void> {
     try {
-      const [currentServer] = await db
+      const [currentServer] = await dbInstance
         .select({ statusConfig: mcpServers.statusConfig })
         .from(mcpServers)
         .where(
@@ -284,21 +319,21 @@ class McpService {
             isNull(mcpServers.deletedAt)
           )
         )
-        .limit(1)
+        .limit(1);
 
       const currentConfig: McpServerStatusConfig =
         (currentServer?.statusConfig as McpServerStatusConfig | null) ?? {
           consecutiveFailures: 0,
           lastSuccessfulDiscovery: null,
-        }
+        };
 
-      const now = new Date()
+      const now = new Date();
 
       if (success) {
-        await db
+        await dbInstance
           .update(mcpServers)
           .set({
-            connectionStatus: 'connected',
+            connectionStatus: "connected",
             lastConnected: now,
             lastError: null,
             toolCount: toolCount ?? 0,
@@ -309,32 +344,33 @@ class McpService {
             },
             updatedAt: now,
           })
-          .where(eq(mcpServers.id, serverId))
+          .where(eq(mcpServers.id, serverId));
       } else {
-        const newFailures = currentConfig.consecutiveFailures + 1
-        const isErrorState = newFailures >= MCP_CONSTANTS.MAX_CONSECUTIVE_FAILURES
+        const newFailures = currentConfig.consecutiveFailures + 1;
+        const isErrorState =
+          newFailures >= MCP_CONSTANTS.MAX_CONSECUTIVE_FAILURES;
 
-        await db
+        await dbInstance
           .update(mcpServers)
           .set({
-            connectionStatus: isErrorState ? 'error' : 'disconnected',
-            lastError: error || 'Unknown error',
+            connectionStatus: isErrorState ? "error" : "disconnected",
+            lastError: error || "Unknown error",
             statusConfig: {
               consecutiveFailures: newFailures,
               lastSuccessfulDiscovery: currentConfig.lastSuccessfulDiscovery,
             },
             updatedAt: now,
           })
-          .where(eq(mcpServers.id, serverId))
+          .where(eq(mcpServers.id, serverId));
 
         if (isErrorState) {
           logger.warn(
             `Server ${serverId} marked as error after ${newFailures} consecutive failures`
-          )
+          );
         }
       }
     } catch (err) {
-      logger.error(`Failed to update server status for ${serverId}:`, err)
+      logger.error(`Failed to update server status for ${serverId}:`, err);
     }
   }
 
@@ -344,99 +380,135 @@ class McpService {
   async discoverTools(
     userId: string,
     workspaceId: string,
-    forceRefresh = false
+    forceRefresh = false,
+    dbInstance?: PostgresJsDatabase<any>
   ): Promise<McpTool[]> {
-    const requestId = generateRequestId()
+    const requestId = generateRequestId();
 
-    const cacheKey = `workspace:${workspaceId}`
+    const cacheKey = `workspace:${workspaceId}`;
 
     try {
       if (!forceRefresh) {
         try {
-          const cached = await this.cacheAdapter.get(cacheKey)
+          const cached = await this.cacheAdapter.get(cacheKey);
           if (cached) {
-            logger.debug(`[${requestId}] Using cached tools for user ${userId}`)
-            return cached.tools
+            logger.debug(
+              `[${requestId}] Using cached tools for user ${userId}`
+            );
+            return cached.tools;
           }
         } catch (error) {
-          logger.warn(`[${requestId}] Cache read failed, proceeding with discovery:`, error)
+          logger.warn(
+            `[${requestId}] Cache read failed, proceeding with discovery:`,
+            error
+          );
         }
       }
 
-      logger.info(`[${requestId}] Discovering MCP tools for workspace ${workspaceId}`)
+      logger.info(
+        `[${requestId}] Discovering MCP tools for workspace ${workspaceId}`
+      );
 
-      const servers = await this.getWorkspaceServers(workspaceId)
+      const servers = await this.getWorkspaceServers(
+        workspaceId,
+        dbInstance || db
+      );
 
       if (servers.length === 0) {
-        logger.info(`[${requestId}] No servers found for workspace ${workspaceId}`)
-        return []
+        logger.info(
+          `[${requestId}] No servers found for workspace ${workspaceId}`
+        );
+        return [];
       }
 
-      const allTools: McpTool[] = []
+      const allTools: McpTool[] = [];
       const results = await Promise.allSettled(
         servers.map(async (config) => {
-          const resolvedConfig = await this.resolveConfigEnvVars(config, userId, workspaceId)
-          const client = await this.createClient(resolvedConfig)
+          const resolvedConfig = await this.resolveConfigEnvVars(
+            config,
+            userId,
+            workspaceId
+          );
+          const client = await this.createClient(resolvedConfig);
           try {
-            const tools = await client.listTools()
+            const tools = await client.listTools();
             logger.debug(
               `[${requestId}] Discovered ${tools.length} tools from server ${config.name}`
-            )
-            return { serverId: config.id, tools }
+            );
+            return { serverId: config.id, tools };
           } finally {
-            await client.disconnect()
+            await client.disconnect();
           }
         })
-      )
+      );
 
-      let failedCount = 0
-      const statusUpdates: Promise<void>[] = []
+      let failedCount = 0;
+      const statusUpdates: Promise<void>[] = [];
 
       results.forEach((result, index) => {
-        const server = servers[index]
-        if (result.status === 'fulfilled') {
-          allTools.push(...result.value.tools)
+        const server = servers[index];
+        if (result.status === "fulfilled") {
+          allTools.push(...result.value.tools);
           statusUpdates.push(
             this.updateServerStatus(
               server.id!,
               workspaceId,
               true,
               undefined,
-              result.value.tools.length
+              result.value.tools.length,
+              dbInstance || db
             )
-          )
+          );
         } else {
-          failedCount++
+          failedCount++;
           const errorMessage =
-            result.reason instanceof Error ? result.reason.message : 'Unknown error'
-          logger.warn(`[${requestId}] Failed to discover tools from server ${server.name}:`)
-          statusUpdates.push(this.updateServerStatus(server.id!, workspaceId, false, errorMessage))
+            result.reason instanceof Error
+              ? result.reason.message
+              : "Unknown error";
+          logger.warn(
+            `[${requestId}] Failed to discover tools from server ${server.name}:`
+          );
+          statusUpdates.push(
+            this.updateServerStatus(
+              server.id!,
+              workspaceId,
+              false,
+              errorMessage,
+              undefined,
+              dbInstance || db
+            )
+          );
         }
-      })
+      });
 
       Promise.allSettled(statusUpdates).catch((err) => {
-        logger.error(`[${requestId}] Error updating server statuses:`, err)
-      })
+        logger.error(`[${requestId}] Error updating server statuses:`, err);
+      });
 
       if (failedCount === 0) {
         try {
-          await this.cacheAdapter.set(cacheKey, allTools, this.cacheTimeout)
+          await this.cacheAdapter.set(cacheKey, allTools, this.cacheTimeout);
         } catch (error) {
-          logger.warn(`[${requestId}] Cache write failed:`, error)
+          logger.warn(`[${requestId}] Cache write failed:`, error);
         }
       } else {
         logger.warn(
           `[${requestId}] Skipping cache due to ${failedCount} failed server(s) - will retry on next request`
-        )
+        );
       }
 
       logger.info(
-        `[${requestId}] Discovered ${allTools.length} tools from ${servers.length - failedCount}/${servers.length} servers`
-      )
-      return allTools
+        `[${requestId}] Discovered ${allTools.length} tools from ${
+          servers.length - failedCount
+        }/${servers.length} servers`
+      );
+      return allTools;
     } catch (error) {
-      logger.error(`[${requestId}] Failed to discover MCP tools for user ${userId}:`, error)
-      throw error
+      logger.error(
+        `[${requestId}] Failed to discover MCP tools for user ${userId}:`,
+        error
+      );
+      throw error;
     }
   }
 
@@ -447,95 +519,128 @@ class McpService {
   async discoverServerTools(
     userId: string,
     serverId: string,
-    workspaceId: string
+    workspaceId: string,
+    dbInstance?: PostgresJsDatabase<any>
   ): Promise<McpTool[]> {
-    const requestId = generateRequestId()
-    const maxRetries = 2
+    const requestId = generateRequestId();
+    const maxRetries = 2;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         logger.info(
-          `[${requestId}] Discovering tools from server ${serverId} for user ${userId}${attempt > 0 ? ` (attempt ${attempt + 1})` : ''}`
-        )
+          `[${requestId}] Discovering tools from server ${serverId} for user ${userId}${
+            attempt > 0 ? ` (attempt ${attempt + 1})` : ""
+          }`
+        );
 
-        const config = await this.getServerConfig(serverId, workspaceId)
+        const config = await this.getServerConfig(
+          serverId,
+          workspaceId,
+          dbInstance || db
+        );
         if (!config) {
-          throw new Error(`Server ${serverId} not found or not accessible`)
+          throw new Error(`Server ${serverId} not found or not accessible`);
         }
 
-        const resolvedConfig = await this.resolveConfigEnvVars(config, userId, workspaceId)
-        const client = await this.createClient(resolvedConfig)
+        const resolvedConfig = await this.resolveConfigEnvVars(
+          config,
+          userId,
+          workspaceId
+        );
+        const client = await this.createClient(resolvedConfig);
 
         try {
-          const tools = await client.listTools()
-          logger.info(`[${requestId}] Discovered ${tools.length} tools from server ${config.name}`)
-          return tools
+          const tools = await client.listTools();
+          logger.info(
+            `[${requestId}] Discovered ${tools.length} tools from server ${config.name}`
+          );
+          return tools;
         } finally {
-          await client.disconnect()
+          await client.disconnect();
         }
       } catch (error) {
         if (this.isSessionError(error) && attempt < maxRetries - 1) {
           logger.warn(
-            `[${requestId}] Session error discovering tools from server ${serverId}, retrying (attempt ${attempt + 1}):`,
+            `[${requestId}] Session error discovering tools from server ${serverId}, retrying (attempt ${
+              attempt + 1
+            }):`,
             error
-          )
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          continue
+          );
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          continue;
         }
-        throw error
+        throw error;
       }
     }
 
-    throw new Error(`Failed to discover tools from server ${serverId} after ${maxRetries} attempts`)
+    throw new Error(
+      `Failed to discover tools from server ${serverId} after ${maxRetries} attempts`
+    );
   }
 
   /**
    * Get server summaries for a user
    */
-  async getServerSummaries(userId: string, workspaceId: string): Promise<McpServerSummary[]> {
-    const requestId = generateRequestId()
+  async getServerSummaries(
+    userId: string,
+    workspaceId: string,
+    dbInstance?: PostgresJsDatabase<any>
+  ): Promise<McpServerSummary[]> {
+    const requestId = generateRequestId();
 
     try {
-      logger.info(`[${requestId}] Getting server summaries for workspace ${workspaceId}`)
+      logger.info(
+        `[${requestId}] Getting server summaries for workspace ${workspaceId}`
+      );
 
-      const servers = await this.getWorkspaceServers(workspaceId)
-      const summaries: McpServerSummary[] = []
+      const servers = await this.getWorkspaceServers(
+        workspaceId,
+        dbInstance || db
+      );
+      const summaries: McpServerSummary[] = [];
 
       for (const config of servers) {
         try {
-          const resolvedConfig = await this.resolveConfigEnvVars(config, userId, workspaceId)
-          const client = await this.createClient(resolvedConfig)
-          const tools = await client.listTools()
-          await client.disconnect()
+          const resolvedConfig = await this.resolveConfigEnvVars(
+            config,
+            userId,
+            workspaceId
+          );
+          const client = await this.createClient(resolvedConfig);
+          const tools = await client.listTools();
+          await client.disconnect();
 
           summaries.push({
             id: config.id,
             name: config.name,
             url: config.url,
             transport: config.transport,
-            status: 'connected',
+            status: "connected",
             toolCount: tools.length,
             lastSeen: new Date(),
             error: undefined,
-          })
+          });
         } catch (error) {
           summaries.push({
             id: config.id,
             name: config.name,
             url: config.url,
             transport: config.transport,
-            status: 'error',
+            status: "error",
             toolCount: 0,
             lastSeen: undefined,
-            error: error instanceof Error ? error.message : 'Connection failed',
-          })
+            error: error instanceof Error ? error.message : "Connection failed",
+          });
         }
       }
 
-      return summaries
+      return summaries;
     } catch (error) {
-      logger.error(`[${requestId}] Failed to get server summaries for user ${userId}:`, error)
-      throw error
+      logger.error(
+        `[${requestId}] Failed to get server summaries for user ${userId}:`,
+        error
+      );
+      throw error;
     }
   }
 
@@ -545,38 +650,38 @@ class McpService {
   async clearCache(workspaceId?: string): Promise<void> {
     try {
       if (workspaceId) {
-        const workspaceCacheKey = `workspace:${workspaceId}`
-        await this.cacheAdapter.delete(workspaceCacheKey)
-        logger.debug(`Cleared MCP tool cache for workspace ${workspaceId}`)
+        const workspaceCacheKey = `workspace:${workspaceId}`;
+        await this.cacheAdapter.delete(workspaceCacheKey);
+        logger.debug(`Cleared MCP tool cache for workspace ${workspaceId}`);
       } else {
-        await this.cacheAdapter.clear()
-        logger.debug('Cleared all MCP tool cache')
+        await this.cacheAdapter.clear();
+        logger.debug("Cleared all MCP tool cache");
       }
     } catch (error) {
-      logger.warn('Failed to clear cache:', error)
+      logger.warn("Failed to clear cache:", error);
     }
   }
 }
 
-export const mcpService = new McpService()
+export const mcpService = new McpService();
 
 /**
  * Setup process signal handlers for graceful shutdown
  */
 export function setupMcpServiceCleanup() {
   if (isTest) {
-    return
+    return;
   }
 
   const cleanup = () => {
-    mcpService.dispose()
-  }
+    mcpService.dispose();
+  };
 
-  process.on('SIGTERM', cleanup)
-  process.on('SIGINT', cleanup)
+  process.on("SIGTERM", cleanup);
+  process.on("SIGINT", cleanup);
 
   return () => {
-    process.removeListener('SIGTERM', cleanup)
-    process.removeListener('SIGINT', cleanup)
-  }
+    process.removeListener("SIGTERM", cleanup);
+    process.removeListener("SIGINT", cleanup);
+  };
 }

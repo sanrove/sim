@@ -1,8 +1,8 @@
-import { db } from '@sim/db'
-import { mcpServers } from '@sim/db/schema'
-import { and, eq, inArray, isNull } from 'drizzle-orm'
-import { getBaseUrl } from '@/lib/core/utils/urls'
-import { createLogger } from '@/lib/logs/console/logger'
+import { db } from "@sim/db";
+import { mcpServers } from "@sim/db/schema";
+import { and, eq, inArray, isNull } from "drizzle-orm";
+import { getBaseUrl } from "@/lib/core/utils/urls";
+import { createLogger } from "@/lib/logs/console/logger";
 import {
   BlockType,
   buildResumeApiUrl,
@@ -10,27 +10,33 @@ import {
   DEFAULTS,
   EDGE,
   isSentinelBlockType,
-} from '@/executor/constants'
-import type { DAGNode } from '@/executor/dag/builder'
-import type { BlockStateWriter, ContextExtensions } from '@/executor/execution/types'
+} from "@/executor/constants";
+import type { DAGNode } from "@/executor/dag/builder";
+import type {
+  BlockStateWriter,
+  ContextExtensions,
+} from "@/executor/execution/types";
 import {
   generatePauseContextId,
   mapNodeMetadataToPauseScopes,
-} from '@/executor/human-in-the-loop/utils.ts'
+} from "@/executor/human-in-the-loop/utils.ts";
 import type {
   BlockHandler,
   BlockLog,
   BlockState,
   ExecutionContext,
   NormalizedBlockOutput,
-} from '@/executor/types'
-import { streamingResponseFormatProcessor } from '@/executor/utils'
-import { buildBlockExecutionError, normalizeError } from '@/executor/utils/errors'
-import type { VariableResolver } from '@/executor/variables/resolver'
-import type { SerializedBlock } from '@/serializer/types'
-import type { SubflowType } from '@/stores/workflows/workflow/types'
+} from "@/executor/types";
+import { streamingResponseFormatProcessor } from "@/executor/utils";
+import {
+  buildBlockExecutionError,
+  normalizeError,
+} from "@/executor/utils/errors";
+import type { VariableResolver } from "@/executor/variables/resolver";
+import type { SerializedBlock } from "@/serializer/types";
+import type { SubflowType } from "@/stores/workflows/workflow/types";
 
-const logger = createLogger('BlockExecutor')
+const logger = createLogger("BlockExecutor");
 
 export class BlockExecutor {
   constructor(
@@ -45,46 +51,109 @@ export class BlockExecutor {
     node: DAGNode,
     block: SerializedBlock
   ): Promise<NormalizedBlockOutput> {
-    const handler = this.findHandler(block)
+    const handler = this.findHandler(block);
     if (!handler) {
       throw buildBlockExecutionError({
         block,
         context: ctx,
-        error: `No handler found for block type: ${block.metadata?.id ?? 'unknown'}`,
-      })
+        error: `No handler found for block type: ${
+          block.metadata?.id ?? "unknown"
+        }`,
+      });
     }
 
-    const isSentinel = isSentinelBlockType(block.metadata?.id ?? '')
+    const isSentinel = isSentinelBlockType(block.metadata?.id ?? "");
 
-    let blockLog: BlockLog | undefined
+    let blockLog: BlockLog | undefined;
     if (!isSentinel) {
-      blockLog = this.createBlockLog(ctx, node.id, block, node)
-      ctx.blockLogs.push(blockLog)
-      this.callOnBlockStart(ctx, node, block)
+      blockLog = this.createBlockLog(ctx, node.id, block, node);
+      ctx.blockLogs.push(blockLog);
+      this.callOnBlockStart(ctx, node, block);
     }
 
-    const startTime = Date.now()
-    let resolvedInputs: Record<string, any> = {}
+    const startTime = Date.now();
+    let resolvedInputs: Record<string, any> = {};
 
-    const nodeMetadata = this.buildNodeMetadata(node)
-    let cleanupSelfReference: (() => void) | undefined
+    const nodeMetadata = this.buildNodeMetadata(node);
+    let cleanupSelfReference: (() => void) | undefined;
 
     if (block.metadata?.id === BlockType.HUMAN_IN_THE_LOOP) {
-      cleanupSelfReference = this.preparePauseResumeSelfReference(ctx, node, block, nodeMetadata)
+      cleanupSelfReference = this.preparePauseResumeSelfReference(
+        ctx,
+        node,
+        block,
+        nodeMetadata
+      );
     }
 
     try {
-      resolvedInputs = this.resolver.resolveInputs(ctx, node.id, block.config.params, block)
+      // Debug logging before resolution for agent blocks
+      if (block.metadata?.id === BlockType.AGENT) {
+        logger.info("[BlockExecutor] Agent block before resolution", {
+          blockId: block.id,
+          hasParamsTools: !!block.config.params.tools,
+          paramsToolsType: block.config.params.tools
+            ? typeof block.config.params.tools
+            : "undefined",
+          paramsToolsLength: Array.isArray(block.config.params.tools)
+            ? block.config.params.tools.length
+            : "not-array",
+        });
+      }
+
+      resolvedInputs = this.resolver.resolveInputs(
+        ctx,
+        node.id,
+        block.config.params,
+        block
+      );
+
+      // Debug logging after resolution for agent blocks
+      if (block.metadata?.id === BlockType.AGENT) {
+        logger.info("[BlockExecutor] Agent block after resolution", {
+          blockId: block.id,
+          hasResolvedTools: !!resolvedInputs.tools,
+          resolvedToolsType: resolvedInputs.tools
+            ? typeof resolvedInputs.tools
+            : "undefined",
+          resolvedToolsLength: Array.isArray(resolvedInputs.tools)
+            ? resolvedInputs.tools.length
+            : "not-array",
+        });
+      }
+
+      // Log BEFORE filter
+      if (block.metadata?.id === BlockType.AGENT) {
+        logger.info("[BlockExecutor] Before MCP filter", {
+          blockId: block.id,
+          toolsBeforeFilter: resolvedInputs.tools,
+          toolsBeforeFilterLength: resolvedInputs.tools?.length,
+          toolsBeforeFilterIsArray: Array.isArray(resolvedInputs.tools),
+        });
+      }
 
       if (block.metadata?.id === BlockType.AGENT && resolvedInputs.tools) {
-        resolvedInputs = await this.filterUnavailableMcpToolsForLog(ctx, resolvedInputs)
+        resolvedInputs = await this.filterUnavailableMcpToolsForLog(
+          ctx,
+          resolvedInputs
+        );
+      }
+
+      // Log AFTER filter
+      if (block.metadata?.id === BlockType.AGENT) {
+        logger.info("[BlockExecutor] After MCP filter", {
+          blockId: block.id,
+          toolsAfterFilter: resolvedInputs.tools,
+          toolsAfterFilterLength: resolvedInputs.tools?.length,
+          toolsAfterFilterIsArray: Array.isArray(resolvedInputs.tools),
+        });
       }
 
       if (blockLog) {
-        blockLog.input = resolvedInputs
+        blockLog.input = resolvedInputs;
       }
     } catch (error) {
-      cleanupSelfReference?.()
+      cleanupSelfReference?.();
       return this.handleBlockError(
         error,
         ctx,
@@ -94,22 +163,46 @@ export class BlockExecutor {
         blockLog,
         resolvedInputs,
         isSentinel,
-        'input_resolution'
-      )
+        "input_resolution"
+      );
     }
-    cleanupSelfReference?.()
+    cleanupSelfReference?.();
 
     try {
+      // Log exactly what we're passing to the handler
+      if (block.metadata?.id === BlockType.AGENT) {
+        logger.info("[BlockExecutor] About to call handler.execute", {
+          blockId: block.id,
+          resolvedInputsTools: resolvedInputs.tools,
+          resolvedInputsToolsIsArray: Array.isArray(resolvedInputs.tools),
+          resolvedInputsToolsLength: resolvedInputs.tools?.length,
+          resolvedInputsToolsKeys: resolvedInputs.tools
+            ? Object.keys(resolvedInputs.tools)
+            : [],
+        });
+      }
+
       const output = handler.executeWithNode
-        ? await handler.executeWithNode(ctx, block, resolvedInputs, nodeMetadata)
-        : await handler.execute(ctx, block, resolvedInputs)
+        ? await handler.executeWithNode(
+            ctx,
+            block,
+            resolvedInputs,
+            nodeMetadata
+          )
+        : await handler.execute(ctx, block, resolvedInputs);
 
       const isStreamingExecution =
-        output && typeof output === 'object' && 'stream' in output && 'execution' in output
+        output &&
+        typeof output === "object" &&
+        "stream" in output &&
+        "execution" in output;
 
-      let normalizedOutput: NormalizedBlockOutput
+      let normalizedOutput: NormalizedBlockOutput;
       if (isStreamingExecution) {
-        const streamingExec = output as { stream: ReadableStream; execution: any }
+        const streamingExec = output as {
+          stream: ReadableStream;
+          execution: any;
+        };
 
         if (ctx.onStream) {
           await this.handleStreamingExecution(
@@ -119,33 +212,40 @@ export class BlockExecutor {
             streamingExec,
             resolvedInputs,
             ctx.selectedOutputs ?? []
-          )
+          );
         }
 
         normalizedOutput = this.normalizeOutput(
           streamingExec.execution.output ?? streamingExec.execution
-        )
+        );
       } else {
-        normalizedOutput = this.normalizeOutput(output)
+        normalizedOutput = this.normalizeOutput(output);
       }
 
-      const duration = Date.now() - startTime
+      const duration = Date.now() - startTime;
 
       if (blockLog) {
-        blockLog.endedAt = new Date().toISOString()
-        blockLog.durationMs = duration
-        blockLog.success = true
-        blockLog.output = this.filterOutputForLog(block, normalizedOutput)
+        blockLog.endedAt = new Date().toISOString();
+        blockLog.durationMs = duration;
+        blockLog.success = true;
+        blockLog.output = this.filterOutputForLog(block, normalizedOutput);
       }
 
-      this.state.setBlockOutput(node.id, normalizedOutput, duration)
+      this.state.setBlockOutput(node.id, normalizedOutput, duration);
 
       if (!isSentinel) {
-        const filteredOutput = this.filterOutputForLog(block, normalizedOutput)
-        this.callOnBlockComplete(ctx, node, block, resolvedInputs, filteredOutput, duration)
+        const filteredOutput = this.filterOutputForLog(block, normalizedOutput);
+        this.callOnBlockComplete(
+          ctx,
+          node,
+          block,
+          resolvedInputs,
+          filteredOutput,
+          duration
+        );
       }
 
-      return normalizedOutput
+      return normalizedOutput;
     } catch (error) {
       return this.handleBlockError(
         error,
@@ -156,30 +256,30 @@ export class BlockExecutor {
         blockLog,
         resolvedInputs,
         isSentinel,
-        'execution'
-      )
+        "execution"
+      );
     }
   }
 
   private buildNodeMetadata(node: DAGNode): {
-    nodeId: string
-    loopId?: string
-    parallelId?: string
-    branchIndex?: number
-    branchTotal?: number
+    nodeId: string;
+    loopId?: string;
+    parallelId?: string;
+    branchIndex?: number;
+    branchTotal?: number;
   } {
-    const metadata = node?.metadata ?? {}
+    const metadata = node?.metadata ?? {};
     return {
       nodeId: node.id,
       loopId: metadata.loopId,
       parallelId: metadata.parallelId,
       branchIndex: metadata.branchIndex,
       branchTotal: metadata.branchTotal,
-    }
+    };
   }
 
   private findHandler(block: SerializedBlock): BlockHandler | undefined {
-    return this.blockHandlers.find((h) => h.canHandle(block))
+    return this.blockHandlers.find((h) => h.canHandle(block));
   }
 
   private handleBlockError(
@@ -191,58 +291,66 @@ export class BlockExecutor {
     blockLog: BlockLog | undefined,
     resolvedInputs: Record<string, any>,
     isSentinel: boolean,
-    phase: 'input_resolution' | 'execution'
+    phase: "input_resolution" | "execution"
   ): NormalizedBlockOutput {
-    const duration = Date.now() - startTime
-    const errorMessage = normalizeError(error)
+    const duration = Date.now() - startTime;
+    const errorMessage = normalizeError(error);
     const hasResolvedInputs =
-      resolvedInputs && typeof resolvedInputs === 'object' && Object.keys(resolvedInputs).length > 0
+      resolvedInputs &&
+      typeof resolvedInputs === "object" &&
+      Object.keys(resolvedInputs).length > 0;
     const input =
       hasResolvedInputs && resolvedInputs
         ? resolvedInputs
-        : ((block.config?.params as Record<string, any> | undefined) ?? {})
+        : (block.config?.params as Record<string, any> | undefined) ?? {};
 
     if (blockLog) {
-      blockLog.endedAt = new Date().toISOString()
-      blockLog.durationMs = duration
-      blockLog.success = false
-      blockLog.error = errorMessage
-      blockLog.input = input
+      blockLog.endedAt = new Date().toISOString();
+      blockLog.durationMs = duration;
+      blockLog.success = false;
+      blockLog.error = errorMessage;
+      blockLog.input = input;
     }
 
     const errorOutput: NormalizedBlockOutput = {
       error: errorMessage,
+    };
+
+    if (error && typeof error === "object" && "childTraceSpans" in error) {
+      errorOutput.childTraceSpans = (error as any).childTraceSpans;
     }
 
-    if (error && typeof error === 'object' && 'childTraceSpans' in error) {
-      errorOutput.childTraceSpans = (error as any).childTraceSpans
-    }
-
-    this.state.setBlockOutput(node.id, errorOutput, duration)
+    this.state.setBlockOutput(node.id, errorOutput, duration);
 
     logger.error(
-      phase === 'input_resolution' ? 'Failed to resolve block inputs' : 'Block execution failed',
+      phase === "input_resolution"
+        ? "Failed to resolve block inputs"
+        : "Block execution failed",
       {
         blockId: node.id,
         blockType: block.metadata?.id,
         error: errorMessage,
       }
-    )
+    );
 
     if (!isSentinel) {
-      this.callOnBlockComplete(ctx, node, block, input, errorOutput, duration)
+      this.callOnBlockComplete(ctx, node, block, input, errorOutput, duration);
     }
 
-    const hasErrorPort = this.hasErrorPortEdge(node)
+    const hasErrorPort = this.hasErrorPortEdge(node);
     if (hasErrorPort) {
-      logger.info('Block has error port - returning error output instead of throwing', {
-        blockId: node.id,
-        error: errorMessage,
-      })
-      return errorOutput
+      logger.info(
+        "Block has error port - returning error output instead of throwing",
+        {
+          blockId: node.id,
+          error: errorMessage,
+        }
+      );
+      return errorOutput;
     }
 
-    const errorToThrow = error instanceof Error ? error : new Error(errorMessage)
+    const errorToThrow =
+      error instanceof Error ? error : new Error(errorMessage);
 
     throw buildBlockExecutionError({
       block,
@@ -252,16 +360,16 @@ export class BlockExecutor {
         nodeId: node.id,
         executionTime: duration,
       },
-    })
+    });
   }
 
   private hasErrorPortEdge(node: DAGNode): boolean {
     for (const [_, edge] of node.outgoingEdges) {
       if (edge.sourceHandle === EDGE.ERROR) {
-        return true
+        return true;
       }
     }
-    return false
+    return false;
   }
 
   private createBlockLog(
@@ -270,24 +378,24 @@ export class BlockExecutor {
     block: SerializedBlock,
     node: DAGNode
   ): BlockLog {
-    let blockName = block.metadata?.name ?? blockId
-    let loopId: string | undefined
-    let parallelId: string | undefined
-    let iterationIndex: number | undefined
+    let blockName = block.metadata?.name ?? blockId;
+    let loopId: string | undefined;
+    let parallelId: string | undefined;
+    let iterationIndex: number | undefined;
 
     if (node?.metadata) {
       if (node.metadata.branchIndex !== undefined && node.metadata.parallelId) {
-        blockName = `${blockName} (iteration ${node.metadata.branchIndex})`
-        iterationIndex = node.metadata.branchIndex
-        parallelId = node.metadata.parallelId
+        blockName = `${blockName} (iteration ${node.metadata.branchIndex})`;
+        iterationIndex = node.metadata.branchIndex;
+        parallelId = node.metadata.parallelId;
       } else if (node.metadata.isLoopNode && node.metadata.loopId) {
-        loopId = node.metadata.loopId
-        const loopScope = ctx.loopExecutions?.get(loopId)
+        loopId = node.metadata.loopId;
+        const loopScope = ctx.loopExecutions?.get(loopId);
         if (loopScope && loopScope.iteration !== undefined) {
-          blockName = `${blockName} (iteration ${loopScope.iteration})`
-          iterationIndex = loopScope.iteration
+          blockName = `${blockName} (iteration ${loopScope.iteration})`;
+          iterationIndex = loopScope.iteration;
         } else {
-          logger.warn('Loop scope not found for block', { blockId, loopId })
+          logger.warn("Loop scope not found for block", { blockId, loopId });
         }
       }
     }
@@ -297,25 +405,25 @@ export class BlockExecutor {
       blockName,
       blockType: block.metadata?.id ?? DEFAULTS.BLOCK_TYPE,
       startedAt: new Date().toISOString(),
-      endedAt: '',
+      endedAt: "",
       durationMs: 0,
       success: false,
       loopId,
       parallelId,
       iterationIndex,
-    }
+    };
   }
 
   private normalizeOutput(output: unknown): NormalizedBlockOutput {
     if (output === null || output === undefined) {
-      return {}
+      return {};
     }
 
-    if (typeof output === 'object' && !Array.isArray(output)) {
-      return output as NormalizedBlockOutput
+    if (typeof output === "object" && !Array.isArray(output)) {
+      return output as NormalizedBlockOutput;
     }
 
-    return { result: output }
+    return { result: output };
   }
 
   private filterOutputForLog(
@@ -323,26 +431,35 @@ export class BlockExecutor {
     output: NormalizedBlockOutput
   ): NormalizedBlockOutput {
     if (block.metadata?.id === BlockType.HUMAN_IN_THE_LOOP) {
-      const filtered: NormalizedBlockOutput = {}
+      const filtered: NormalizedBlockOutput = {};
       for (const [key, value] of Object.entries(output)) {
-        if (key.startsWith('_')) continue
-        if (key === 'response') continue
-        filtered[key] = value
+        if (key.startsWith("_")) continue;
+        if (key === "response") continue;
+        filtered[key] = value;
       }
-      return filtered
+      return filtered;
     }
-    return output
+    return output;
   }
 
-  private callOnBlockStart(ctx: ExecutionContext, node: DAGNode, block: SerializedBlock): void {
-    const blockId = node.id
-    const blockName = block.metadata?.name ?? blockId
-    const blockType = block.metadata?.id ?? DEFAULTS.BLOCK_TYPE
+  private callOnBlockStart(
+    ctx: ExecutionContext,
+    node: DAGNode,
+    block: SerializedBlock
+  ): void {
+    const blockId = node.id;
+    const blockName = block.metadata?.name ?? blockId;
+    const blockType = block.metadata?.id ?? DEFAULTS.BLOCK_TYPE;
 
-    const iterationContext = this.getIterationContext(ctx, node)
+    const iterationContext = this.getIterationContext(ctx, node);
 
     if (this.contextExtensions.onBlockStart) {
-      this.contextExtensions.onBlockStart(blockId, blockName, blockType, iterationContext)
+      this.contextExtensions.onBlockStart(
+        blockId,
+        blockName,
+        blockType,
+        iterationContext
+      );
     }
   }
 
@@ -354,11 +471,11 @@ export class BlockExecutor {
     output: NormalizedBlockOutput,
     duration: number
   ): void {
-    const blockId = node.id
-    const blockName = block.metadata?.name ?? blockId
-    const blockType = block.metadata?.id ?? DEFAULTS.BLOCK_TYPE
+    const blockId = node.id;
+    const blockName = block.metadata?.name ?? blockId;
+    const blockType = block.metadata?.id ?? DEFAULTS.BLOCK_TYPE;
 
-    const iterationContext = this.getIterationContext(ctx, node)
+    const iterationContext = this.getIterationContext(ctx, node);
 
     if (this.contextExtensions.onBlockComplete) {
       this.contextExtensions.onBlockComplete(
@@ -371,36 +488,46 @@ export class BlockExecutor {
           executionTime: duration,
         },
         iterationContext
-      )
+      );
     }
   }
 
   private getIterationContext(
     ctx: ExecutionContext,
     node: DAGNode
-  ): { iterationCurrent: number; iterationTotal: number; iterationType: SubflowType } | undefined {
-    if (!node?.metadata) return undefined
+  ):
+    | {
+        iterationCurrent: number;
+        iterationTotal: number;
+        iterationType: SubflowType;
+      }
+    | undefined {
+    if (!node?.metadata) return undefined;
 
     if (node.metadata.branchIndex !== undefined && node.metadata.branchTotal) {
       return {
         iterationCurrent: node.metadata.branchIndex,
         iterationTotal: node.metadata.branchTotal,
-        iterationType: 'parallel',
-      }
+        iterationType: "parallel",
+      };
     }
 
     if (node.metadata.isLoopNode && node.metadata.loopId) {
-      const loopScope = ctx.loopExecutions?.get(node.metadata.loopId)
-      if (loopScope && loopScope.iteration !== undefined && loopScope.maxIterations) {
+      const loopScope = ctx.loopExecutions?.get(node.metadata.loopId);
+      if (
+        loopScope &&
+        loopScope.iteration !== undefined &&
+        loopScope.maxIterations
+      ) {
         return {
           iterationCurrent: loopScope.iteration,
           iterationTotal: loopScope.maxIterations,
-          iterationType: 'loop',
-        }
+          iterationType: "loop",
+        };
       }
     }
 
-    return undefined
+    return undefined;
   }
 
   /**
@@ -411,22 +538,28 @@ export class BlockExecutor {
     ctx: ExecutionContext,
     inputs: Record<string, any>
   ): Promise<Record<string, any>> {
-    const tools = inputs.tools
-    if (!Array.isArray(tools) || tools.length === 0) return inputs
+    const tools = inputs.tools;
+    if (!Array.isArray(tools) || tools.length === 0) return inputs;
 
-    const mcpTools = tools.filter((t: any) => t.type === 'mcp')
-    if (mcpTools.length === 0) return inputs
+    const mcpTools = tools.filter((t: any) => t.type === "mcp");
+    if (mcpTools.length === 0) return inputs;
 
     const serverIds = [
       ...new Set(mcpTools.map((t: any) => t.params?.serverId).filter(Boolean)),
-    ] as string[]
-    if (serverIds.length === 0) return inputs
+    ] as string[];
+    if (serverIds.length === 0) return inputs;
 
-    const availableServerIds = new Set<string>()
+    // Use tenant database if available, otherwise fall back to main db
+    const dbInstance = (ctx.metadata as any)?.tenantDb || db;
+
+    const availableServerIds = new Set<string>();
     if (ctx.workspaceId && serverIds.length > 0) {
       try {
-        const servers = await db
-          .select({ id: mcpServers.id, connectionStatus: mcpServers.connectionStatus })
+        const servers = await dbInstance
+          .select({
+            id: mcpServers.id,
+            connectionStatus: mcpServers.connectionStatus,
+          })
           .from(mcpServers)
           .where(
             and(
@@ -434,27 +567,30 @@ export class BlockExecutor {
               inArray(mcpServers.id, serverIds),
               isNull(mcpServers.deletedAt)
             )
-          )
+          );
 
         for (const server of servers) {
-          if (server.connectionStatus === 'connected') {
-            availableServerIds.add(server.id)
+          if (server.connectionStatus === "connected") {
+            availableServerIds.add(server.id);
           }
         }
       } catch (error) {
-        logger.warn('Failed to check MCP server availability for logging:', error)
-        return inputs
+        logger.warn(
+          "Failed to check MCP server availability for logging:",
+          error
+        );
+        return inputs;
       }
     }
 
     const filteredTools = tools.filter((tool: any) => {
-      if (tool.type !== 'mcp') return true
-      const serverId = tool.params?.serverId
-      if (!serverId) return false
-      return availableServerIds.has(serverId)
-    })
+      if (tool.type !== "mcp") return true;
+      const serverId = tool.params?.serverId;
+      if (!serverId) return false;
+      return availableServerIds.has(serverId);
+    });
 
-    return { ...inputs, tools: filteredTools }
+    return { ...inputs, tools: filteredTools };
   }
 
   private preparePauseResumeSelfReference(
@@ -462,50 +598,55 @@ export class BlockExecutor {
     node: DAGNode,
     block: SerializedBlock,
     nodeMetadata: {
-      nodeId: string
-      loopId?: string
-      parallelId?: string
-      branchIndex?: number
-      branchTotal?: number
+      nodeId: string;
+      loopId?: string;
+      parallelId?: string;
+      branchIndex?: number;
+      branchTotal?: number;
     }
   ): (() => void) | undefined {
-    const blockId = node.id
+    const blockId = node.id;
 
-    const existingState = ctx.blockStates.get(blockId)
+    const existingState = ctx.blockStates.get(blockId);
     if (existingState?.executed) {
-      return undefined
+      return undefined;
     }
 
-    const executionId = ctx.executionId ?? ctx.metadata?.executionId
-    const workflowId = ctx.workflowId
+    const executionId = ctx.executionId ?? ctx.metadata?.executionId;
+    const workflowId = ctx.workflowId;
 
     if (!executionId || !workflowId) {
-      return undefined
+      return undefined;
     }
 
-    const { loopScope } = mapNodeMetadataToPauseScopes(ctx, nodeMetadata)
-    const contextId = generatePauseContextId(block.id, nodeMetadata, loopScope)
+    const { loopScope } = mapNodeMetadataToPauseScopes(ctx, nodeMetadata);
+    const contextId = generatePauseContextId(block.id, nodeMetadata, loopScope);
 
-    let resumeLinks: { apiUrl: string; uiUrl: string }
+    let resumeLinks: { apiUrl: string; uiUrl: string };
 
     try {
-      const baseUrl = getBaseUrl()
+      const baseUrl = getBaseUrl();
       resumeLinks = {
         apiUrl: buildResumeApiUrl(baseUrl, workflowId, executionId, contextId),
         uiUrl: buildResumeUiUrl(baseUrl, workflowId, executionId),
-      }
+      };
     } catch {
       resumeLinks = {
-        apiUrl: buildResumeApiUrl(undefined, workflowId, executionId, contextId),
+        apiUrl: buildResumeApiUrl(
+          undefined,
+          workflowId,
+          executionId,
+          contextId
+        ),
         uiUrl: buildResumeUiUrl(undefined, workflowId, executionId),
-      }
+      };
     }
 
-    let previousState: BlockState | undefined
+    let previousState: BlockState | undefined;
     if (existingState) {
-      previousState = { ...existingState }
+      previousState = { ...existingState };
     }
-    const hadPrevious = existingState !== undefined
+    const hadPrevious = existingState !== undefined;
 
     const placeholderState: BlockState = {
       output: {
@@ -514,17 +655,17 @@ export class BlockExecutor {
       },
       executed: false,
       executionTime: existingState?.executionTime ?? 0,
-    }
+    };
 
-    this.state.setBlockState(blockId, placeholderState)
+    this.state.setBlockState(blockId, placeholderState);
 
     return () => {
       if (hadPrevious && previousState) {
-        this.state.setBlockState(blockId, previousState)
+        this.state.setBlockState(blockId, previousState);
       } else {
-        this.state.deleteBlockState(blockId)
+        this.state.deleteBlockState(blockId);
       }
-    }
+    };
   }
 
   private async handleStreamingExecution(
@@ -535,49 +676,58 @@ export class BlockExecutor {
     resolvedInputs: Record<string, any>,
     selectedOutputs: string[]
   ): Promise<void> {
-    const blockId = node.id
+    const blockId = node.id;
 
     const responseFormat =
       resolvedInputs?.responseFormat ??
-      (block.config?.params as Record<string, any> | undefined)?.responseFormat ??
-      (block.config as Record<string, any> | undefined)?.responseFormat
+      (block.config?.params as Record<string, any> | undefined)
+        ?.responseFormat ??
+      (block.config as Record<string, any> | undefined)?.responseFormat;
 
-    const stream = streamingExec.stream
-    if (typeof stream.tee !== 'function') {
-      await this.forwardStream(ctx, blockId, streamingExec, stream, responseFormat, selectedOutputs)
-      return
+    const stream = streamingExec.stream;
+    if (typeof stream.tee !== "function") {
+      await this.forwardStream(
+        ctx,
+        blockId,
+        streamingExec,
+        stream,
+        responseFormat,
+        selectedOutputs
+      );
+      return;
     }
 
-    const [clientStream, executorStream] = stream.tee()
+    const [clientStream, executorStream] = stream.tee();
 
-    const processedClientStream = streamingResponseFormatProcessor.processStream(
-      clientStream,
-      blockId,
-      selectedOutputs,
-      responseFormat
-    )
+    const processedClientStream =
+      streamingResponseFormatProcessor.processStream(
+        clientStream,
+        blockId,
+        selectedOutputs,
+        responseFormat
+      );
 
     const clientStreamingExec = {
       ...streamingExec,
       stream: processedClientStream,
-    }
+    };
 
     const executorConsumption = this.consumeExecutorStream(
       executorStream,
       streamingExec,
       blockId,
       responseFormat
-    )
+    );
 
     const clientConsumption = (async () => {
       try {
-        await ctx.onStream?.(clientStreamingExec)
+        await ctx.onStream?.(clientStreamingExec);
       } catch (error) {
-        logger.error('Error in onStream callback', { blockId, error })
+        logger.error("Error in onStream callback", { blockId, error });
       }
-    })()
+    })();
 
-    await Promise.all([clientConsumption, executorConsumption])
+    await Promise.all([clientConsumption, executorConsumption]);
   }
 
   private async forwardStream(
@@ -593,15 +743,15 @@ export class BlockExecutor {
       blockId,
       selectedOutputs,
       responseFormat
-    )
+    );
 
     try {
       await ctx.onStream?.({
         ...streamingExec,
         stream: processedStream,
-      })
+      });
     } catch (error) {
-      logger.error('Error in onStream callback', { blockId, error })
+      logger.error("Error in onStream callback", { blockId, error });
     }
   }
 
@@ -611,36 +761,39 @@ export class BlockExecutor {
     blockId: string,
     responseFormat: any
   ): Promise<void> {
-    const reader = stream.getReader()
-    const decoder = new TextDecoder()
-    let fullContent = ''
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = "";
 
     try {
       while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        fullContent += decoder.decode(value, { stream: true })
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullContent += decoder.decode(value, { stream: true });
       }
     } catch (error) {
-      logger.error('Error reading executor stream for block', { blockId, error })
+      logger.error("Error reading executor stream for block", {
+        blockId,
+        error,
+      });
     } finally {
       try {
-        reader.releaseLock()
+        reader.releaseLock();
       } catch {}
     }
 
     if (!fullContent) {
-      return
+      return;
     }
 
-    const executionOutput = streamingExec.execution?.output
-    if (!executionOutput || typeof executionOutput !== 'object') {
-      return
+    const executionOutput = streamingExec.execution?.output;
+    if (!executionOutput || typeof executionOutput !== "object") {
+      return;
     }
 
     if (responseFormat) {
       try {
-        const parsed = JSON.parse(fullContent.trim())
+        const parsed = JSON.parse(fullContent.trim());
 
         streamingExec.execution.output = {
           ...parsed,
@@ -649,13 +802,16 @@ export class BlockExecutor {
           providerTiming: executionOutput.providerTiming,
           cost: executionOutput.cost,
           model: executionOutput.model,
-        }
-        return
+        };
+        return;
       } catch (error) {
-        logger.warn('Failed to parse streamed content for response format', { blockId, error })
+        logger.warn("Failed to parse streamed content for response format", {
+          blockId,
+          error,
+        });
       }
     }
 
-    executionOutput.content = fullContent
+    executionOutput.content = fullContent;
   }
 }
