@@ -177,12 +177,21 @@ export async function executeWorkflowCore(
     // Use already-decrypted values for execution (no redundant decryption)
     const decryptedEnvVars: Record<string, string> = { ...personalDecrypted, ...workspaceDecrypted }
 
+    // Extract conversationId from input if present (for chat executions)
+    const conversationId = input && typeof input === 'object' ? input.conversationId : undefined
+    
+    // Debug logging
+    if (triggerType === 'chat') {
+      logger.info(`[${requestId}] Chat execution - input:`, { input, conversationId })
+    }
+
     await loggingSession.safeStart({
       userId,
       workspaceId: providedWorkspaceId,
       variables,
       skipLogCreation,
       deploymentVersionId,
+      conversationId,
     })
 
     // Process block states with env var substitution using pre-decrypted values
