@@ -205,9 +205,12 @@ export default function ChatClient({ identifier }: { identifier: string }) {
     }
   }, [isStreamingResponse])
 
-  const fetchChatConfig = async () => {
+  // Fetch chat history for existing conversation
+  const fetchChatHistory = useCallback(async (convId: string, configData?: ChatConfig) => {
     try {
-      const response = await fetch(`/api/chat/${identifier}`, {
+      logger.info('Fetching chat history', { conversationId: convId })
+      
+      const response = await fetch(`/api/chat/${identifier}/history?conversationId=${convId}`, {
         credentials: 'same-origin',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
@@ -215,55 +218,114 @@ export default function ChatClient({ identifier }: { identifier: string }) {
       })
 
       if (!response.ok) {
-        // Check if auth is required
-        if (response.status === 401) {
-          const errorData = await response.json()
-
-          if (errorData.error === 'auth_required_password') {
-            setAuthRequired('password')
-            return
-          }
-          if (errorData.error === 'auth_required_email') {
-            setAuthRequired('email')
-            return
-          }
-          if (errorData.error === 'auth_required_sso') {
-            setAuthRequired('sso')
-            return
-          }
+        if (response.status === 404) {
+          logger.warn('No chat history found for conversation', { conversationId: convId })
+          return
         }
-
-        throw new Error(`Failed to load chat configuration: ${response.status}`)
+        throw new Error(`Failed to load chat history: ${response.status}`)
       }
-
-      // Reset auth required state when authentication is successful
-      setAuthRequired(null)
 
       const data = await response.json()
-
-      setChatConfig(data)
-
-      if (data?.customizations?.welcomeMessage) {
-        setMessages([
-          {
-            id: 'welcome',
-            content: data.customizations.welcomeMessage,
-            type: 'assistant',
-            timestamp: new Date(),
-            isInitialMessage: true,
-          },
-        ])
+      
+      if (data.messages && data.messages.length > 0) {
+        // Convert timestamps to Date objects
+        const historyMessages = data.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }))
+        
+        logger.info('Chat history loaded', { messageCount: historyMessages.length })
+        
+        // Check if we should prepend a welcome message
+        const welcomeMessage = configData?.customizations?.welcomeMessage
+        if (welcomeMessage) {
+          setMessages([
+            {
+              id: 'welcome',
+              content: welcomeMessage,
+              type: 'assistant',
+              timestamp: new Date(),
+              isInitialMessage: true,
+            },
+            ...historyMessages,
+          ])
+        } else {
+          setMessages(historyMessages)
+        }
+        
+        // Scroll to bottom after loading history
+        setTimeout(() => {
+          scrollToBottom()
+        }, 100)
       }
     } catch (error) {
-      logger.error('Error fetching chat config:', error)
-      setError(CHAT_ERROR_MESSAGES.CHAT_UNAVAILABLE)
+      logger.error('Error fetching chat history:', error)
+      // Don't show error to user - just start fresh conversation
     }
-  }
+  }, [identifier, scrollToBottom])
 
-  // Fetch chat config on mount and generate new conversation ID
+  // Fetch chat config on mount and handle conversation ID
   useEffect(() => {
-    fetchChatConfig()
-    setConversationId(uuidv4())
+    let isMounted = true
+    
+    const initializeChat = async () => {
+      // First fetch the chat config
+      const response = await fetch(`/api/chat/${identifier}`, {
+        credentials: 'same-origin',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      })
+
+      if (!isMounted) return
+
+      if (response.ok) {
+        const configData = await response.json()
+        setChatConfig(configData)
+        
+        // Check if conversationId is in URL query params
+        const urlParams = new URLSearchParams(window.location.search)
+        const urlConvId = urlParams.get('conversationId')
+        
+        if (urlConvId) {
+          // Use conversationId from URL and load history
+          logger.info('Loading conversation from URL', { conversationId: urlConvId })
+          setConversationId(urlConvId)
+          // Fetch history with config data
+          await fetchChatHistory(urlConvId, configData)
+        } else {
+          // Generate new conversation ID for fresh conversation
+          const newConvId = uuidv4()
+          logger.info('Starting new conversation (no URL conversationId)', { conversationId: newConvId })
+          setConversationId(newConvId)
+          // Don't store in localStorage - only use URL-based conversations
+          
+          // Add welcome message for new conversation
+          if (configData?.customizations?.welcomeMessage) {
+            setMessages([{
+              id: 'welcome',
+              content: configData.customizations.welcomeMessage,
+              type: 'assistant',
+              timestamp: new Date(),
+              isInitialMessage: true,
+            }])
+          }
+        }
+      } else if (response.status === 401) {
+        const errorData = await response.json()
+        if (errorData.error === 'auth_required_password') {
+          setAuthRequired('password')
+        } else if (errorData.error === 'auth_required_email') {
+          setAuthRequired('email')
+        } else if (errorData.error === 'auth_required_sso') {
+          setAuthRequired('sso')
+        }
+      } else {
+        setError(CHAT_ERROR_MESSAGES.CHAT_UNAVAILABLE)
+      }
+    }
+
+    initializeChat()
 
     getFormattedGitHubStars()
       .then((formattedStars) => {
@@ -272,11 +334,18 @@ export default function ChatClient({ identifier }: { identifier: string }) {
       .catch((err) => {
         logger.error('Failed to fetch GitHub stars:', err)
       })
+    
+    return () => {
+      isMounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identifier])
 
-  const refreshChat = () => {
-    fetchChatConfig()
-  }
+  const refreshChat = useCallback(() => {
+    if (conversationId) {
+      fetchChatHistory(conversationId)
+    }
+  }, [conversationId, fetchChatHistory])
 
   const handleAuthSuccess = () => {
     setAuthRequired(null)
@@ -420,6 +489,15 @@ export default function ChatClient({ identifier }: { identifier: string }) {
           outputConfigs: chatConfig?.outputConfigs,
         }
       )
+      
+      // Update URL with conversationId after first successful message
+      // This allows users to bookmark/share the conversation
+      const urlParams = new URLSearchParams(window.location.search)
+      if (!urlParams.has('conversationId') && conversationId) {
+        const newUrl = `${window.location.pathname}?conversationId=${conversationId}`
+        window.history.replaceState({}, '', newUrl)
+        logger.info('Updated URL with conversationId', { conversationId })
+      }
     } catch (error: any) {
       // Clear timeout in case of error
       clearTimeout(timeoutId)

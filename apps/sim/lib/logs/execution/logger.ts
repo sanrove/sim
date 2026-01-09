@@ -83,6 +83,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
     environment: ExecutionEnvironment
     workflowState: WorkflowState
     deploymentVersionId?: string
+    conversationId?: string
     tenantDb?: any
   }): Promise<{
     workflowLog: WorkflowExecutionLog
@@ -96,12 +97,16 @@ export class ExecutionLogger implements IExecutionLoggerService {
       environment,
       workflowState,
       deploymentVersionId,
+      conversationId,
       tenantDb,
     } = params
 
     const dbToUse = tenantDb || db
 
     logger.debug(`Starting workflow execution ${executionId} for workflow ${workflowId}`)
+    if (conversationId) {
+      logger.info(`[Chat] Starting execution with conversationId: ${conversationId}`)
+    }
 
     // Check if execution log already exists (idempotency check)
     const existingLog = await dbToUse
@@ -162,6 +167,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
         executionData: {
           environment,
           trigger,
+          ...(conversationId && { conversationId }),
         },
       })
       .returning()
@@ -235,15 +241,16 @@ export class ExecutionLogger implements IExecutionLoggerService {
 
     logger.debug(`Completing workflow execution ${executionId}`, { isResume })
 
-    // If this is a resume, fetch the existing log to merge data
-    let existingLog: any = null
-    if (isResume) {
-      const [existing] = await dbToUse
-        .select()
-        .from(workflowExecutionLogs)
-        .where(eq(workflowExecutionLogs.executionId, executionId))
-        .limit(1)
-      existingLog = existing
+    // ALWAYS fetch the existing log to preserve fields like conversationId
+    // Even for non-resume executions, we need to preserve the initial executionData
+    const [existingLog] = await dbToUse
+      .select()
+      .from(workflowExecutionLogs)
+      .where(eq(workflowExecutionLogs.executionId, executionId))
+      .limit(1)
+
+    if (!existingLog) {
+      throw new Error(`Workflow log not found for execution ${executionId}`)
     }
 
     // Determine if workflow failed by checking trace spans for errors
@@ -269,7 +276,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
     const mergedTraceSpans = isResume
       ? traceSpans && traceSpans.length > 0
         ? traceSpans
-        : existingLog?.executionData?.traceSpans || []
+        : existingLog.executionData?.traceSpans || []
       : traceSpans
 
     const filteredTraceSpans = filterForDisplay(mergedTraceSpans)
@@ -278,7 +285,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
     const redactedFinalOutput = redactApiKeys(filteredFinalOutput)
 
     // Merge costs if resuming
-    const existingCost = isResume && existingLog?.cost ? existingLog.cost : null
+    const existingCost = isResume && existingLog.cost ? existingLog.cost : null
     const mergedCost = existingCost
       ? {
           // For resume, add only the model costs, NOT the base execution charge again
@@ -309,15 +316,23 @@ export class ExecutionLogger implements IExecutionLoggerService {
         }
 
     // Merge files if resuming
-    const existingFiles = isResume && existingLog?.files ? existingLog.files : []
+    const existingFiles = isResume && existingLog.files ? existingLog.files : []
     const mergedFiles = [...existingFiles, ...executionFiles]
 
     // Calculate the actual total duration for resume executions
     const actualTotalDuration =
-      isResume && existingLog?.startedAt
+      isResume && existingLog.startedAt
         ? new Date(endedAt).getTime() - new Date(existingLog.startedAt).getTime()
         : totalDurationMs
 
+    // Preserve existing executionData fields (like conversationId, environment, trigger)
+    const existingExecutionData = (existingLog.executionData as any) || {}
+    
+    // Debug logging for conversationId preservation
+    if (existingExecutionData.conversationId) {
+      logger.info(`[Chat] Preserving conversationId in completion: ${existingExecutionData.conversationId}`)
+    }
+    
     const [updatedLog] = await dbToUse
       .update(workflowExecutionLogs)
       .set({
@@ -327,8 +342,10 @@ export class ExecutionLogger implements IExecutionLoggerService {
         totalDurationMs: actualTotalDuration,
         files: mergedFiles.length > 0 ? mergedFiles : null,
         executionData: {
+          ...existingExecutionData, // Preserve existing fields like conversationId
           traceSpans: redactedTraceSpans,
           finalOutput: redactedFinalOutput,
+          workflowInput,
           tokens: {
             input: mergedCost.tokens.input,
             output: mergedCost.tokens.output,

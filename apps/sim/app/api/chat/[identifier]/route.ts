@@ -212,13 +212,16 @@ export async function POST(
         deployment.workflowId,
         executionId,
         'chat',
-        requestId
+        requestId,
+        tenantId,
+        tenantDb
       )
 
       await loggingSession.safeStart({
         userId: deployment.userId,
         workspaceId,
         variables: {},
+        conversationId,
       })
 
       await loggingSession.safeCompleteWithError({
@@ -305,7 +308,14 @@ export async function POST(
 
     const executionId = randomUUID()
 
-    const loggingSession = new LoggingSession(deployment.workflowId, executionId, 'chat', requestId)
+    const loggingSession = new LoggingSession(
+      deployment.workflowId, 
+      executionId, 
+      'chat', 
+      requestId,
+      tenantId,
+      tenantDb
+    )
 
     const preprocessResult = await preprocessExecution({
       workflowId: deployment.workflowId,
@@ -383,6 +393,7 @@ export async function POST(
             userId: workspaceOwnerId,
             workspaceId,
             variables: {},
+            conversationId,
           })
 
           await loggingSession.safeCompleteWithError({

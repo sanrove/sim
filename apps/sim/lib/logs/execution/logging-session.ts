@@ -24,6 +24,7 @@ export interface SessionStartParams {
   triggerData?: Record<string, unknown>
   skipLogCreation?: boolean // For resume executions - reuse existing log entry
   deploymentVersionId?: string // ID of the deployment version used (null for manual/editor executions)
+  conversationId?: string // For chat executions to track conversation history
 }
 
 export interface SessionCompleteParams {
@@ -80,7 +81,7 @@ export class LoggingSession {
   }
 
   async start(params: SessionStartParams): Promise<void> {
-    const { userId, workspaceId, variables, triggerData, skipLogCreation, deploymentVersionId } =
+    const { userId, workspaceId, variables, triggerData, skipLogCreation, deploymentVersionId, conversationId } =
       params
 
     try {
@@ -108,6 +109,7 @@ export class LoggingSession {
           environment: this.environment,
           workflowState: this.workflowState,
           deploymentVersionId,
+          conversationId,
           tenantDb: this.tenantDb,
         })
 
