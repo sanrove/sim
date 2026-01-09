@@ -15,6 +15,8 @@ export interface ExecuteWorkflowOptions {
   onStream?: (streamingExec: any) => Promise<void>
   onBlockComplete?: (blockId: string, output: any) => Promise<void>
   skipLoggingComplete?: boolean
+  tenantId?: string
+  tenantDb?: any
 }
 
 export interface WorkflowInfo {
@@ -41,7 +43,14 @@ export async function executeWorkflow(
   const workspaceId = workflow.workspaceId
   const executionId = providedExecutionId || uuidv4()
   const triggerType = streamConfig?.workflowTriggerType || 'api'
-  const loggingSession = new LoggingSession(workflowId, executionId, triggerType, requestId)
+  const loggingSession = new LoggingSession(
+    workflowId,
+    executionId,
+    triggerType,
+    requestId,
+    streamConfig?.tenantId,
+    streamConfig?.tenantDb
+  )
 
   try {
     const metadata: ExecutionMetadata = {
@@ -55,6 +64,8 @@ export async function executeWorkflow(
       useDraftState: false,
       startTime: new Date().toISOString(),
       isClientSession: false,
+      tenantId: streamConfig?.tenantId,
+      tenantDb: streamConfig?.tenantDb,
     }
 
     const snapshot = new ExecutionSnapshot(

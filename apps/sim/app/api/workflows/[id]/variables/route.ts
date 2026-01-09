@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { workflow } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -10,6 +10,22 @@ import { getWorkflowAccessContext } from '@/lib/workflows/utils'
 import type { Variable } from '@/stores/panel/variables/types'
 
 const logger = createLogger('WorkflowVariablesAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession() {
+  const session = await getSession()
+  const orgId = (session as any)?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const VariablesSchema = z.object({
   variables: z.array(
@@ -34,8 +50,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
     // Get the workflow record
-    const accessContext = await getWorkflowAccessContext(workflowId, session.user.id)
+    const accessContext = await getWorkflowAccessContext(workflowId, session.user.id, tenantDb || undefined)
     const workflowData = accessContext?.workflow
 
     if (!workflowData) {
@@ -71,7 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const updatedVariables = variablesRecord
 
       // Update workflow with variables
-      await db
+      await database
         .update(workflow)
         .set({
           variables: updatedVariables,
@@ -110,8 +130,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+
     // Get the workflow record
-    const accessContext = await getWorkflowAccessContext(workflowId, session.user.id)
+    const accessContext = await getWorkflowAccessContext(workflowId, session.user.id, tenantDb || undefined)
     const workflowData = accessContext?.workflow
 
     if (!workflowData) {

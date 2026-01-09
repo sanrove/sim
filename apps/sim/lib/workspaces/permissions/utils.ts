@@ -1,6 +1,7 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase } from '@sim/db'
 import { permissions, type permissionTypeEnum, user, workspace } from '@sim/db/schema'
 import { and, eq } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 
 export type PermissionType = (typeof permissionTypeEnum.enumValues)[number]
 
@@ -10,14 +11,17 @@ export type PermissionType = (typeof permissionTypeEnum.enumValues)[number]
  * @param userId - The ID of the user to check permissions for
  * @param entityType - The type of entity (e.g., 'workspace', 'workflow', etc.)
  * @param entityId - The ID of the specific entity
+ * @param tenantDb - Optional tenant database connection (uses master db if not provided)
  * @returns Promise<PermissionType | null> - The highest permission the user has for the entity, or null if none
  */
 export async function getUserEntityPermissions(
   userId: string,
   entityType: string,
-  entityId: string
+  entityId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<PermissionType | null> {
-  const result = await db
+  const database = tenantDb || db
+  const result = await database
     .select({ permissionType: permissions.permissionType })
     .from(permissions)
     .where(
@@ -47,10 +51,16 @@ export async function getUserEntityPermissions(
  *
  * @param userId - The ID of the user to check
  * @param workspaceId - The ID of the workspace to check
+ * @param tenantDb - Optional tenant database connection
  * @returns Promise<boolean> - True if the user has admin permission for the workspace, false otherwise
  */
-export async function hasAdminPermission(userId: string, workspaceId: string): Promise<boolean> {
-  const result = await db
+export async function hasAdminPermission(
+  userId: string,
+  workspaceId: string,
+  tenantDb?: PostgresJsDatabase<any>
+): Promise<boolean> {
+  const database = tenantDb || db
+  const result = await database
     .select({ id: permissions.id })
     .from(permissions)
     .where(
@@ -105,13 +115,16 @@ export async function getUsersWithPermissions(workspaceId: string): Promise<
  *
  * @param userId - The ID of the user to check
  * @param workspaceId - The ID of the workspace to check
+ * @param tenantDb - Optional tenant database connection
  * @returns Promise<boolean> - True if the user has admin access to the workspace, false otherwise
  */
 export async function hasWorkspaceAdminAccess(
   userId: string,
-  workspaceId: string
+  workspaceId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<boolean> {
-  const workspaceResult = await db
+  const database = tenantDb || db
+  const workspaceResult = await database
     .select({ ownerId: workspace.ownerId })
     .from(workspace)
     .where(eq(workspace.id, workspaceId))
@@ -125,7 +138,7 @@ export async function hasWorkspaceAdminAccess(
     return true
   }
 
-  return await hasAdminPermission(userId, workspaceId)
+  return await hasAdminPermission(userId, workspaceId, tenantDb)
 }
 
 /**

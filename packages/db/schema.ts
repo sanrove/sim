@@ -616,6 +616,7 @@ export const apiKey = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id').references(() => organization.id, { onDelete: 'cascade' }), // Organization for tenant isolation
     workspaceId: text('workspace_id').references(() => workspace.id, { onDelete: 'cascade' }), // Only set for workspace keys
     createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
     name: text('name').notNull(),
@@ -633,6 +634,7 @@ export const apiKey = pgTable(
     ),
     workspaceTypeIdx: index('api_key_workspace_type_idx').on(table.workspaceId, table.type),
     userTypeIdx: index('api_key_user_type_idx').on(table.userId, table.type),
+    orgTypeIdx: index('api_key_org_type_idx').on(table.organizationId, table.type),
   })
 )
 
@@ -1663,6 +1665,22 @@ export const ssoProvider = pgTable(
     domainIdx: index('sso_provider_domain_idx').on(table.domain),
     userIdIdx: index('sso_provider_user_id_idx').on(table.userId),
     organizationIdIdx: index('sso_provider_organization_id_idx').on(table.organizationId),
+  })
+)
+
+// Tenant configuration for multi-tenant routing
+export const tenantConfig = pgTable(
+  'tenant_config',
+  {
+    id: text('id').primaryKey(),
+    tenantId: text('tenant_id').notNull().unique(),
+    baseUrl: text('base_url').notNull(),
+    description: text('description'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index('tenant_config_tenant_id_idx').on(table.tenantId),
   })
 )
 

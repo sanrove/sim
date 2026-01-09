@@ -1,122 +1,133 @@
-import { HubspotIcon } from '@/components/icons'
-import type { BlockConfig } from '@/blocks/types'
-import { AuthMode } from '@/blocks/types'
-import type { HubSpotResponse } from '@/tools/hubspot/types'
-import { getTrigger } from '@/triggers'
-import { hubspotAllTriggerOptions } from '@/triggers/hubspot/utils'
+import { HubspotIcon } from "@/components/icons";
+import type { BlockConfig } from "@/blocks/types";
+import { AuthMode } from "@/blocks/types";
+import type { HubSpotResponse } from "@/tools/hubspot/types";
+import { getTrigger } from "@/triggers";
+import { hubspotAllTriggerOptions } from "@/triggers/hubspot/utils";
 
 export const HubSpotBlock: BlockConfig<HubSpotResponse> = {
-  type: 'hubspot',
-  name: 'HubSpot',
-  description: 'Interact with HubSpot CRM or trigger workflows from HubSpot events',
+  type: "hubspot",
+  name: "HubSpot",
+  description:
+    "Interact with HubSpot CRM or trigger workflows from HubSpot events",
   authMode: AuthMode.OAuth,
   longDescription:
-    'Integrate HubSpot into your workflow. Manage contacts, companies, deals, tickets, and other CRM objects with powerful automation capabilities. Can be used in trigger mode to start workflows when contacts are created, deleted, or updated.',
-  docsLink: 'https://docs.sim.ai/tools/hubspot',
-  category: 'tools',
-  bgColor: '#FF7A59',
+    "Integrate HubSpot into your workflow. Manage contacts, companies, deals, tickets, and other CRM objects with powerful automation capabilities. Can be used in trigger mode to start workflows when contacts are created, deleted, or updated.",
+  docsLink: "https://docs.ethana.ai/tools/hubspot",
+  category: "tools",
+  bgColor: "#FF7A59",
   icon: HubspotIcon,
   subBlocks: [
     {
-      id: 'operation',
-      title: 'Operation',
-      type: 'dropdown',
+      id: "operation",
+      title: "Operation",
+      type: "dropdown",
       options: [
-        { label: 'Get Users', id: 'get_users' },
-        { label: 'Get Contacts', id: 'get_contacts' },
-        { label: 'Create Contact', id: 'create_contact' },
-        { label: 'Update Contact', id: 'update_contact' },
-        { label: 'Search Contacts', id: 'search_contacts' },
-        { label: 'Get Companies', id: 'get_companies' },
-        { label: 'Create Company', id: 'create_company' },
-        { label: 'Update Company', id: 'update_company' },
-        { label: 'Search Companies', id: 'search_companies' },
-        { label: 'Get Deals', id: 'get_deals' },
+        { label: "Get Users", id: "get_users" },
+        { label: "Get Contacts", id: "get_contacts" },
+        { label: "Create Contact", id: "create_contact" },
+        { label: "Update Contact", id: "update_contact" },
+        { label: "Search Contacts", id: "search_contacts" },
+        { label: "Get Companies", id: "get_companies" },
+        { label: "Create Company", id: "create_company" },
+        { label: "Update Company", id: "update_company" },
+        { label: "Search Companies", id: "search_companies" },
+        { label: "Get Deals", id: "get_deals" },
       ],
-      value: () => 'get_contacts',
+      value: () => "get_contacts",
     },
     {
-      id: 'credential',
-      title: 'HubSpot Account',
-      type: 'oauth-input',
-      serviceId: 'hubspot',
+      id: "credential",
+      title: "HubSpot Account",
+      type: "oauth-input",
+      serviceId: "hubspot",
       requiredScopes: [
-        'crm.objects.contacts.read',
-        'crm.objects.contacts.write',
-        'crm.objects.companies.read',
-        'crm.objects.companies.write',
-        'crm.objects.deals.read',
-        'crm.objects.deals.write',
-        'crm.objects.owners.read',
-        'crm.objects.users.read',
-        'crm.objects.users.write',
-        'crm.objects.marketing_events.read',
-        'crm.objects.marketing_events.write',
-        'crm.objects.line_items.read',
-        'crm.objects.line_items.write',
-        'crm.objects.quotes.read',
-        'crm.objects.quotes.write',
-        'crm.objects.appointments.read',
-        'crm.objects.appointments.write',
-        'crm.objects.carts.read',
-        'crm.objects.carts.write',
-        'crm.import',
-        'crm.lists.read',
-        'crm.lists.write',
-        'tickets',
+        "crm.objects.contacts.read",
+        "crm.objects.contacts.write",
+        "crm.objects.companies.read",
+        "crm.objects.companies.write",
+        "crm.objects.deals.read",
+        "crm.objects.deals.write",
+        "crm.objects.owners.read",
+        "crm.objects.users.read",
+        "crm.objects.users.write",
+        "crm.objects.marketing_events.read",
+        "crm.objects.marketing_events.write",
+        "crm.objects.line_items.read",
+        "crm.objects.line_items.write",
+        "crm.objects.quotes.read",
+        "crm.objects.quotes.write",
+        "crm.objects.appointments.read",
+        "crm.objects.appointments.write",
+        "crm.objects.carts.read",
+        "crm.objects.carts.write",
+        "crm.import",
+        "crm.lists.read",
+        "crm.lists.write",
+        "tickets",
       ],
-      placeholder: 'Select HubSpot account',
+      placeholder: "Select HubSpot account",
       required: true,
     },
     {
-      id: 'contactId',
-      title: 'Contact ID or Email',
-      type: 'short-input',
-      placeholder: 'Leave empty to list all contacts',
-      condition: { field: 'operation', value: 'get_contacts' },
+      id: "contactId",
+      title: "Contact ID or Email",
+      type: "short-input",
+      placeholder: "Leave empty to list all contacts",
+      condition: { field: "operation", value: "get_contacts" },
     },
     {
-      id: 'contactId',
-      title: 'Contact ID or Email',
-      type: 'short-input',
-      placeholder: 'Numeric ID, or email (requires ID Property below)',
-      condition: { field: 'operation', value: 'update_contact' },
+      id: "contactId",
+      title: "Contact ID or Email",
+      type: "short-input",
+      placeholder: "Numeric ID, or email (requires ID Property below)",
+      condition: { field: "operation", value: "update_contact" },
       required: true,
     },
     {
-      id: 'companyId',
-      title: 'Company ID or Domain',
-      type: 'short-input',
-      placeholder: 'Leave empty to list all companies',
-      condition: { field: 'operation', value: 'get_companies' },
+      id: "companyId",
+      title: "Company ID or Domain",
+      type: "short-input",
+      placeholder: "Leave empty to list all companies",
+      condition: { field: "operation", value: "get_companies" },
     },
     {
-      id: 'companyId',
-      title: 'Company ID or Domain',
-      type: 'short-input',
-      placeholder: 'Numeric ID, or domain (requires ID Property below)',
-      condition: { field: 'operation', value: 'update_company' },
+      id: "companyId",
+      title: "Company ID or Domain",
+      type: "short-input",
+      placeholder: "Numeric ID, or domain (requires ID Property below)",
+      condition: { field: "operation", value: "update_company" },
       required: true,
     },
     {
-      id: 'idProperty',
-      title: 'ID Property',
-      type: 'short-input',
+      id: "idProperty",
+      title: "ID Property",
+      type: "short-input",
       placeholder: 'Required if using email/domain (e.g., "email" or "domain")',
       condition: {
-        field: 'operation',
-        value: ['get_contacts', 'update_contact', 'get_companies', 'update_company'],
+        field: "operation",
+        value: [
+          "get_contacts",
+          "update_contact",
+          "get_companies",
+          "update_company",
+        ],
       },
     },
     {
-      id: 'propertiesToSet',
-      title: 'Properties',
-      type: 'long-input',
+      id: "propertiesToSet",
+      title: "Properties",
+      type: "long-input",
       placeholder:
         'JSON object with properties (e.g., {"email": "test@example.com", "firstname": "John"})',
       condition: {
-        field: 'operation',
-        value: ['create_contact', 'update_contact', 'create_company', 'update_company'],
+        field: "operation",
+        value: [
+          "create_contact",
+          "update_contact",
+          "create_company",
+          "update_company",
+        ],
       },
       wandConfig: {
         enabled: true,
@@ -236,74 +247,89 @@ HubSpot properties are defined as a flat JSON object with property names as keys
 
 ### REMEMBER
 Return ONLY the JSON object with properties - no explanations, no markdown, no extra text.`,
-        placeholder: 'Describe the properties you want to set...',
-        generationType: 'json-object',
+        placeholder: "Describe the properties you want to set...",
+        generationType: "json-object",
       },
     },
     {
-      id: 'properties',
-      title: 'Properties to Return',
-      type: 'short-input',
+      id: "properties",
+      title: "Properties to Return",
+      type: "short-input",
       placeholder: 'Comma-separated list (e.g., "email,firstname,lastname")',
-      condition: { field: 'operation', value: ['get_contacts', 'get_companies', 'get_deals'] },
+      condition: {
+        field: "operation",
+        value: ["get_contacts", "get_companies", "get_deals"],
+      },
     },
     {
-      id: 'associations',
-      title: 'Associations',
-      type: 'short-input',
+      id: "associations",
+      title: "Associations",
+      type: "short-input",
       placeholder: 'Comma-separated object types (e.g., "companies,deals")',
       condition: {
-        field: 'operation',
-        value: ['get_contacts', 'get_companies', 'get_deals', 'create_contact', 'create_company'],
-      },
-    },
-    {
-      id: 'limit',
-      title: 'Limit',
-      type: 'short-input',
-      placeholder: 'Max results (list: 100, search: 200)',
-      condition: {
-        field: 'operation',
+        field: "operation",
         value: [
-          'get_users',
-          'get_contacts',
-          'get_companies',
-          'get_deals',
-          'search_contacts',
-          'search_companies',
+          "get_contacts",
+          "get_companies",
+          "get_deals",
+          "create_contact",
+          "create_company",
         ],
       },
     },
     {
-      id: 'after',
-      title: 'After (Pagination)',
-      type: 'short-input',
-      placeholder: 'Pagination cursor from previous response',
+      id: "limit",
+      title: "Limit",
+      type: "short-input",
+      placeholder: "Max results (list: 100, search: 200)",
       condition: {
-        field: 'operation',
+        field: "operation",
         value: [
-          'get_contacts',
-          'get_companies',
-          'get_deals',
-          'search_contacts',
-          'search_companies',
+          "get_users",
+          "get_contacts",
+          "get_companies",
+          "get_deals",
+          "search_contacts",
+          "search_companies",
         ],
       },
     },
     {
-      id: 'query',
-      title: 'Search Query',
-      type: 'short-input',
-      placeholder: 'Search term (e.g., company name, contact email)',
-      condition: { field: 'operation', value: ['search_contacts', 'search_companies'] },
+      id: "after",
+      title: "After (Pagination)",
+      type: "short-input",
+      placeholder: "Pagination cursor from previous response",
+      condition: {
+        field: "operation",
+        value: [
+          "get_contacts",
+          "get_companies",
+          "get_deals",
+          "search_contacts",
+          "search_companies",
+        ],
+      },
     },
     {
-      id: 'filterGroups',
-      title: 'Filter Groups',
-      type: 'long-input',
+      id: "query",
+      title: "Search Query",
+      type: "short-input",
+      placeholder: "Search term (e.g., company name, contact email)",
+      condition: {
+        field: "operation",
+        value: ["search_contacts", "search_companies"],
+      },
+    },
+    {
+      id: "filterGroups",
+      title: "Filter Groups",
+      type: "long-input",
       placeholder:
         'JSON array of filter groups (e.g., [{"filters":[{"propertyName":"email","operator":"EQ","value":"test@example.com"}]}])',
-      condition: { field: 'operation', value: ['search_contacts', 'search_companies'] },
+      condition: {
+        field: "operation",
+        value: ["search_contacts", "search_companies"],
+      },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -493,17 +519,20 @@ HubSpot supports the following operators:
 
 ### REMEMBER
 Return ONLY the JSON array of filter groups - no explanations, no markdown, no extra text.`,
-        placeholder: 'Describe the filters you want to apply...',
-        generationType: 'json-object',
+        placeholder: "Describe the filters you want to apply...",
+        generationType: "json-object",
       },
     },
     {
-      id: 'sorts',
-      title: 'Sort Order',
-      type: 'long-input',
+      id: "sorts",
+      title: "Sort Order",
+      type: "long-input",
       placeholder:
         'JSON array of sort objects (e.g., [{"propertyName":"createdate","direction":"DESCENDING"}])',
-      condition: { field: 'operation', value: ['search_contacts', 'search_companies'] },
+      condition: {
+        field: "operation",
+        value: ["search_contacts", "search_companies"],
+      },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -615,16 +644,20 @@ Structure:
 
 ### REMEMBER
 Return ONLY the JSON array of sort objects - no explanations, no markdown, no extra text.`,
-        placeholder: 'Describe how you want to sort the results...',
-        generationType: 'json-object',
+        placeholder: "Describe how you want to sort the results...",
+        generationType: "json-object",
       },
     },
     {
-      id: 'searchProperties',
-      title: 'Properties to Return',
-      type: 'long-input',
-      placeholder: 'JSON array of properties (e.g., ["email","firstname","lastname"])',
-      condition: { field: 'operation', value: ['search_contacts', 'search_companies'] },
+      id: "searchProperties",
+      title: "Properties to Return",
+      type: "long-input",
+      placeholder:
+        'JSON array of properties (e.g., ["email","firstname","lastname"])',
+      condition: {
+        field: "operation",
+        value: ["search_contacts", "search_companies"],
+      },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -747,78 +780,82 @@ Structure:
 
 ### REMEMBER
 Return ONLY the JSON array of property names - no explanations, no markdown, no extra text.`,
-        placeholder: 'Describe which properties you want to return...',
-        generationType: 'json-object',
+        placeholder: "Describe which properties you want to return...",
+        generationType: "json-object",
       },
     },
     {
-      id: 'selectedTriggerId',
-      title: 'Trigger Type',
-      type: 'dropdown',
-      mode: 'trigger',
+      id: "selectedTriggerId",
+      title: "Trigger Type",
+      type: "dropdown",
+      mode: "trigger",
       options: hubspotAllTriggerOptions,
-      value: () => 'hubspot_contact_created',
+      value: () => "hubspot_contact_created",
       required: true,
     },
-    ...getTrigger('hubspot_contact_created').subBlocks.slice(1),
-    ...getTrigger('hubspot_contact_deleted').subBlocks.slice(1),
-    ...getTrigger('hubspot_contact_privacy_deleted').subBlocks.slice(1),
-    ...getTrigger('hubspot_contact_property_changed').subBlocks.slice(1),
-    ...getTrigger('hubspot_company_created').subBlocks.slice(1),
-    ...getTrigger('hubspot_company_deleted').subBlocks.slice(1),
-    ...getTrigger('hubspot_company_property_changed').subBlocks.slice(1),
-    ...getTrigger('hubspot_conversation_creation').subBlocks.slice(1),
-    ...getTrigger('hubspot_conversation_deletion').subBlocks.slice(1),
-    ...getTrigger('hubspot_conversation_new_message').subBlocks.slice(1),
-    ...getTrigger('hubspot_conversation_privacy_deletion').subBlocks.slice(1),
-    ...getTrigger('hubspot_conversation_property_changed').subBlocks.slice(1),
-    ...getTrigger('hubspot_deal_created').subBlocks.slice(1),
-    ...getTrigger('hubspot_deal_deleted').subBlocks.slice(1),
-    ...getTrigger('hubspot_deal_property_changed').subBlocks.slice(1),
-    ...getTrigger('hubspot_ticket_created').subBlocks.slice(1),
-    ...getTrigger('hubspot_ticket_deleted').subBlocks.slice(1),
-    ...getTrigger('hubspot_ticket_property_changed').subBlocks.slice(1),
+    ...getTrigger("hubspot_contact_created").subBlocks.slice(1),
+    ...getTrigger("hubspot_contact_deleted").subBlocks.slice(1),
+    ...getTrigger("hubspot_contact_privacy_deleted").subBlocks.slice(1),
+    ...getTrigger("hubspot_contact_property_changed").subBlocks.slice(1),
+    ...getTrigger("hubspot_company_created").subBlocks.slice(1),
+    ...getTrigger("hubspot_company_deleted").subBlocks.slice(1),
+    ...getTrigger("hubspot_company_property_changed").subBlocks.slice(1),
+    ...getTrigger("hubspot_conversation_creation").subBlocks.slice(1),
+    ...getTrigger("hubspot_conversation_deletion").subBlocks.slice(1),
+    ...getTrigger("hubspot_conversation_new_message").subBlocks.slice(1),
+    ...getTrigger("hubspot_conversation_privacy_deletion").subBlocks.slice(1),
+    ...getTrigger("hubspot_conversation_property_changed").subBlocks.slice(1),
+    ...getTrigger("hubspot_deal_created").subBlocks.slice(1),
+    ...getTrigger("hubspot_deal_deleted").subBlocks.slice(1),
+    ...getTrigger("hubspot_deal_property_changed").subBlocks.slice(1),
+    ...getTrigger("hubspot_ticket_created").subBlocks.slice(1),
+    ...getTrigger("hubspot_ticket_deleted").subBlocks.slice(1),
+    ...getTrigger("hubspot_ticket_property_changed").subBlocks.slice(1),
   ],
   tools: {
     access: [
-      'hubspot_get_users',
-      'hubspot_list_contacts',
-      'hubspot_get_contact',
-      'hubspot_create_contact',
-      'hubspot_update_contact',
-      'hubspot_search_contacts',
-      'hubspot_list_companies',
-      'hubspot_get_company',
-      'hubspot_create_company',
-      'hubspot_update_company',
-      'hubspot_search_companies',
-      'hubspot_list_deals',
+      "hubspot_get_users",
+      "hubspot_list_contacts",
+      "hubspot_get_contact",
+      "hubspot_create_contact",
+      "hubspot_update_contact",
+      "hubspot_search_contacts",
+      "hubspot_list_companies",
+      "hubspot_get_company",
+      "hubspot_create_company",
+      "hubspot_update_company",
+      "hubspot_search_companies",
+      "hubspot_list_deals",
     ],
     config: {
       tool: (params) => {
         switch (params.operation) {
-          case 'get_users':
-            return 'hubspot_get_users'
-          case 'get_contacts':
-            return params.contactId ? 'hubspot_get_contact' : 'hubspot_list_contacts'
-          case 'create_contact':
-            return 'hubspot_create_contact'
-          case 'update_contact':
-            return 'hubspot_update_contact'
-          case 'search_contacts':
-            return 'hubspot_search_contacts'
-          case 'get_companies':
-            return params.companyId ? 'hubspot_get_company' : 'hubspot_list_companies'
-          case 'create_company':
-            return 'hubspot_create_company'
-          case 'update_company':
-            return 'hubspot_update_company'
-          case 'search_companies':
-            return 'hubspot_search_companies'
-          case 'get_deals':
-            return 'hubspot_list_deals'
+          case "get_users":
+            return "hubspot_get_users";
+          case "get_contacts":
+            return params.contactId
+              ? "hubspot_get_contact"
+              : "hubspot_list_contacts";
+          case "create_contact":
+            return "hubspot_create_contact";
+          case "update_contact":
+            return "hubspot_update_contact";
+          case "search_contacts":
+            return "hubspot_search_contacts";
+          case "get_companies":
+            return params.companyId
+              ? "hubspot_get_company"
+              : "hubspot_list_companies";
+          case "create_company":
+            return "hubspot_create_company";
+          case "update_company":
+            return "hubspot_update_company";
+          case "search_companies":
+            return "hubspot_search_companies";
+          case "get_deals":
+            return "hubspot_list_deals";
           default:
-            throw new Error(`Unknown operation: ${params.operation}`)
+            throw new Error(`Unknown operation: ${params.operation}`);
         }
       },
       params: (params) => {
@@ -832,136 +869,177 @@ Return ONLY the JSON array of property names - no explanations, no markdown, no 
           sorts,
           associations,
           ...rest
-        } = params
+        } = params;
 
         const cleanParams: Record<string, any> = {
           credential,
-        }
+        };
 
         const createUpdateOps = [
-          'create_contact',
-          'update_contact',
-          'create_company',
-          'update_company',
-        ]
+          "create_contact",
+          "update_contact",
+          "create_company",
+          "update_company",
+        ];
         if (propertiesToSet && createUpdateOps.includes(operation as string)) {
-          cleanParams.properties = propertiesToSet
+          cleanParams.properties = propertiesToSet;
         }
 
-        const getListOps = ['get_contacts', 'get_companies', 'get_deals']
-        if (properties && !searchProperties && getListOps.includes(operation as string)) {
-          cleanParams.properties = properties
+        const getListOps = ["get_contacts", "get_companies", "get_deals"];
+        if (
+          properties &&
+          !searchProperties &&
+          getListOps.includes(operation as string)
+        ) {
+          cleanParams.properties = properties;
         }
 
-        const searchOps = ['search_contacts', 'search_companies']
+        const searchOps = ["search_contacts", "search_companies"];
         if (searchProperties && searchOps.includes(operation as string)) {
-          cleanParams.properties = searchProperties
+          cleanParams.properties = searchProperties;
         }
 
         if (filterGroups && searchOps.includes(operation as string)) {
-          cleanParams.filterGroups = filterGroups
+          cleanParams.filterGroups = filterGroups;
         }
 
         if (sorts && searchOps.includes(operation as string)) {
-          cleanParams.sorts = sorts
+          cleanParams.sorts = sorts;
         }
 
-        if (associations && ['create_contact', 'create_company'].includes(operation as string)) {
-          cleanParams.associations = associations
+        if (
+          associations &&
+          ["create_contact", "create_company"].includes(operation as string)
+        ) {
+          cleanParams.associations = associations;
         }
 
         const excludeKeys = [
-          'propertiesToSet',
-          'properties',
-          'searchProperties',
-          'filterGroups',
-          'sorts',
-          'associations',
-        ]
+          "propertiesToSet",
+          "properties",
+          "searchProperties",
+          "filterGroups",
+          "sorts",
+          "associations",
+        ];
         Object.entries(rest).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '' && !excludeKeys.includes(key)) {
-            cleanParams[key] = value
+          if (
+            value !== undefined &&
+            value !== null &&
+            value !== "" &&
+            !excludeKeys.includes(key)
+          ) {
+            cleanParams[key] = value;
           }
-        })
+        });
 
-        return cleanParams
+        return cleanParams;
       },
     },
   },
   inputs: {
-    operation: { type: 'string', description: 'Operation to perform' },
-    credential: { type: 'string', description: 'HubSpot access token' },
-    contactId: { type: 'string', description: 'Contact ID or email' },
-    companyId: { type: 'string', description: 'Company ID or domain' },
-    idProperty: { type: 'string', description: 'Property name to use as unique identifier' },
-    propertiesToSet: { type: 'json', description: 'Properties to create/update (JSON object)' },
-    properties: {
-      type: 'string',
-      description: 'Comma-separated properties to return (for list/get)',
+    operation: { type: "string", description: "Operation to perform" },
+    credential: { type: "string", description: "HubSpot access token" },
+    contactId: { type: "string", description: "Contact ID or email" },
+    companyId: { type: "string", description: "Company ID or domain" },
+    idProperty: {
+      type: "string",
+      description: "Property name to use as unique identifier",
     },
-    associations: { type: 'string', description: 'Comma-separated object types for associations' },
-    limit: { type: 'string', description: 'Maximum results (list: 100, search: 200)' },
-    after: { type: 'string', description: 'Pagination cursor' },
-    query: { type: 'string', description: 'Search query string' },
-    filterGroups: { type: 'json', description: 'Filter groups for search (JSON array)' },
-    sorts: { type: 'json', description: 'Sort order (JSON array of strings or objects)' },
-    searchProperties: { type: 'json', description: 'Properties to return in search (JSON array)' },
+    propertiesToSet: {
+      type: "json",
+      description: "Properties to create/update (JSON object)",
+    },
+    properties: {
+      type: "string",
+      description: "Comma-separated properties to return (for list/get)",
+    },
+    associations: {
+      type: "string",
+      description: "Comma-separated object types for associations",
+    },
+    limit: {
+      type: "string",
+      description: "Maximum results (list: 100, search: 200)",
+    },
+    after: { type: "string", description: "Pagination cursor" },
+    query: { type: "string", description: "Search query string" },
+    filterGroups: {
+      type: "json",
+      description: "Filter groups for search (JSON array)",
+    },
+    sorts: {
+      type: "json",
+      description: "Sort order (JSON array of strings or objects)",
+    },
+    searchProperties: {
+      type: "json",
+      description: "Properties to return in search (JSON array)",
+    },
   },
   outputs: {
-    users: { type: 'json', description: 'Array of user objects' },
-    contacts: { type: 'json', description: 'Array of contact objects' },
-    contact: { type: 'json', description: 'Single contact object' },
-    companies: { type: 'json', description: 'Array of company objects' },
-    company: { type: 'json', description: 'Single company object' },
-    deals: { type: 'json', description: 'Array of deal objects' },
-    total: { type: 'number', description: 'Total number of matching results (for search)' },
-    paging: { type: 'json', description: 'Pagination info with next/prev cursors' },
-    metadata: { type: 'json', description: 'Operation metadata' },
-    success: { type: 'boolean', description: 'Operation success status' },
+    users: { type: "json", description: "Array of user objects" },
+    contacts: { type: "json", description: "Array of contact objects" },
+    contact: { type: "json", description: "Single contact object" },
+    companies: { type: "json", description: "Array of company objects" },
+    company: { type: "json", description: "Single company object" },
+    deals: { type: "json", description: "Array of deal objects" },
+    total: {
+      type: "number",
+      description: "Total number of matching results (for search)",
+    },
+    paging: {
+      type: "json",
+      description: "Pagination info with next/prev cursors",
+    },
+    metadata: { type: "json", description: "Operation metadata" },
+    success: { type: "boolean", description: "Operation success status" },
     payload: {
-      type: 'json',
-      description: 'Full webhook payload array from HubSpot containing event details',
+      type: "json",
+      description:
+        "Full webhook payload array from HubSpot containing event details",
     },
     provider: {
-      type: 'string',
-      description: 'Provider name (hubspot)',
+      type: "string",
+      description: "Provider name (hubspot)",
     },
     providerConfig: {
       appId: {
-        type: 'string',
-        description: 'HubSpot App ID',
+        type: "string",
+        description: "HubSpot App ID",
       },
       clientId: {
-        type: 'string',
-        description: 'HubSpot Client ID',
+        type: "string",
+        description: "HubSpot Client ID",
       },
       triggerId: {
-        type: 'string',
-        description: 'Trigger ID (e.g., hubspot_company_created)',
+        type: "string",
+        description: "Trigger ID (e.g., hubspot_company_created)",
       },
       clientSecret: {
-        type: 'string',
-        description: 'HubSpot Client Secret',
+        type: "string",
+        description: "HubSpot Client Secret",
       },
       developerApiKey: {
-        type: 'string',
-        description: 'HubSpot Developer API Key',
+        type: "string",
+        description: "HubSpot Developer API Key",
       },
       curlSetWebhookUrl: {
-        type: 'string',
-        description: 'curl command to set webhook URL',
+        type: "string",
+        description: "curl command to set webhook URL",
       },
       curlCreateSubscription: {
-        type: 'string',
-        description: 'curl command to create subscription',
+        type: "string",
+        description: "curl command to create subscription",
       },
       webhookUrlDisplay: {
-        type: 'string',
-        description: 'Webhook URL display value',
+        type: "string",
+        description: "Webhook URL display value",
       },
       propertyName: {
-        type: 'string',
-        description: 'Optional property name filter (for property change triggers)',
+        type: "string",
+        description:
+          "Optional property name filter (for property change triggers)",
       },
     },
   } as any,
@@ -969,24 +1047,24 @@ Return ONLY the JSON array of property names - no explanations, no markdown, no 
   triggers: {
     enabled: true,
     available: [
-      'hubspot_contact_created',
-      'hubspot_contact_deleted',
-      'hubspot_contact_privacy_deleted',
-      'hubspot_contact_property_changed',
-      'hubspot_company_created',
-      'hubspot_company_deleted',
-      'hubspot_company_property_changed',
-      'hubspot_conversation_creation',
-      'hubspot_conversation_deletion',
-      'hubspot_conversation_new_message',
-      'hubspot_conversation_privacy_deletion',
-      'hubspot_conversation_property_changed',
-      'hubspot_deal_created',
-      'hubspot_deal_deleted',
-      'hubspot_deal_property_changed',
-      'hubspot_ticket_created',
-      'hubspot_ticket_deleted',
-      'hubspot_ticket_property_changed',
+      "hubspot_contact_created",
+      "hubspot_contact_deleted",
+      "hubspot_contact_privacy_deleted",
+      "hubspot_contact_property_changed",
+      "hubspot_company_created",
+      "hubspot_company_deleted",
+      "hubspot_company_property_changed",
+      "hubspot_conversation_creation",
+      "hubspot_conversation_deletion",
+      "hubspot_conversation_new_message",
+      "hubspot_conversation_privacy_deletion",
+      "hubspot_conversation_property_changed",
+      "hubspot_deal_created",
+      "hubspot_deal_deleted",
+      "hubspot_deal_property_changed",
+      "hubspot_ticket_created",
+      "hubspot_ticket_deleted",
+      "hubspot_ticket_property_changed",
     ],
   },
-}
+};

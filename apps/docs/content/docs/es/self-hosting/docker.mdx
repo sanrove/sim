@@ -3,18 +3,18 @@ title: Docker
 description: Despliega Sim Studio con Docker Compose
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## Inicio rápido
 
 ```bash
 # Clone and start
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Abre [http://localhost:3000](http://localhost:3000)
+Abre [http://localhost:5863](http://localhost:5863)
 
 ## Configuración de producción
 
@@ -57,10 +57,10 @@ Crea `/etc/caddy/Caddyfile`:
 
 ```
 sim.yourdomain.com {
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:5863
 
     handle /socket.io/* {
-        reverse_proxy localhost:3002
+        reverse_proxy localhost:5865
     }
 }
 ```
@@ -82,7 +82,7 @@ server {
     server_name sim.yourdomain.com;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:5863;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -91,7 +91,7 @@ server {
     }
 
     location /socket.io/ {
-        proxy_pass http://127.0.0.1:3002;
+        proxy_pass http://127.0.0.1:5865;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -135,7 +135,8 @@ OLLAMA_URL=http://192.168.1.100:11434 docker compose -f docker-compose.prod.yml 
 ```
 
 <Callout type="warning">
-  Dentro de Docker, `localhost` se refiere al contenedor, no a tu host. Usa `host.docker.internal` o la IP de tu host.
+  Dentro de Docker, `localhost` se refiere al contenedor, no a tu host. Usa
+  `host.docker.internal` o la IP de tu host.
 </Callout>
 
 ## Comandos

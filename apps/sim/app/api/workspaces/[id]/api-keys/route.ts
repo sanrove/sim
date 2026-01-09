@@ -32,6 +32,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const userId = session.user.id
+    const organizationId = (session as any)?.session?.activeOrganizationId
+
+    if (!organizationId) {
+      logger.warn(`[${requestId}] No active organization for user ${userId}`)
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
 
     const ws = await db.select().from(workspace).where(eq(workspace.id, workspaceId)).limit(1)
     if (!ws.length) {
@@ -54,7 +60,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         createdBy: apiKey.createdBy,
       })
       .from(apiKey)
-      .where(and(eq(apiKey.workspaceId, workspaceId), eq(apiKey.type, 'workspace')))
+      .where(
+        and(
+          eq(apiKey.workspaceId, workspaceId),
+          eq(apiKey.type, 'workspace'),
+          eq(apiKey.organizationId, organizationId)
+        )
+      )
       .orderBy(apiKey.createdAt)
 
     const formattedWorkspaceKeys = await Promise.all(
@@ -92,6 +104,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const userId = session.user.id
+    const organizationId = (session as any)?.session?.activeOrganizationId
+
+    if (!organizationId) {
+      logger.warn(`[${requestId}] No active organization for user ${userId}`)
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
 
     const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId)
     if (permission !== 'admin') {
@@ -108,7 +126,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         and(
           eq(apiKey.workspaceId, workspaceId),
           eq(apiKey.name, name),
-          eq(apiKey.type, 'workspace')
+          eq(apiKey.type, 'workspace'),
+          eq(apiKey.organizationId, organizationId)
         )
       )
       .limit(1)
@@ -133,6 +152,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .values({
         id: nanoid(),
         workspaceId,
+        organizationId,
         userId: userId,
         createdBy: userId,
         name,
@@ -179,6 +199,12 @@ export async function DELETE(
     }
 
     const userId = session.user.id
+    const organizationId = (session as any)?.session?.activeOrganizationId
+
+    if (!organizationId) {
+      logger.warn(`[${requestId}] No active organization for user ${userId}`)
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
 
     const permission = await getUserEntityPermissions(userId, 'workspace', workspaceId)
     if (permission !== 'admin') {
@@ -194,6 +220,7 @@ export async function DELETE(
         and(
           eq(apiKey.workspaceId, workspaceId),
           eq(apiKey.type, 'workspace'),
+          eq(apiKey.organizationId, organizationId),
           inArray(apiKey.id, keys)
         )
       )

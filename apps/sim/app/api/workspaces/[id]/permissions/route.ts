@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { permissions, workspace } from '@sim/db/schema'
 import { and, eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -12,6 +12,21 @@ import {
 } from '@/lib/workspaces/permissions/utils'
 
 const logger = createLogger('WorkspacesPermissionsAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const updatePermissionsSchema = z.object({
   updates: z.array(
@@ -40,7 +55,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const userPermission = await db
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
+    const userPermission = await tenantDb
       .select()
       .from(permissions)
       .where(
@@ -56,7 +77,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Workspace not found or access denied' }, { status: 404 })
     }
 
-    const result = await getUsersWithPermissions(workspaceId)
+    // Get users with permissions from tenant DB
+    const result = await getUsersWithPermissionsFromTenant(workspaceId, tenantDb)
 
     return NextResponse.json({
       users: result,
@@ -66,6 +88,42 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     logger.error('Error fetching workspace permissions:', error)
     return NextResponse.json({ error: 'Failed to fetch workspace permissions' }, { status: 500 })
   }
+}
+
+// Helper function to get users with permissions from tenant DB
+async function getUsersWithPermissionsFromTenant(workspaceId: string, tenantDb: any) {
+  // Query permissions from tenant DB, but user info from master DB
+  const permissionRecords = await tenantDb
+    .select({
+      userId: permissions.userId,
+      permissionType: permissions.permissionType,
+    })
+    .from(permissions)
+    .where(and(eq(permissions.entityType, 'workspace'), eq(permissions.entityId, workspaceId)))
+
+  // Get user info from master DB
+  const userIds = permissionRecords.map((p: any) => p.userId)
+  if (userIds.length === 0) return []
+
+  const { user } = await import('@sim/db/schema')
+  const { inArray } = await import('drizzle-orm')
+  
+  const users = await db
+    .select({ id: user.id, email: user.email, name: user.name })
+    .from(user)
+    .where(inArray(user.id, userIds))
+
+  const userMap = new Map(users.map(u => [u.id, u]))
+
+  return permissionRecords.map((p: any) => {
+    const u = userMap.get(p.userId)
+    return {
+      userId: p.userId,
+      email: u?.email || '',
+      name: u?.name || '',
+      permissionType: p.permissionType,
+    }
+  })
 }
 
 /**
@@ -87,7 +145,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const hasAdminAccess = await hasWorkspaceAdminAccess(session.user.id, workspaceId)
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
+    const hasAdminAccess = await hasWorkspaceAdminAccess(session.user.id, workspaceId, tenantDb)
 
     if (!hasAdminAccess) {
       return NextResponse.json(
@@ -98,7 +162,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const body = updatePermissionsSchema.parse(await request.json())
 
-    const workspaceRow = await db
+    const workspaceRow = await tenantDb
       .select({ billedAccountUserId: workspace.billedAccountUserId })
       .from(workspace)
       .where(eq(workspace.id, workspaceId))
@@ -130,7 +194,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       )
     }
 
-    await db.transaction(async (tx) => {
+    await tenantDb.transaction(async (tx: any) => {
       for (const update of body.updates) {
         await tx
           .delete(permissions)
@@ -154,7 +218,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
     })
 
-    const updatedUsers = await getUsersWithPermissions(workspaceId)
+    const updatedUsers = await getUsersWithPermissionsFromTenant(workspaceId, tenantDb)
 
     return NextResponse.json({
       message: 'Permissions updated successfully',

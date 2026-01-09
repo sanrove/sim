@@ -3,18 +3,18 @@ title: Docker
 description: Docker Composeを使用してSim Studioをデプロイする
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## クイックスタート
 
 ```bash
 # Clone and start
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-[http://localhost:3000](http://localhost:3000)を開く
+[http://localhost:5863](http://localhost:5863)を開く
 
 ## 本番環境のセットアップ
 
@@ -39,7 +39,7 @@ EOF
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-### 3. SSLの設定
+### 3. SSL の設定
 
 <Tabs items={['Caddy (推奨)', 'Nginx + Certbot']}>
   <Tab value="Caddy (推奨)">
@@ -57,10 +57,10 @@ sudo apt update && sudo apt install caddy
 
 ```
 sim.yourdomain.com {
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:5863
 
     handle /socket.io/* {
-        reverse_proxy localhost:3002
+        reverse_proxy localhost:5865
     }
 }
 ```
@@ -82,7 +82,7 @@ server {
     server_name sim.yourdomain.com;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:5863;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -91,7 +91,7 @@ server {
     }
 
     location /socket.io/ {
-        proxy_pass http://127.0.0.1:3002;
+        proxy_pass http://127.0.0.1:5865;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -122,9 +122,9 @@ docker compose -f docker-compose.ollama.yml --profile cpu --profile setup up -d
 docker compose -f docker-compose.ollama.yml exec ollama ollama pull llama3.2
 ```
 
-### 外部Ollama
+### 外部 Ollama
 
-Ollamaがホストマシン上で実行されている場合（Dockerではない）：
+Ollama がホストマシン上で実行されている場合（Docker ではない）：
 
 ```bash
 # macOS/Windows

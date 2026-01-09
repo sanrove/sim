@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { db, getTenantDatabase, organization } from '@sim/db'
+import { eq } from 'drizzle-orm'
 import { getSession } from '@/lib/auth'
 import { generateRequestId } from '@/lib/core/utils/request'
 import {
@@ -11,6 +13,21 @@ import { createLogger } from '@/lib/logs/console/logger'
 import { checkKnowledgeBaseAccess, checkKnowledgeBaseWriteAccess } from '@/app/api/knowledge/utils'
 
 const logger = createLogger('KnowledgeBaseByIdAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 /**
  * Schema for updating a knowledge base
@@ -59,7 +76,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const accessCheck = await checkKnowledgeBaseAccess(id, session.user.id)
+    const tenantDb = await getTenantDbFromSession(session)
+
+    const accessCheck = await checkKnowledgeBaseAccess(id, session.user.id, tenantDb)
 
     if (!accessCheck.hasAccess) {
       if ('notFound' in accessCheck && accessCheck.notFound) {
@@ -72,7 +91,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const knowledgeBaseData = await getKnowledgeBaseById(id)
+    const knowledgeBaseData = await getKnowledgeBaseById(id, tenantDb)
 
     if (!knowledgeBaseData) {
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 })
@@ -101,7 +120,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const accessCheck = await checkKnowledgeBaseWriteAccess(id, session.user.id)
+    const tenantDb = await getTenantDbFromSession(session)
+
+    const accessCheck = await checkKnowledgeBaseWriteAccess(id, session.user.id, tenantDb)
 
     if (!accessCheck.hasAccess) {
       if ('notFound' in accessCheck && accessCheck.notFound) {
@@ -127,7 +148,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           workspaceId: validatedData.workspaceId,
           chunkingConfig: validatedData.chunkingConfig,
         },
-        requestId
+        requestId,
+        tenantDb
       )
 
       logger.info(`[${requestId}] Knowledge base updated: ${id} for user ${session.user.id}`)
@@ -168,7 +190,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const accessCheck = await checkKnowledgeBaseWriteAccess(id, session.user.id)
+    const tenantDb = await getTenantDbFromSession(session)
+
+    const accessCheck = await checkKnowledgeBaseWriteAccess(id, session.user.id, tenantDb)
 
     if (!accessCheck.hasAccess) {
       if ('notFound' in accessCheck && accessCheck.notFound) {
@@ -181,7 +205,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    await deleteKnowledgeBase(id, requestId)
+    await deleteKnowledgeBase(id, requestId, tenantDb)
 
     logger.info(`[${requestId}] Knowledge base deleted: ${id} for user ${session.user.id}`)
 

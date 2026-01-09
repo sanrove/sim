@@ -1,6 +1,6 @@
 ---
 slug: multiplayer
-title: 'Realtime Collaboration on Sim'
+title: "Realtime Collaboration on Sim"
 description: A high-level explanation into Sim realtime collaborative workflow builder - from operation queues to conflict resolution.
 date: 2025-11-11
 updated: 2025-11-11
@@ -9,7 +9,7 @@ authors:
 readingTime: 12
 tags: [Multiplayer, Realtime, Collaboration, WebSockets, Architecture]
 ogImage: /studio/multiplayer/cover.png
-canonical: https://sim.ai/studio/multiplayer
+canonical: https://ethana.ai/studio/multiplayer
 draft: false
 ---
 
@@ -155,7 +155,7 @@ For removal operations, we snapshot the complete state of the removed entity (in
 
 ### Multiplayer Undo Semantics
 
-Undo stacks are **per-user**. Your undo history doesn't include others' changes. This matches user expectations: Cmd+Z undoes *your* recent actions, not your collaborator's.
+Undo stacks are **per-user**. Your undo history doesn't include others' changes. This matches user expectations: Cmd+Z undoes _your_ recent actions, not your collaborator's.
 
 The system prunes invalid operations from your stack when entities are deleted by collaborators. If User B has "add edge to Block X" in their undo stack, but User A deletes Block X, that undo entry becomes invalid and is automatically removed since the target block no longer exists.
 
@@ -178,4 +178,4 @@ Multiplayer workflow building is no longer a technical curiosity—it's how team
 
 ---
 
-*Interested in how Sim's multiplayer system works in practice? [Try building a workflow](https://sim.ai) with a collaborator in real-time.*
+_Interested in how Sim's multiplayer system works in practice? [Try building a workflow](https://ethana.ai) with a collaborator in real-time._

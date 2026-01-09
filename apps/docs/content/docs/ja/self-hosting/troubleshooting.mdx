@@ -15,9 +15,9 @@ docker compose exec db psql -U postgres -c "SELECT 1"
 
 `DATABASE_URL` 形式を確認してください: `postgresql://user:pass@host:5432/database`
 
-## Ollamaモデルが表示されない
+## Ollama モデルが表示されない
 
-Docker内では、`localhost` = ホストマシンではなく、コンテナを指します。
+Docker 内では、`localhost` = ホストマシンではなく、コンテナを指します。
 
 ```bash
 # For host-machine Ollama, use:
@@ -29,7 +29,7 @@ OLLAMA_URL=http://192.168.1.x:11434           # Linux (use actual IP)
 
 1. `NEXT_PUBLIC_SOCKET_URL` がドメインと一致しているか確認する
 2. リアルタイムサービスが実行されているか確認する: `docker compose ps realtime`
-3. リバースプロキシがWebSocketアップグレードを通過させていることを確認する（[Dockerガイド](/self-hosting/docker)を参照）
+3. リバースプロキシが WebSocket アップグレードを通過させていることを確認する（[Docker ガイド](/self-hosting/docker)を参照）
 
 ## 502 Bad Gateway
 
@@ -51,17 +51,17 @@ docker compose logs migrations
 docker compose exec simstudio bun run db:migrate
 ```
 
-## pgvectorが見つからない
+## pgvector が見つからない
 
-正しいPostgreSQLイメージを使用してください：
+正しい PostgreSQL イメージを使用してください：
 
 ```yaml
-image: pgvector/pgvector:pg17  # NOT postgres:17
+image: pgvector/pgvector:pg17 # NOT postgres:17
 ```
 
 ## 証明書エラー（CERT_HAS_EXPIRED）
 
-外部APIを呼び出す際にSSL証明書エラーが表示される場合：
+外部 API を呼び出す際に SSL 証明書エラーが表示される場合：
 
 ```bash
 # Update CA certificates in container
@@ -75,12 +75,12 @@ NODE_TLS_REJECT_UNAUTHORIZED=0
 
 1. ブラウザコンソールでエラーを確認する
 2. `NEXT_PUBLIC_APP_URL` が実際のドメインと一致しているか確認する
-3. ブラウザのCookieとローカルストレージをクリアする
+3. ブラウザの Cookie とローカルストレージをクリアする
 4. すべてのサービスが実行されているか確認する: `docker compose ps`
 
-## Windows特有の問題
+## Windows 特有の問題
 
-**WindowsでのTurbopackエラー：**
+**Windows での Turbopack エラー：**
 
 ```bash
 # Use WSL2 for better compatibility
@@ -109,5 +109,5 @@ docker compose logs -f simstudio
 
 ## ヘルプを得る
 
-- [GitHub Issues](https://github.com/simstudioai/sim/issues)
-- [Discord](https://discord.gg/Hr4UWYEcTT)
+- [GitHub Issues](https://github.com//issues)
+- [Discord](https://discord.com)

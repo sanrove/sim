@@ -9,17 +9,17 @@ import {
   Row,
   Section,
   Text,
-} from '@react-email/components'
-import { format } from 'date-fns'
-import { baseStyles } from '@/components/emails/base-styles'
-import EmailFooter from '@/components/emails/footer'
-import { getBrandConfig } from '@/lib/branding/branding'
-import { getBaseUrl } from '@/lib/core/utils/urls'
+} from "@react-email/components";
+import { format } from "date-fns";
+import { baseStyles } from "@/components/emails/base-styles";
+import EmailFooter from "@/components/emails/footer";
+import { getBrandConfig } from "@/lib/branding/branding";
+import { getBaseUrl } from "@/lib/core/utils/urls";
 
 interface CareersConfirmationEmailProps {
-  name: string
-  position: string
-  submittedDate?: Date
+  name: string;
+  position: string;
+  submittedDate?: Date;
 }
 
 export const CareersConfirmationEmail = ({
@@ -27,8 +27,8 @@ export const CareersConfirmationEmail = ({
   position,
   submittedDate = new Date(),
 }: CareersConfirmationEmailProps) => {
-  const brand = getBrandConfig()
-  const baseUrl = getBaseUrl()
+  const brand = getBrandConfig();
+  const baseUrl = getBaseUrl();
 
   return (
     <Html>
@@ -36,15 +36,17 @@ export const CareersConfirmationEmail = ({
       <Body style={baseStyles.main}>
         <Preview>Your application to {brand.name} has been received</Preview>
         <Container style={baseStyles.container}>
-          <Section style={{ padding: '30px 0', textAlign: 'center' }}>
+          <Section style={{ padding: "30px 0", textAlign: "center" }}>
             <Row>
-              <Column style={{ textAlign: 'center' }}>
+              <Column style={{ textAlign: "center" }}>
                 <Img
-                  src={brand.logoUrl || `${baseUrl}/logo/reverse/text/medium.png`}
-                  width='114'
+                  src={
+                    brand.logoUrl || `${baseUrl}/logo/reverse/text/medium.png`
+                  }
+                  width="114"
                   alt={brand.name}
                   style={{
-                    margin: '0 auto',
+                    margin: "0 auto",
                   }}
                 />
               </Column>
@@ -62,30 +64,35 @@ export const CareersConfirmationEmail = ({
           <Section style={baseStyles.content}>
             <Text style={baseStyles.paragraph}>Hello {name},</Text>
             <Text style={baseStyles.paragraph}>
-              Thank you for your interest in joining the {brand.name} team! We've received your
-              application for the <strong>{position}</strong> position.
+              Thank you for your interest in joining the {brand.name} team!
+              We've received your application for the{" "}
+              <strong>{position}</strong> position.
             </Text>
 
             <Text style={baseStyles.paragraph}>
-              Our team carefully reviews every application and will get back to you within the next
-              few weeks. If your qualifications match what we're looking for, we'll reach out to
-              schedule an initial conversation.
+              Our team carefully reviews every application and will get back to
+              you within the next few weeks. If your qualifications match what
+              we're looking for, we'll reach out to schedule an initial
+              conversation.
             </Text>
 
             <Text style={baseStyles.paragraph}>
-              In the meantime, feel free to explore our{' '}
+              In the meantime, feel free to explore our{" "}
               <a
-                href='https://docs.sim.ai'
-                target='_blank'
-                rel='noopener noreferrer'
-                style={{ color: '#6F3DFA', textDecoration: 'none' }}
+                href="https://docs.ethana.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#6F3DFA", textDecoration: "none" }}
               >
                 documentation
-              </a>{' '}
-              to learn more about what we're building, or check out our{' '}
-              <a href={`${baseUrl}/studio`} style={{ color: '#6F3DFA', textDecoration: 'none' }}>
+              </a>{" "}
+              to learn more about what we're building, or check out our{" "}
+              <a
+                href={`${baseUrl}/studio`}
+                style={{ color: "#6F3DFA", textDecoration: "none" }}
+              >
                 blog
-              </a>{' '}
+              </a>{" "}
               for the latest updates.
             </Text>
 
@@ -98,13 +105,14 @@ export const CareersConfirmationEmail = ({
             <Text
               style={{
                 ...baseStyles.footerText,
-                marginTop: '40px',
-                textAlign: 'left',
-                color: '#666666',
+                marginTop: "40px",
+                textAlign: "left",
+                color: "#666666",
               }}
             >
-              This confirmation was sent on {format(submittedDate, 'MMMM do, yyyy')} at{' '}
-              {format(submittedDate, 'h:mm a')}.
+              This confirmation was sent on{" "}
+              {format(submittedDate, "MMMM do, yyyy")} at{" "}
+              {format(submittedDate, "h:mm a")}.
             </Text>
           </Section>
         </Container>
@@ -112,7 +120,7 @@ export const CareersConfirmationEmail = ({
         <EmailFooter baseUrl={baseUrl} />
       </Body>
     </Html>
-  )
-}
+  );
+};
 
-export default CareersConfirmationEmail
+export default CareersConfirmationEmail;

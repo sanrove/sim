@@ -1,39 +1,44 @@
-import { source } from '@/lib/source'
+import { source } from "@/lib/source";
 
-export const revalidate = false
+export const revalidate = false;
 
 export async function GET() {
-  const baseUrl = 'https://docs.sim.ai'
+  const baseUrl = "https://docs.ethana.ai";
 
   try {
     const pages = source.getPages().filter((page) => {
-      if (!page || !page.data || !page.url) return false
+      if (!page || !page.data || !page.url) return false;
 
-      const pathParts = page.url.split('/').filter(Boolean)
-      const hasLangPrefix = pathParts[0] && ['es', 'fr', 'de', 'ja', 'zh'].includes(pathParts[0])
+      const pathParts = page.url.split("/").filter(Boolean);
+      const hasLangPrefix =
+        pathParts[0] && ["es", "fr", "de", "ja", "zh"].includes(pathParts[0]);
 
-      return !hasLangPrefix
-    })
+      return !hasLangPrefix;
+    });
 
-    const sections: Record<string, Array<{ title: string; url: string; description?: string }>> = {}
+    const sections: Record<
+      string,
+      Array<{ title: string; url: string; description?: string }>
+    > = {};
 
     pages.forEach((page) => {
-      const pathParts = page.url.split('/').filter(Boolean)
+      const pathParts = page.url.split("/").filter(Boolean);
       const section =
-        pathParts[0] && ['en', 'es', 'fr', 'de', 'ja', 'zh'].includes(pathParts[0])
-          ? pathParts[1] || 'root'
-          : pathParts[0] || 'root'
+        pathParts[0] &&
+        ["en", "es", "fr", "de", "ja", "zh"].includes(pathParts[0])
+          ? pathParts[1] || "root"
+          : pathParts[0] || "root";
 
       if (!sections[section]) {
-        sections[section] = []
+        sections[section] = [];
       }
 
       sections[section].push({
-        title: page.data.title || 'Untitled',
+        title: page.data.title || "Untitled",
         url: `${baseUrl}${page.url}`,
         description: page.data.description,
-      })
-    })
+      });
+    });
 
     const manifest = `# Sim Documentation
 
@@ -50,12 +55,19 @@ This file provides an overview of our documentation. For full content of all pag
 ${Object.entries(sections)
   .map(([section, items]) => {
     const sectionTitle = section
-      .split('-')
+      .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
-    return `### ${sectionTitle}\n\n${items.map((item) => `- ${item.title}: ${item.url}${item.description ? `\n  ${item.description}` : ''}`).join('\n')}`
+      .join(" ");
+    return `### ${sectionTitle}\n\n${items
+      .map(
+        (item) =>
+          `- ${item.title}: ${item.url}${
+            item.description ? `\n  ${item.description}` : ""
+          }`
+      )
+      .join("\n")}`;
   })
-  .join('\n\n')}
+  .join("\n\n")}
 
 ## Additional Resources
 
@@ -73,15 +85,17 @@ ${Object.entries(sections)
 
 Generated: ${new Date().toISOString()}
 Format: llms.txt v0.1.0
-See: https://llmstxt.org for specification`
+See: https://llmstxt.org for specification`;
 
     return new Response(manifest, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        "Content-Type": "text/plain; charset=utf-8",
       },
-    })
+    });
   } catch (error) {
-    console.error('Error generating LLM manifest:', error)
-    return new Response('Error generating documentation manifest', { status: 500 })
+    console.error("Error generating LLM manifest:", error);
+    return new Response("Error generating documentation manifest", {
+      status: 500,
+    });
   }
 }

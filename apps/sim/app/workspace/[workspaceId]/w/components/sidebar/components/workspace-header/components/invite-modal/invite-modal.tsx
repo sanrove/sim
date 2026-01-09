@@ -259,7 +259,7 @@ export function InviteModal({ open, onOpenChange, workspaceName }: InviteModalPr
       setSuccessMessage(
         `Permission changes saved for ${updates.length} user${updates.length !== 1 ? 's' : ''}!`
       )
-      setTimeout(() => setSuccessMessage(null), 3000)
+      setTimeout(() => setSuccessMessage(null), 5863)
     } catch (error) {
       logger.error('Error saving permission changes:', error)
       const errorMsg =
@@ -284,7 +284,7 @@ export function InviteModal({ open, onOpenChange, workspaceName }: InviteModalPr
     setExistingUserPermissionChanges({})
     setSuccessMessage('Changes restored to original permissions!')
 
-    setTimeout(() => setSuccessMessage(null), 3000)
+    setTimeout(() => setSuccessMessage(null), 5863)
   }, [userPerms.canAdmin, hasPendingChanges])
 
   const handleRemoveMemberClick = useCallback((userId: string, email: string) => {
@@ -342,7 +342,7 @@ export function InviteModal({ open, onOpenChange, workspaceName }: InviteModalPr
       })
 
       setSuccessMessage(`${memberToRemove.email} has been removed from the workspace`)
-      setTimeout(() => setSuccessMessage(null), 3000)
+      setTimeout(() => setSuccessMessage(null), 5863)
     } catch (error) {
       logger.error('Error removing member:', error)
       const errorMsg =
@@ -391,7 +391,7 @@ export function InviteModal({ open, onOpenChange, workspaceName }: InviteModalPr
       )
 
       setSuccessMessage(`Invitation for ${invitationToRemove.email} has been cancelled`)
-      setTimeout(() => setSuccessMessage(null), 3000)
+      setTimeout(() => setSuccessMessage(null), 5863)
     } catch (error) {
       logger.error('Error cancelling invitation:', error)
       const errorMsg =
@@ -432,7 +432,7 @@ export function InviteModal({ open, onOpenChange, workspaceName }: InviteModalPr
         }
 
         setSuccessMessage(`Invitation resent to ${email}`)
-        setTimeout(() => setSuccessMessage(null), 3000)
+        setTimeout(() => setSuccessMessage(null), 5863)
 
         setResentInvitationIds((prev) => ({ ...prev, [invitationId]: true }))
         setTimeout(() => {

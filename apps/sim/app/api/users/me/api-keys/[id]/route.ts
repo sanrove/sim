@@ -24,16 +24,29 @@ export async function DELETE(
     }
 
     const userId = session.user.id
+    const organizationId = (session as any)?.session?.activeOrganizationId
+
+    if (!organizationId) {
+      logger.warn(`[${requestId}] No active organization for user ${userId}`)
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
+
     const keyId = id
 
     if (!keyId) {
       return NextResponse.json({ error: 'API key ID is required' }, { status: 400 })
     }
 
-    // Delete the API key, ensuring it belongs to the current user
+    // Delete the API key, ensuring it belongs to the current user and organization
     const result = await db
       .delete(apiKey)
-      .where(and(eq(apiKey.id, keyId), eq(apiKey.userId, userId)))
+      .where(
+        and(
+          eq(apiKey.id, keyId),
+          eq(apiKey.userId, userId),
+          eq(apiKey.organizationId, organizationId)
+        )
+      )
       .returning({ id: apiKey.id })
 
     if (!result.length) {

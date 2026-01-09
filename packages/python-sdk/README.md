@@ -1,6 +1,6 @@
 # Sim Python SDK
 
-The official Python SDK for [Sim](https://sim.ai), allowing you to execute workflows programmatically from your Python applications.
+The official Python SDK for [Sim](https://ethana.ai), allowing you to execute workflows programmatically from your Python applications.
 
 ## Installation
 
@@ -17,7 +17,7 @@ from simstudio import SimStudioClient
 # Initialize the client
 client = SimStudioClient(
     api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY", "your-api-key-here"),
-    base_url="https://sim.ai"  # optional, defaults to https://sim.ai
+    base_url="https://ethana.ai"  # optional, defaults to https://ethana.ai
 )
 
 # Execute a workflow
@@ -35,11 +35,11 @@ except Exception as error:
 #### Constructor
 
 ```python
-SimStudioClient(api_key: str, base_url: str = "https://sim.ai")
+SimStudioClient(api_key: str, base_url: str = "https://ethana.ai")
 ```
 
 - `api_key` (str): Your Sim API key
-- `base_url` (str, optional): Base URL for the Sim API (defaults to `https://sim.ai`)
+- `base_url` (str, optional): Base URL for the Sim API (defaults to `https://ethana.ai`)
 
 #### Methods
 
@@ -264,7 +264,7 @@ from simstudio import SimStudioClient
 # Using environment variables
 client = SimStudioClient(
     api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY"),
-    base_url=os.getenv("SIM_BASE_URL", "https://sim.ai")
+    base_url=os.getenv("SIM_BASE_URL", "https://ethana.ai")
 )
 ```
 
@@ -370,7 +370,7 @@ for result in results:
 
 ## Getting Your API Key
 
-1. Log in to your [Sim](https://sim.ai) account
+1. Log in to your [Sim](https://ethana.ai) account
 2. Navigate to your workflow
 3. Click on "Deploy" to deploy your workflow
 4. Select or create an API key during the deployment process

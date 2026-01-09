@@ -1,160 +1,163 @@
-import { MicrosoftExcelIcon } from '@/components/icons'
-import type { BlockConfig } from '@/blocks/types'
-import { AuthMode } from '@/blocks/types'
-import type { MicrosoftExcelResponse } from '@/tools/microsoft_excel/types'
+import { MicrosoftExcelIcon } from "@/components/icons";
+import type { BlockConfig } from "@/blocks/types";
+import { AuthMode } from "@/blocks/types";
+import type { MicrosoftExcelResponse } from "@/tools/microsoft_excel/types";
 
 export const MicrosoftExcelBlock: BlockConfig<MicrosoftExcelResponse> = {
-  type: 'microsoft_excel',
-  name: 'Microsoft Excel',
-  description: 'Read, write, and update data',
+  type: "microsoft_excel",
+  name: "Microsoft Excel",
+  description: "Read, write, and update data",
   authMode: AuthMode.OAuth,
   longDescription:
-    'Integrate Microsoft Excel into the workflow. Can read, write, update, add to table, and create new worksheets.',
-  docsLink: 'https://docs.sim.ai/tools/microsoft_excel',
-  category: 'tools',
-  bgColor: '#E0E0E0',
+    "Integrate Microsoft Excel into the workflow. Can read, write, update, add to table, and create new worksheets.",
+  docsLink: "https://docs.ethana.ai/tools/microsoft_excel",
+  category: "tools",
+  bgColor: "#E0E0E0",
   icon: MicrosoftExcelIcon,
   subBlocks: [
     {
-      id: 'operation',
-      title: 'Operation',
-      type: 'dropdown',
+      id: "operation",
+      title: "Operation",
+      type: "dropdown",
       options: [
-        { label: 'Read Data', id: 'read' },
-        { label: 'Write/Update Data', id: 'write' },
-        { label: 'Add to Table', id: 'table_add' },
-        { label: 'Add Worksheet', id: 'worksheet_add' },
+        { label: "Read Data", id: "read" },
+        { label: "Write/Update Data", id: "write" },
+        { label: "Add to Table", id: "table_add" },
+        { label: "Add Worksheet", id: "worksheet_add" },
       ],
-      value: () => 'read',
+      value: () => "read",
     },
     {
-      id: 'credential',
-      title: 'Microsoft Account',
-      type: 'oauth-input',
-      serviceId: 'microsoft-excel',
+      id: "credential",
+      title: "Microsoft Account",
+      type: "oauth-input",
+      serviceId: "microsoft-excel",
       requiredScopes: [
-        'openid',
-        'profile',
-        'email',
-        'Files.Read',
-        'Files.ReadWrite',
-        'offline_access',
+        "openid",
+        "profile",
+        "email",
+        "Files.Read",
+        "Files.ReadWrite",
+        "offline_access",
       ],
-      placeholder: 'Select Microsoft account',
+      placeholder: "Select Microsoft account",
       required: true,
     },
     {
-      id: 'spreadsheetId',
-      title: 'Select Sheet',
-      type: 'file-selector',
-      canonicalParamId: 'spreadsheetId',
-      serviceId: 'microsoft-excel',
+      id: "spreadsheetId",
+      title: "Select Sheet",
+      type: "file-selector",
+      canonicalParamId: "spreadsheetId",
+      serviceId: "microsoft-excel",
       requiredScopes: [],
-      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      placeholder: 'Select a spreadsheet',
-      dependsOn: ['credential'],
-      mode: 'basic',
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      placeholder: "Select a spreadsheet",
+      dependsOn: ["credential"],
+      mode: "basic",
     },
     {
-      id: 'manualSpreadsheetId',
-      title: 'Spreadsheet ID',
-      type: 'short-input',
-      canonicalParamId: 'spreadsheetId',
-      placeholder: 'Enter spreadsheet ID',
-      dependsOn: ['credential'],
-      mode: 'advanced',
+      id: "manualSpreadsheetId",
+      title: "Spreadsheet ID",
+      type: "short-input",
+      canonicalParamId: "spreadsheetId",
+      placeholder: "Enter spreadsheet ID",
+      dependsOn: ["credential"],
+      mode: "advanced",
     },
     {
-      id: 'range',
-      title: 'Range',
-      type: 'short-input',
-      placeholder: 'Sheet name and cell range (e.g., Sheet1!A1:D10)',
-      condition: { field: 'operation', value: ['read', 'write', 'update'] },
+      id: "range",
+      title: "Range",
+      type: "short-input",
+      placeholder: "Sheet name and cell range (e.g., Sheet1!A1:D10)",
+      condition: { field: "operation", value: ["read", "write", "update"] },
     },
     {
-      id: 'tableName',
-      title: 'Table Name',
-      type: 'short-input',
-      placeholder: 'Name of the Excel table',
-      condition: { field: 'operation', value: ['table_add'] },
+      id: "tableName",
+      title: "Table Name",
+      type: "short-input",
+      placeholder: "Name of the Excel table",
+      condition: { field: "operation", value: ["table_add"] },
       required: true,
     },
     {
-      id: 'worksheetName',
-      title: 'Worksheet Name',
-      type: 'short-input',
-      placeholder: 'Name of the new worksheet (max 31 characters)',
-      condition: { field: 'operation', value: ['worksheet_add'] },
+      id: "worksheetName",
+      title: "Worksheet Name",
+      type: "short-input",
+      placeholder: "Name of the new worksheet (max 31 characters)",
+      condition: { field: "operation", value: ["worksheet_add"] },
       required: true,
     },
     {
-      id: 'values',
-      title: 'Values',
-      type: 'long-input',
+      id: "values",
+      title: "Values",
+      type: "long-input",
       placeholder:
         'Enter values as JSON array of arrays (e.g., [["A1", "B1"], ["A2", "B2"]]) or an array of objects (e.g., [{"name":"John", "age":30}, {"name":"Jane", "age":25}])',
-      condition: { field: 'operation', value: 'write' },
+      condition: { field: "operation", value: "write" },
       required: true,
     },
     {
-      id: 'valueInputOption',
-      title: 'Value Input Option',
-      type: 'dropdown',
+      id: "valueInputOption",
+      title: "Value Input Option",
+      type: "dropdown",
       options: [
-        { label: 'User Entered (Parse formulas)', id: 'USER_ENTERED' },
-        { label: "Raw (Don't parse formulas)", id: 'RAW' },
+        { label: "User Entered (Parse formulas)", id: "USER_ENTERED" },
+        { label: "Raw (Don't parse formulas)", id: "RAW" },
       ],
-      condition: { field: 'operation', value: 'write' },
+      condition: { field: "operation", value: "write" },
     },
     {
-      id: 'values',
-      title: 'Values',
-      type: 'long-input',
+      id: "values",
+      title: "Values",
+      type: "long-input",
       placeholder:
         'Enter values as JSON array of arrays (e.g., [["A1", "B1"], ["A2", "B2"]]) or an array of objects (e.g., [{"name":"John", "age":30}, {"name":"Jane", "age":25}])',
-      condition: { field: 'operation', value: 'update' },
+      condition: { field: "operation", value: "update" },
       required: true,
     },
     {
-      id: 'valueInputOption',
-      title: 'Value Input Option',
-      type: 'dropdown',
+      id: "valueInputOption",
+      title: "Value Input Option",
+      type: "dropdown",
       options: [
-        { label: 'User Entered (Parse formulas)', id: 'USER_ENTERED' },
-        { label: "Raw (Don't parse formulas)", id: 'RAW' },
+        { label: "User Entered (Parse formulas)", id: "USER_ENTERED" },
+        { label: "Raw (Don't parse formulas)", id: "RAW" },
       ],
-      condition: { field: 'operation', value: 'update' },
+      condition: { field: "operation", value: "update" },
     },
     {
-      id: 'values',
-      title: 'Values',
-      type: 'long-input',
+      id: "values",
+      title: "Values",
+      type: "long-input",
       placeholder:
         'Enter values as JSON array of arrays (e.g., [["A1", "B1"], ["A2", "B2"]]) or an array of objects (e.g., [{"name":"John", "age":30}, {"name":"Jane", "age":25}])',
-      condition: { field: 'operation', value: 'table_add' },
+      condition: { field: "operation", value: "table_add" },
       required: true,
     },
   ],
   tools: {
     access: [
-      'microsoft_excel_read',
-      'microsoft_excel_write',
-      'microsoft_excel_table_add',
-      'microsoft_excel_worksheet_add',
+      "microsoft_excel_read",
+      "microsoft_excel_write",
+      "microsoft_excel_table_add",
+      "microsoft_excel_worksheet_add",
     ],
     config: {
       tool: (params) => {
         switch (params.operation) {
-          case 'read':
-            return 'microsoft_excel_read'
-          case 'write':
-            return 'microsoft_excel_write'
-          case 'table_add':
-            return 'microsoft_excel_table_add'
-          case 'worksheet_add':
-            return 'microsoft_excel_worksheet_add'
+          case "read":
+            return "microsoft_excel_read";
+          case "write":
+            return "microsoft_excel_write";
+          case "table_add":
+            return "microsoft_excel_table_add";
+          case "worksheet_add":
+            return "microsoft_excel_worksheet_add";
           default:
-            throw new Error(`Invalid Microsoft Excel operation: ${params.operation}`)
+            throw new Error(
+              `Invalid Microsoft Excel operation: ${params.operation}`
+            );
         }
       },
       params: (params) => {
@@ -166,27 +169,33 @@ export const MicrosoftExcelBlock: BlockConfig<MicrosoftExcelResponse> = {
           tableName,
           worksheetName,
           ...rest
-        } = params
+        } = params;
 
-        const effectiveSpreadsheetId = (spreadsheetId || manualSpreadsheetId || '').trim()
+        const effectiveSpreadsheetId = (
+          spreadsheetId ||
+          manualSpreadsheetId ||
+          ""
+        ).trim();
 
-        let parsedValues
+        let parsedValues;
         try {
-          parsedValues = values ? JSON.parse(values as string) : undefined
+          parsedValues = values ? JSON.parse(values as string) : undefined;
         } catch (error) {
-          throw new Error('Invalid JSON format for values')
+          throw new Error("Invalid JSON format for values");
         }
 
         if (!effectiveSpreadsheetId) {
-          throw new Error('Spreadsheet ID is required.')
+          throw new Error("Spreadsheet ID is required.");
         }
 
-        if (params.operation === 'table_add' && !tableName) {
-          throw new Error('Table name is required for table operations.')
+        if (params.operation === "table_add" && !tableName) {
+          throw new Error("Table name is required for table operations.");
         }
 
-        if (params.operation === 'worksheet_add' && !worksheetName) {
-          throw new Error('Worksheet name is required for worksheet operations.')
+        if (params.operation === "worksheet_add" && !worksheetName) {
+          throw new Error(
+            "Worksheet name is required for worksheet operations."
+          );
         }
 
         const baseParams = {
@@ -194,55 +203,77 @@ export const MicrosoftExcelBlock: BlockConfig<MicrosoftExcelResponse> = {
           spreadsheetId: effectiveSpreadsheetId,
           values: parsedValues,
           credential,
-        }
+        };
 
-        if (params.operation === 'table_add') {
+        if (params.operation === "table_add") {
           return {
             ...baseParams,
             tableName,
-          }
+          };
         }
 
-        if (params.operation === 'worksheet_add') {
+        if (params.operation === "worksheet_add") {
           return {
             ...baseParams,
             worksheetName,
-          }
+          };
         }
 
-        return baseParams
+        return baseParams;
       },
     },
   },
   inputs: {
-    operation: { type: 'string', description: 'Operation to perform' },
-    credential: { type: 'string', description: 'Microsoft Excel access token' },
-    spreadsheetId: { type: 'string', description: 'Spreadsheet identifier' },
-    manualSpreadsheetId: { type: 'string', description: 'Manual spreadsheet identifier' },
-    range: { type: 'string', description: 'Cell range' },
-    tableName: { type: 'string', description: 'Table name' },
-    worksheetName: { type: 'string', description: 'Worksheet name' },
-    values: { type: 'string', description: 'Cell values data' },
-    valueInputOption: { type: 'string', description: 'Value input option' },
+    operation: { type: "string", description: "Operation to perform" },
+    credential: { type: "string", description: "Microsoft Excel access token" },
+    spreadsheetId: { type: "string", description: "Spreadsheet identifier" },
+    manualSpreadsheetId: {
+      type: "string",
+      description: "Manual spreadsheet identifier",
+    },
+    range: { type: "string", description: "Cell range" },
+    tableName: { type: "string", description: "Table name" },
+    worksheetName: { type: "string", description: "Worksheet name" },
+    values: { type: "string", description: "Cell values data" },
+    valueInputOption: { type: "string", description: "Value input option" },
   },
   outputs: {
-    data: { type: 'json', description: 'Excel range data with sheet information and cell values' },
+    data: {
+      type: "json",
+      description: "Excel range data with sheet information and cell values",
+    },
     metadata: {
-      type: 'json',
-      description: 'Spreadsheet metadata including ID, URL, and sheet details',
+      type: "json",
+      description: "Spreadsheet metadata including ID, URL, and sheet details",
     },
-    updatedRange: { type: 'string', description: 'The range that was updated (write operations)' },
-    updatedRows: { type: 'number', description: 'Number of rows updated (write operations)' },
-    updatedColumns: { type: 'number', description: 'Number of columns updated (write operations)' },
+    updatedRange: {
+      type: "string",
+      description: "The range that was updated (write operations)",
+    },
+    updatedRows: {
+      type: "number",
+      description: "Number of rows updated (write operations)",
+    },
+    updatedColumns: {
+      type: "number",
+      description: "Number of columns updated (write operations)",
+    },
     updatedCells: {
-      type: 'number',
-      description: 'Total number of cells updated (write operations)',
+      type: "number",
+      description: "Total number of cells updated (write operations)",
     },
-    index: { type: 'number', description: 'Row index for table add operations' },
-    values: { type: 'json', description: 'Cell values array for table add operations' },
+    index: {
+      type: "number",
+      description: "Row index for table add operations",
+    },
+    values: {
+      type: "json",
+      description: "Cell values array for table add operations",
+    },
     worksheet: {
-      type: 'json',
-      description: 'Details of the newly created worksheet (worksheet_add operations)',
+      type: "json",
+      description:
+        "Details of the newly created worksheet (worksheet_add operations)",
     },
   },
-}
+};

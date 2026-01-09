@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { workflowFolder } from '@sim/db/schema'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -7,6 +7,21 @@ import { createLogger } from '@/lib/logs/console/logger'
 import { getUserEntityPermissions } from '@/lib/workspaces/permissions/utils'
 
 const logger = createLogger('FoldersAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 // GET - Fetch folders for a workspace
 export async function GET(request: NextRequest) {
@@ -23,20 +38,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Workspace ID is required' }, { status: 400 })
     }
 
-    // Check if user has workspace permissions
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
+    // Check if user has workspace permissions (in tenant DB)
     const workspacePermission = await getUserEntityPermissions(
       session.user.id,
       'workspace',
-      workspaceId
+      workspaceId,
+      tenantDb
     )
 
     if (!workspacePermission) {
       return NextResponse.json({ error: 'Access denied to this workspace' }, { status: 403 })
     }
 
-    // If user has workspace permissions, fetch ALL folders in the workspace
-    // This allows shared workspace members to see folders created by other users
-    const folders = await db
+    // If user has workspace permissions, fetch ALL folders in the workspace from tenant DB
+    const folders = await tenantDb
       .select()
       .from(workflowFolder)
       .where(eq(workflowFolder.workspaceId, workspaceId))
@@ -64,11 +85,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name and workspace ID are required' }, { status: 400 })
     }
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
     // Check if user has workspace permissions (at least 'write' access to create folders)
     const workspacePermission = await getUserEntityPermissions(
       session.user.id,
       'workspace',
-      workspaceId
+      workspaceId,
+      tenantDb
     )
 
     if (!workspacePermission || workspacePermission === 'read') {
@@ -82,7 +110,7 @@ export async function POST(request: NextRequest) {
     const id = crypto.randomUUID()
 
     // Use transaction to ensure sortOrder consistency
-    const newFolder = await db.transaction(async (tx) => {
+    const newFolder = await tenantDb.transaction(async (tx) => {
       // Get the next sort order for the parent (or root level)
       // Consider all folders in the workspace, not just those created by current user
       const existingFolders = await tx

@@ -3,13 +3,10 @@ title: Webhook
 description: 通过配置自定义 webhook，从任何服务接收 webhook。
 ---
 
-import { BlockInfoCard } from "@/components/ui/block-info-card"
-import { Image } from '@/components/ui/image'
+import { BlockInfoCard } from "@/components/ui/block-info-card";
+import { Image } from "@/components/ui/image";
 
-<BlockInfoCard 
-  type="generic_webhook"
-  color="#10B981"
-/>
+<BlockInfoCard type="generic_webhook" color="#10B981" />
 
 <div className="flex justify-center">
   <Image
@@ -32,7 +29,7 @@ import { Image } from '@/components/ui/image'
 在未定义输入格式的情况下，webhook 会按原样传递整个请求正文：
 
 ```bash
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret" \
   -d '{
@@ -44,6 +41,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ```
 
 在下游模块中使用以下方式访问数据：
+
 - `<webhook1.message>` → "测试 webhook 触发器"
 - `<webhook1.data.key>` → "值"
 
@@ -64,7 +62,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 **Webhook 请求：**
 
 ```bash
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret" \
   -d '{
@@ -88,6 +86,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 webhook 支持两种文件输入格式：
 
 #### 1. Base64 编码文件
+
 用于直接上传文件内容：
 
 ```json
@@ -108,6 +107,7 @@ webhook 支持两种文件输入格式：
 - **存储**：文件上传到安全的执行存储
 
 #### 2. URL 引用
+
 用于传递现有文件 URL：
 
 ```json
@@ -141,6 +141,7 @@ webhook 支持两种文件输入格式：
 ```
 
 **分块访问：**
+
 - `<webhook1.documents[0].url>` → 下载 URL
 - `<webhook1.documents[0].name>` → "invoice.pdf"
 - `<webhook1.documents[0].size>` → 524288
@@ -154,7 +155,7 @@ echo "Hello World" | base64
 # SGVsbG8gV29ybGQK
 
 # Send webhook with file
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret" \
   -d '{
@@ -175,6 +176,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ### 配置身份验证（可选）
 
 在 webhook 配置中：
+
 1. 启用“需要身份验证”
 2. 设置一个密钥令牌
 3. 选择头类型：
@@ -185,13 +187,13 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 
 ```bash
 # With custom header
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "X-Sim-Secret: your-secret-token" \
   -d '{"message": "Authenticated request"}'
 
 # With bearer token
-curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
+curl -X POST https://ethana.ai/api/webhooks/trigger/{webhook-path} \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-secret-token" \
   -d '{"message": "Authenticated request"}'
@@ -200,6 +202,7 @@ curl -X POST https://sim.ai/api/webhooks/trigger/{webhook-path} \
 ## 最佳实践
 
 1. **使用输入格式定义结构**：当您知道预期的模式时，定义输入格式。这提供：
+
    - 类型验证
    - 编辑器中的更好自动完成
    - 文件上传功能

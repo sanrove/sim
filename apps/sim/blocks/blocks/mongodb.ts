@@ -1,98 +1,98 @@
-import { MongoDBIcon } from '@/components/icons'
-import type { BlockConfig } from '@/blocks/types'
-import type { MongoDBResponse } from '@/tools/mongodb/types'
+import { MongoDBIcon } from "@/components/icons";
+import type { BlockConfig } from "@/blocks/types";
+import type { MongoDBResponse } from "@/tools/mongodb/types";
 
 export const MongoDBBlock: BlockConfig<MongoDBResponse> = {
-  type: 'mongodb',
-  name: 'MongoDB',
-  description: 'Connect to MongoDB database',
+  type: "mongodb",
+  name: "MongoDB",
+  description: "Connect to MongoDB database",
   longDescription:
-    'Integrate MongoDB into the workflow. Can find, insert, update, delete, and aggregate data.',
-  docsLink: 'https://docs.sim.ai/tools/mongodb',
-  category: 'tools',
-  bgColor: '#E0E0E0',
+    "Integrate MongoDB into the workflow. Can find, insert, update, delete, and aggregate data.",
+  docsLink: "https://docs.ethana.ai/tools/mongodb",
+  category: "tools",
+  bgColor: "#E0E0E0",
   icon: MongoDBIcon,
   subBlocks: [
     {
-      id: 'operation',
-      title: 'Operation',
-      type: 'dropdown',
+      id: "operation",
+      title: "Operation",
+      type: "dropdown",
       options: [
-        { label: 'Find Documents', id: 'query' },
-        { label: 'Insert Documents', id: 'insert' },
-        { label: 'Update Documents', id: 'update' },
-        { label: 'Delete Documents', id: 'delete' },
-        { label: 'Aggregate Pipeline', id: 'execute' },
+        { label: "Find Documents", id: "query" },
+        { label: "Insert Documents", id: "insert" },
+        { label: "Update Documents", id: "update" },
+        { label: "Delete Documents", id: "delete" },
+        { label: "Aggregate Pipeline", id: "execute" },
       ],
-      value: () => 'query',
+      value: () => "query",
     },
     {
-      id: 'host',
-      title: 'Host',
-      type: 'short-input',
-      placeholder: 'localhost or your.mongodb.host',
+      id: "host",
+      title: "Host",
+      type: "short-input",
+      placeholder: "localhost or your.mongodb.host",
       required: true,
     },
     {
-      id: 'port',
-      title: 'Port',
-      type: 'short-input',
-      placeholder: '27017',
-      value: () => '27017',
+      id: "port",
+      title: "Port",
+      type: "short-input",
+      placeholder: "27017",
+      value: () => "27017",
       required: true,
     },
     {
-      id: 'database',
-      title: 'Database Name',
-      type: 'short-input',
-      placeholder: 'your_database',
+      id: "database",
+      title: "Database Name",
+      type: "short-input",
+      placeholder: "your_database",
       required: true,
     },
     {
-      id: 'username',
-      title: 'Username',
-      type: 'short-input',
-      placeholder: 'mongodb_user',
+      id: "username",
+      title: "Username",
+      type: "short-input",
+      placeholder: "mongodb_user",
       required: true,
     },
     {
-      id: 'password',
-      title: 'Password',
-      type: 'short-input',
+      id: "password",
+      title: "Password",
+      type: "short-input",
       password: true,
-      placeholder: 'Your database password',
+      placeholder: "Your database password",
       required: true,
     },
     {
-      id: 'authSource',
-      title: 'Auth Source',
-      type: 'short-input',
-      placeholder: 'admin',
+      id: "authSource",
+      title: "Auth Source",
+      type: "short-input",
+      placeholder: "admin",
     },
     {
-      id: 'ssl',
-      title: 'SSL Mode',
-      type: 'dropdown',
+      id: "ssl",
+      title: "SSL Mode",
+      type: "dropdown",
       options: [
-        { label: 'Disabled', id: 'disabled' },
-        { label: 'Required', id: 'required' },
-        { label: 'Preferred', id: 'preferred' },
+        { label: "Disabled", id: "disabled" },
+        { label: "Required", id: "required" },
+        { label: "Preferred", id: "preferred" },
       ],
-      value: () => 'preferred',
+      value: () => "preferred",
     },
     {
-      id: 'collection',
-      title: 'Collection Name',
-      type: 'short-input',
-      placeholder: 'users',
+      id: "collection",
+      title: "Collection Name",
+      type: "short-input",
+      placeholder: "users",
       required: true,
     },
     {
-      id: 'query',
-      title: 'Query Filter (JSON)',
-      type: 'code',
+      id: "query",
+      title: "Query Filter (JSON)",
+      type: "code",
       placeholder: '{"status": "active"}',
-      condition: { field: 'operation', value: 'query' },
+      condition: { field: "operation", value: "query" },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -205,16 +205,16 @@ Return ONLY the MongoDB query filter as valid JSON. Do not include any explanati
 
 ### REMEMBER
 Return ONLY the MongoDB query filter as valid JSON - no explanations, no markdown, no extra text. The output must be ready to use directly in MongoDB operations.`,
-        placeholder: 'Describe the documents you want to find...',
-        generationType: 'mongodb-filter',
+        placeholder: "Describe the documents you want to find...",
+        generationType: "mongodb-filter",
       },
     },
     {
-      id: 'pipeline',
-      title: 'Aggregation Pipeline (JSON Array)',
-      type: 'code',
+      id: "pipeline",
+      title: "Aggregation Pipeline (JSON Array)",
+      type: "code",
       placeholder: '[{"$group": {"_id": "$status", "count": {"$sum": 1}}}]',
-      condition: { field: 'operation', value: 'execute' },
+      condition: { field: "operation", value: "execute" },
       required: true,
       wandConfig: {
         enabled: true,
@@ -439,23 +439,23 @@ Return ONLY the aggregation pipeline as a valid JSON array. Do not include any e
 
 ### REMEMBER
 Return ONLY the JSON array pipeline - no explanations, no markdown, no extra text.`,
-        placeholder: 'Describe the aggregation you want to perform...',
-        generationType: 'mongodb-pipeline',
+        placeholder: "Describe the aggregation you want to perform...",
+        generationType: "mongodb-pipeline",
       },
     },
     {
-      id: 'limit',
-      title: 'Limit',
-      type: 'short-input',
-      placeholder: '100',
-      condition: { field: 'operation', value: 'query' },
+      id: "limit",
+      title: "Limit",
+      type: "short-input",
+      placeholder: "100",
+      condition: { field: "operation", value: "query" },
     },
     {
-      id: 'sort',
-      title: 'Sort (JSON)',
-      type: 'code',
+      id: "sort",
+      title: "Sort (JSON)",
+      type: "code",
       placeholder: '{"createdAt": -1}',
-      condition: { field: 'operation', value: 'query' },
+      condition: { field: "operation", value: "query" },
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -470,16 +470,17 @@ Alphabetical: {"name": 1}
 Multiple fields: {"category": 1, "price": -1}
 
 Use 1 for ascending, -1 for descending. Return ONLY valid JSON.`,
-        placeholder: 'Describe how you want to sort the results...',
-        generationType: 'mongodb-sort',
+        placeholder: "Describe how you want to sort the results...",
+        generationType: "mongodb-sort",
       },
     },
     {
-      id: 'documents',
-      title: 'Documents (JSON Array)',
-      type: 'code',
-      placeholder: '[{"name": "John Doe", "email": "john@example.com", "status": "active"}]',
-      condition: { field: 'operation', value: 'insert' },
+      id: "documents",
+      title: "Documents (JSON Array)",
+      type: "code",
+      placeholder:
+        '[{"name": "John Doe", "email": "john@example.com", "status": "active"}]',
+      condition: { field: "operation", value: "insert" },
       required: true,
       wandConfig: {
         enabled: true,
@@ -495,16 +496,16 @@ With nested data: [{"user": {"name": "Jane", "profile": {"age": 25, "city": "NYC
 Multiple docs: [{"name": "User1", "type": "admin"}, {"name": "User2", "type": "user"}]
 
 Return ONLY valid JSON array - no explanations.`,
-        placeholder: 'Describe the documents you want to insert...',
-        generationType: 'mongodb-documents',
+        placeholder: "Describe the documents you want to insert...",
+        generationType: "mongodb-documents",
       },
     },
     {
-      id: 'filter',
-      title: 'Filter (JSON)',
-      type: 'code',
+      id: "filter",
+      title: "Filter (JSON)",
+      type: "code",
       placeholder: '{"name": "Alice Test"}',
-      condition: { field: 'operation', value: 'update' },
+      condition: { field: "operation", value: "update" },
       required: true,
       wandConfig: {
         enabled: true,
@@ -579,16 +580,17 @@ Return ONLY the MongoDB query filter as valid JSON. Do not include any explanati
 
 ### REMEMBER
 Return ONLY the MongoDB query filter as valid JSON - no explanations, no markdown, no extra text. This filter will determine which documents get updated, so be precise and careful.`,
-        placeholder: 'Describe which documents to update...',
-        generationType: 'mongodb-filter',
+        placeholder: "Describe which documents to update...",
+        generationType: "mongodb-filter",
       },
     },
     {
-      id: 'update',
-      title: 'Update (JSON)',
-      type: 'code',
-      placeholder: '{"$set": {"name": "Jane Doe", "email": "jane@example.com"}}',
-      condition: { field: 'operation', value: 'update' },
+      id: "update",
+      title: "Update (JSON)",
+      type: "code",
+      placeholder:
+        '{"$set": {"name": "Jane Doe", "email": "jane@example.com"}}',
+      condition: { field: "operation", value: "update" },
       required: true,
       wandConfig: {
         enabled: true,
@@ -664,38 +666,38 @@ You have access to workflow context variables:
 - Previous block outputs: Use <block.previousBlock.output.field> syntax
 
 Generate the MongoDB update operation that safely and accurately fulfills the user's request.`,
-        placeholder: 'Describe what you want to update...',
-        generationType: 'mongodb-update',
+        placeholder: "Describe what you want to update...",
+        generationType: "mongodb-update",
       },
     },
     {
-      id: 'upsert',
-      title: 'Upsert',
-      type: 'dropdown',
+      id: "upsert",
+      title: "Upsert",
+      type: "dropdown",
       options: [
-        { label: 'False', id: 'false' },
-        { label: 'True', id: 'true' },
+        { label: "False", id: "false" },
+        { label: "True", id: "true" },
       ],
-      value: () => 'false',
-      condition: { field: 'operation', value: 'update' },
+      value: () => "false",
+      condition: { field: "operation", value: "update" },
     },
     {
-      id: 'multi',
-      title: 'Update Multiple',
-      type: 'dropdown',
+      id: "multi",
+      title: "Update Multiple",
+      type: "dropdown",
       options: [
-        { label: 'False', id: 'false' },
-        { label: 'True', id: 'true' },
+        { label: "False", id: "false" },
+        { label: "True", id: "true" },
       ],
-      value: () => 'false',
-      condition: { field: 'operation', value: 'update' },
+      value: () => "false",
+      condition: { field: "operation", value: "update" },
     },
     {
-      id: 'filter',
-      title: 'Filter (JSON)',
-      type: 'code',
+      id: "filter",
+      title: "Filter (JSON)",
+      type: "code",
       placeholder: '{"status": "inactive"}',
-      condition: { field: 'operation', value: 'delete' },
+      condition: { field: "operation", value: "delete" },
       required: true,
       wandConfig: {
         enabled: true,
@@ -780,161 +782,186 @@ DELETIONS ARE PERMANENT! This filter will determine which documents are permanen
 
 ### REMEMBER
 Return ONLY the MongoDB query filter as valid JSON - no explanations, no markdown, no extra text. This filter will PERMANENTLY DELETE documents, so be extremely careful and precise!`,
-        placeholder: 'Describe which documents to delete...',
-        generationType: 'mongodb-filter',
+        placeholder: "Describe which documents to delete...",
+        generationType: "mongodb-filter",
       },
     },
     {
-      id: 'multi',
-      title: 'Delete Multiple',
-      type: 'dropdown',
+      id: "multi",
+      title: "Delete Multiple",
+      type: "dropdown",
       options: [
-        { label: 'False', id: 'false' },
-        { label: 'True', id: 'true' },
+        { label: "False", id: "false" },
+        { label: "True", id: "true" },
       ],
-      value: () => 'false',
-      condition: { field: 'operation', value: 'delete' },
+      value: () => "false",
+      condition: { field: "operation", value: "delete" },
     },
   ],
   tools: {
     access: [
-      'mongodb_query',
-      'mongodb_insert',
-      'mongodb_update',
-      'mongodb_delete',
-      'mongodb_execute',
+      "mongodb_query",
+      "mongodb_insert",
+      "mongodb_update",
+      "mongodb_delete",
+      "mongodb_execute",
     ],
     config: {
       tool: (params) => {
         switch (params.operation) {
-          case 'query':
-            return 'mongodb_query'
-          case 'insert':
-            return 'mongodb_insert'
-          case 'update':
-            return 'mongodb_update'
-          case 'delete':
-            return 'mongodb_delete'
-          case 'execute':
-            return 'mongodb_execute'
+          case "query":
+            return "mongodb_query";
+          case "insert":
+            return "mongodb_insert";
+          case "update":
+            return "mongodb_update";
+          case "delete":
+            return "mongodb_delete";
+          case "execute":
+            return "mongodb_execute";
           default:
-            throw new Error(`Invalid MongoDB operation: ${params.operation}`)
+            throw new Error(`Invalid MongoDB operation: ${params.operation}`);
         }
       },
       params: (params) => {
-        const { operation, documents, ...rest } = params
+        const { operation, documents, ...rest } = params;
 
-        let parsedDocuments
-        if (documents && typeof documents === 'string' && documents.trim()) {
+        let parsedDocuments;
+        if (documents && typeof documents === "string" && documents.trim()) {
           try {
-            parsedDocuments = JSON.parse(documents)
+            parsedDocuments = JSON.parse(documents);
           } catch (parseError) {
-            const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown JSON error'
+            const errorMsg =
+              parseError instanceof Error
+                ? parseError.message
+                : "Unknown JSON error";
             throw new Error(
               `Invalid JSON documents format: ${errorMsg}. Please check your JSON syntax.`
-            )
+            );
           }
-        } else if (documents && typeof documents === 'object') {
-          parsedDocuments = documents
+        } else if (documents && typeof documents === "object") {
+          parsedDocuments = documents;
         }
 
         const connectionConfig = {
           host: rest.host,
-          port: typeof rest.port === 'string' ? Number.parseInt(rest.port, 10) : rest.port || 27017,
+          port:
+            typeof rest.port === "string"
+              ? Number.parseInt(rest.port, 10)
+              : rest.port || 27017,
           database: rest.database,
           username: rest.username,
           password: rest.password,
           authSource: rest.authSource,
-          ssl: rest.ssl || 'preferred',
-        }
+          ssl: rest.ssl || "preferred",
+        };
 
-        const result: any = { ...connectionConfig }
+        const result: any = { ...connectionConfig };
 
-        if (rest.collection) result.collection = rest.collection
+        if (rest.collection) result.collection = rest.collection;
         if (rest.query) {
-          result.query = typeof rest.query === 'string' ? rest.query : JSON.stringify(rest.query)
+          result.query =
+            typeof rest.query === "string"
+              ? rest.query
+              : JSON.stringify(rest.query);
         }
-        if (rest.limit && rest.limit !== '') {
+        if (rest.limit && rest.limit !== "") {
           result.limit =
-            typeof rest.limit === 'string' ? Number.parseInt(rest.limit, 10) : rest.limit
+            typeof rest.limit === "string"
+              ? Number.parseInt(rest.limit, 10)
+              : rest.limit;
         } else {
-          result.limit = 100 // Default to 100 if not provided
+          result.limit = 100; // Default to 100 if not provided
         }
         if (rest.sort) {
-          result.sort = typeof rest.sort === 'string' ? rest.sort : JSON.stringify(rest.sort)
+          result.sort =
+            typeof rest.sort === "string"
+              ? rest.sort
+              : JSON.stringify(rest.sort);
         }
         if (rest.filter) {
           result.filter =
-            typeof rest.filter === 'string' ? rest.filter : JSON.stringify(rest.filter)
+            typeof rest.filter === "string"
+              ? rest.filter
+              : JSON.stringify(rest.filter);
         }
         if (rest.update) {
           result.update =
-            typeof rest.update === 'string' ? rest.update : JSON.stringify(rest.update)
+            typeof rest.update === "string"
+              ? rest.update
+              : JSON.stringify(rest.update);
         }
         if (rest.pipeline) {
           result.pipeline =
-            typeof rest.pipeline === 'string' ? rest.pipeline : JSON.stringify(rest.pipeline)
+            typeof rest.pipeline === "string"
+              ? rest.pipeline
+              : JSON.stringify(rest.pipeline);
         }
-        if (rest.upsert) result.upsert = rest.upsert === 'true' || rest.upsert === true
-        if (rest.multi) result.multi = rest.multi === 'true' || rest.multi === true
-        if (parsedDocuments !== undefined) result.documents = parsedDocuments
+        if (rest.upsert)
+          result.upsert = rest.upsert === "true" || rest.upsert === true;
+        if (rest.multi)
+          result.multi = rest.multi === "true" || rest.multi === true;
+        if (parsedDocuments !== undefined) result.documents = parsedDocuments;
 
-        return result
+        return result;
       },
     },
   },
   inputs: {
-    operation: { type: 'string', description: 'Database operation to perform' },
-    host: { type: 'string', description: 'MongoDB host' },
-    port: { type: 'string', description: 'MongoDB port' },
-    database: { type: 'string', description: 'Database name' },
-    username: { type: 'string', description: 'MongoDB username' },
-    password: { type: 'string', description: 'MongoDB password' },
-    authSource: { type: 'string', description: 'Authentication database' },
-    ssl: { type: 'string', description: 'SSL mode' },
-    collection: { type: 'string', description: 'Collection name' },
-    query: { type: 'string', description: 'Query filter as JSON string' },
-    limit: { type: 'number', description: 'Limit number of documents' },
-    sort: { type: 'string', description: 'Sort criteria as JSON string' },
-    documents: { type: 'json', description: 'Documents to insert' },
-    filter: { type: 'string', description: 'Filter criteria as JSON string' },
-    update: { type: 'string', description: 'Update operations as JSON string' },
-    pipeline: { type: 'string', description: 'Aggregation pipeline as JSON string' },
-    upsert: { type: 'boolean', description: 'Create document if not found' },
-    multi: { type: 'boolean', description: 'Operate on multiple documents' },
+    operation: { type: "string", description: "Database operation to perform" },
+    host: { type: "string", description: "MongoDB host" },
+    port: { type: "string", description: "MongoDB port" },
+    database: { type: "string", description: "Database name" },
+    username: { type: "string", description: "MongoDB username" },
+    password: { type: "string", description: "MongoDB password" },
+    authSource: { type: "string", description: "Authentication database" },
+    ssl: { type: "string", description: "SSL mode" },
+    collection: { type: "string", description: "Collection name" },
+    query: { type: "string", description: "Query filter as JSON string" },
+    limit: { type: "number", description: "Limit number of documents" },
+    sort: { type: "string", description: "Sort criteria as JSON string" },
+    documents: { type: "json", description: "Documents to insert" },
+    filter: { type: "string", description: "Filter criteria as JSON string" },
+    update: { type: "string", description: "Update operations as JSON string" },
+    pipeline: {
+      type: "string",
+      description: "Aggregation pipeline as JSON string",
+    },
+    upsert: { type: "boolean", description: "Create document if not found" },
+    multi: { type: "boolean", description: "Operate on multiple documents" },
   },
   outputs: {
     message: {
-      type: 'string',
-      description: 'Success or error message describing the operation outcome',
+      type: "string",
+      description: "Success or error message describing the operation outcome",
     },
     documents: {
-      type: 'array',
-      description: 'Array of documents returned from the operation',
+      type: "array",
+      description: "Array of documents returned from the operation",
     },
     documentCount: {
-      type: 'number',
-      description: 'Number of documents affected by the operation',
+      type: "number",
+      description: "Number of documents affected by the operation",
     },
     insertedId: {
-      type: 'string',
-      description: 'ID of the inserted document (single insert)',
+      type: "string",
+      description: "ID of the inserted document (single insert)",
     },
     insertedIds: {
-      type: 'array',
-      description: 'Array of IDs for inserted documents (multiple insert)',
+      type: "array",
+      description: "Array of IDs for inserted documents (multiple insert)",
     },
     modifiedCount: {
-      type: 'number',
-      description: 'Number of documents modified (update operations)',
+      type: "number",
+      description: "Number of documents modified (update operations)",
     },
     deletedCount: {
-      type: 'number',
-      description: 'Number of documents deleted (delete operations)',
+      type: "number",
+      description: "Number of documents deleted (delete operations)",
     },
     matchedCount: {
-      type: 'number',
-      description: 'Number of documents matched (update operations)',
+      type: "number",
+      description: "Number of documents matched (update operations)",
     },
   },
-}
+};

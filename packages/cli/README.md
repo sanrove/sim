@@ -1,6 +1,6 @@
 # Sim CLI
 
-Sim CLI allows you to run [Sim](https://sim.ai) using Docker with a single command.
+Sim CLI allows you to run [Sim](https://ethana.ai) using Docker with a single command.
 
 ## Installation
 
@@ -20,7 +20,7 @@ simstudio
 
 ### Options
 
-- `-p, --port <port>`: Specify the port to run Sim on (default: 3000).
+- `-p, --port <port>`: Specify the port to run Sim on (default: 5863).
 - `--no-pull`: Skip pulling the latest Docker images.
 
 ## Requirements
@@ -33,4 +33,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
-This project is licensed under the Apache-2.0 License. 
+This project is licensed under the Apache-2.0 License.

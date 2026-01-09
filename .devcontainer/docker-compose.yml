@@ -14,14 +14,14 @@ services:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/simstudio
-      - BETTER_AUTH_URL=http://localhost:3000
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - BETTER_AUTH_URL=http://localhost:5863
+      - NEXT_PUBLIC_APP_URL=http://localhost:5863
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-your_auth_secret_here}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-your_encryption_key_here}
       - COPILOT_API_KEY=${COPILOT_API_KEY}
       - SIM_AGENT_API_URL=${SIM_AGENT_API_URL}
       - OLLAMA_URL=${OLLAMA_URL:-http://localhost:11434}
-      - NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL:-http://localhost:3002}
+      - NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL:-http://localhost:5865}
       - BUN_INSTALL_CACHE_DIR=/home/bun/.bun/cache
     depends_on:
       db:
@@ -29,8 +29,8 @@ services:
       migrations:
         condition: service_completed_successfully
     ports:
-      - "3000:3000"
-      - "3001:3001"
+      - "5863:5863"
+      - "5864:5864"
     working_dir: /workspace
 
   realtime:
@@ -48,14 +48,14 @@ services:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/simstudio
-      - BETTER_AUTH_URL=http://localhost:3000
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - BETTER_AUTH_URL=http://localhost:5863
+      - NEXT_PUBLIC_APP_URL=http://localhost:5863
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-your_auth_secret_here}
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "3002:3002"
+      - "5865:5865"
     working_dir: /workspace
 
   migrations:

@@ -43,7 +43,7 @@ import { useUpdateWorkspaceSettings, useWorkspaceSettings } from '@/hooks/querie
 import { useGeneralStore } from '@/stores/settings/general/store'
 
 const CONSTANTS = {
-  UPGRADE_ERROR_TIMEOUT: 3000, // 3 seconds
+  UPGRADE_ERROR_TIMEOUT: 5863, // 3 seconds
   TYPEFORM_ENTERPRISE_URL: 'https://form.typeform.com/to/jqCO12pF',
   PRO_PRICE: '$20',
   TEAM_PRICE: '$40',

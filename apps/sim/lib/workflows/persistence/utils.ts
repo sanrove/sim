@@ -10,6 +10,7 @@ import {
 } from '@sim/db'
 import type { InferSelectModel } from 'drizzle-orm'
 import { and, desc, eq, sql } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type { Edge } from 'reactflow'
 import { v4 as uuidv4 } from 'uuid'
 import { createLogger } from '@/lib/logs/console/logger'
@@ -72,9 +73,13 @@ export async function blockExistsInDeployment(
   }
 }
 
-export async function loadDeployedWorkflowState(workflowId: string): Promise<DeployedWorkflowData> {
+export async function loadDeployedWorkflowState(
+  workflowId: string,
+  tenantDb?: PostgresJsDatabase<any>
+): Promise<DeployedWorkflowData> {
   try {
-    const [active] = await db
+    const database = tenantDb || db
+    const [active] = await database
       .select({
         id: workflowDeploymentVersion.id,
         state: workflowDeploymentVersion.state,
@@ -186,14 +191,16 @@ export function migrateAgentBlocksToMessagesFormat(
  * Returns null if no data found (fallback to JSON blob)
  */
 export async function loadWorkflowFromNormalizedTables(
-  workflowId: string
+  workflowId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<NormalizedWorkflowData | null> {
   try {
+    const database = tenantDb || db
     // Load all components in parallel
     const [blocks, edges, subflows] = await Promise.all([
-      db.select().from(workflowBlocks).where(eq(workflowBlocks.workflowId, workflowId)),
-      db.select().from(workflowEdges).where(eq(workflowEdges.workflowId, workflowId)),
-      db.select().from(workflowSubflows).where(eq(workflowSubflows.workflowId, workflowId)),
+      database.select().from(workflowBlocks).where(eq(workflowBlocks.workflowId, workflowId)),
+      database.select().from(workflowEdges).where(eq(workflowEdges.workflowId, workflowId)),
+      database.select().from(workflowSubflows).where(eq(workflowSubflows.workflowId, workflowId)),
     ])
 
     // If no blocks found, assume this workflow hasn't been migrated yet
@@ -323,15 +330,19 @@ export async function loadWorkflowFromNormalizedTables(
  */
 export async function saveWorkflowToNormalizedTables(
   workflowId: string,
-  state: WorkflowState
+  state: WorkflowState,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const blockRecords = state.blocks as Record<string, BlockState>
     const canonicalLoops = generateLoopBlocks(blockRecords)
     const canonicalParallels = generateParallelBlocks(blockRecords)
 
+    // Use tenant database if provided, otherwise use master db
+    const database = tenantDb || db
+
     // Start a transaction
-    await db.transaction(async (tx) => {
+    await database.transaction(async (tx) => {
       // Snapshot existing webhooks before deletion to preserve them through the cycle
       let existingWebhooks: any[] = []
       try {
@@ -486,6 +497,7 @@ export async function deployWorkflow(params: {
   workflowId: string
   deployedBy: string // User ID of the person deploying
   workflowName?: string
+  tenantDb?: PostgresJsDatabase<any>
 }): Promise<{
   success: boolean
   version?: number
@@ -493,16 +505,17 @@ export async function deployWorkflow(params: {
   currentState?: any
   error?: string
 }> {
-  const { workflowId, deployedBy, workflowName } = params
+  const { workflowId, deployedBy, workflowName, tenantDb } = params
+  const database = tenantDb || db
 
   try {
-    const normalizedData = await loadWorkflowFromNormalizedTables(workflowId)
+    const normalizedData = await loadWorkflowFromNormalizedTables(workflowId, tenantDb)
     if (!normalizedData) {
       return { success: false, error: 'Failed to load workflow state' }
     }
 
     // Also fetch workflow variables
-    const [workflowRecord] = await db
+    const [workflowRecord] = await database
       .select({ variables: workflow.variables })
       .from(workflow)
       .where(eq(workflow.id, workflowId))
@@ -519,7 +532,7 @@ export async function deployWorkflow(params: {
 
     const now = new Date()
 
-    const deployedVersion = await db.transaction(async (tx) => {
+    const deployedVersion = await database.transaction(async (tx) => {
       // Get next version number
       const [{ maxVersion }] = await tx
         .select({ maxVersion: sql`COALESCE(MAX("version"), 0)` })

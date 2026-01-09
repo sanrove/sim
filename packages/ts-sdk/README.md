@@ -1,6 +1,6 @@
 # Sim TypeScript SDK
 
-The official TypeScript/JavaScript SDK for [Sim](https://sim.ai), allowing you to execute workflows programmatically from your applications.
+The official TypeScript/JavaScript SDK for [Sim](https://ethana.ai), allowing you to execute workflows programmatically from your applications.
 
 ## Installation
 
@@ -20,7 +20,7 @@ import { SimStudioClient } from "simstudio-ts-sdk";
 // Initialize the client
 const client = new SimStudioClient({
   apiKey: "your-api-key-here",
-  baseUrl: "https://sim.ai", // optional, defaults to https://sim.ai
+  baseUrl: "https://ethana.ai", // optional, defaults to https://ethana.ai
 });
 
 // Execute a workflow
@@ -43,7 +43,7 @@ new SimStudioClient(config: SimStudioConfig)
 ```
 
 - `config.apiKey` (string): Your Sim API key
-- `config.baseUrl` (string, optional): Base URL for the Sim API (defaults to `https://sim.ai`)
+- `config.baseUrl` (string, optional): Base URL for the Sim API (defaults to `https://ethana.ai`)
 
 #### Methods
 
@@ -328,7 +328,7 @@ const handleFileUpload = async (event: Event) => {
 
 ## Getting Your API Key
 
-1. Log in to your [Sim](https://sim.ai) account
+1. Log in to your [Sim](https://ethana.ai) account
 2. Navigate to your workflow
 3. Click on "Deploy" to deploy your workflow
 4. Select or create an API key during the deployment process

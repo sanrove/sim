@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { workflow } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import { checkServerSideUsageLimits } from '@/lib/billing/calculations/usage-monitor'
@@ -121,6 +121,10 @@ export interface PreprocessExecutionOptions {
   workspaceId?: string // If known, used for billing resolution
   loggingSession?: LoggingSession // If provided, will be used for error logging
   isResumeContext?: boolean // If true, allows fallback billing on resolution failure (for paused workflow resumes)
+  
+  // Tenant information for multi-tenant database isolation
+  tenantId?: string // If provided, will use tenant-specific database
+  organizationId?: string // Organization ID to determine tenant
 }
 
 /**
@@ -136,6 +140,8 @@ export interface PreprocessExecutionResult {
   actorUserId?: string // The user ID that will be billed
   workflowRecord?: WorkflowRecord
   userSubscription?: SubscriptionInfo | null
+  tenantId?: string // The resolved tenant ID
+  tenantDb?: any // The tenant database connection
   rateLimitInfo?: {
     allowed: boolean
     remaining: number
@@ -161,6 +167,8 @@ export async function preprocessExecution(
     workspaceId: providedWorkspaceId,
     loggingSession: providedLoggingSession,
     isResumeContext = false,
+    tenantId: providedTenantId,
+    organizationId,
   } = options
 
   logger.info(`[${requestId}] Starting execution preprocessing`, {
@@ -168,12 +176,55 @@ export async function preprocessExecution(
     userId,
     triggerType,
     executionId,
+    tenantId: providedTenantId,
+    organizationId,
   })
+
+  // ========== STEP 0: Determine Tenant Database ==========
+  let tenantId = providedTenantId
+  let tenantDb = db // Default to master database
+
+  // Try to determine tenant ID from organization if not provided
+  if (!tenantId && organizationId) {
+    try {
+      const orgRecord = await db.query.organization.findFirst({
+        where: eq(organization.id, organizationId),
+      })
+
+      if (orgRecord?.name?.startsWith('ModelFlow-')) {
+        tenantId = orgRecord.name.replace('ModelFlow-', '')
+        logger.info(`[${requestId}] Resolved tenant ID from organization`, {
+          organizationId,
+          tenantId,
+        })
+      }
+    } catch (error) {
+      logger.warn(`[${requestId}] Failed to resolve tenant from organization`, {
+        error,
+        organizationId,
+      })
+    }
+  }
+
+  // Use tenant-specific database if tenant ID is available
+  if (tenantId) {
+    try {
+      tenantDb = await getTenantDatabase(tenantId)
+      logger.info(`[${requestId}] Using tenant-specific database`, { tenantId })
+    } catch (error) {
+      logger.error(`[${requestId}] Failed to get tenant database, falling back to master`, {
+        error,
+        tenantId,
+      })
+      // Fall back to master database
+      tenantDb = db
+    }
+  }
 
   // ========== STEP 1: Validate Workflow Exists ==========
   let workflowRecord: WorkflowRecord | null = null
   try {
-    const records = await db.select().from(workflow).where(eq(workflow.id, workflowId)).limit(1)
+    const records = await tenantDb.select().from(workflow).where(eq(workflow.id, workflowId)).limit(1)
 
     if (records.length === 0) {
       logger.warn(`[${requestId}] Workflow not found: ${workflowId}`)
@@ -486,6 +537,8 @@ export async function preprocessExecution(
     actorUserId,
     workflowRecord,
     userSubscription,
+    tenantId,
+    tenantDb,
     rateLimitInfo,
   }
 }

@@ -1,6 +1,7 @@
-import { db, workflowDeploymentVersion } from '@sim/db'
+import { db, getTenantDatabase, organization, workflowDeploymentVersion } from '@sim/db'
 import { and, desc, eq } from 'drizzle-orm'
 import type { NextRequest, NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { verifyInternalToken } from '@/lib/auth/internal'
 import { generateRequestId } from '@/lib/core/utils/request'
 import { createLogger } from '@/lib/logs/console/logger'
@@ -8,6 +9,22 @@ import { validateWorkflowPermissions } from '@/lib/workflows/utils'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
 
 const logger = createLogger('WorkflowDeployedStateAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession() {
+  const session = await getSession()
+  const orgId = (session as any)?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -33,8 +50,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       isInternalCall = verification.valid
     }
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
     if (!isInternalCall) {
-      const { error } = await validateWorkflowPermissions(id, requestId, 'read')
+      const { error } = await validateWorkflowPermissions(id, requestId, 'read', tenantDb)
       if (error) {
         const response = createErrorResponse(error.message, error.status)
         return addNoCacheHeaders(response)
@@ -43,7 +64,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       logger.debug(`[${requestId}] Internal API call for deployed workflow: ${id}`)
     }
 
-    const [active] = await db
+    const [active] = await database
       .select({ state: workflowDeploymentVersion.state })
       .from(workflowDeploymentVersion)
       .where(

@@ -33,7 +33,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned?type=chat', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned?type=chat', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'test.txt',
@@ -63,7 +63,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned', {
         method: 'POST',
         body: JSON.stringify({
           contentType: 'text/plain',
@@ -87,7 +87,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'test.txt',
@@ -111,7 +111,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'test.txt',
@@ -137,7 +137,7 @@ describe('/api/files/presigned', () => {
       const { POST } = await import('@/app/api/files/presigned/route')
 
       const largeFileSize = 150 * 1024 * 1024 // 150MB (exceeds 100MB limit)
-      const request = new NextRequest('http://localhost:3000/api/files/presigned', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'large-file.txt',
@@ -162,7 +162,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned?type=chat', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned?type=chat', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'test document.txt',
@@ -195,7 +195,7 @@ describe('/api/files/presigned', () => {
       const { POST } = await import('@/app/api/files/presigned/route')
 
       const request = new NextRequest(
-        'http://localhost:3000/api/files/presigned?type=knowledge-base',
+        'http://localhost:5863/api/files/presigned?type=knowledge-base',
         {
           method: 'POST',
           body: JSON.stringify({
@@ -222,7 +222,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned?type=chat', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned?type=chat', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'chat-logo.png',
@@ -249,7 +249,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned?type=chat', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned?type=chat', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'test document.txt',
@@ -281,7 +281,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned?type=chat', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned?type=chat', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'chat-logo.png',
@@ -315,7 +315,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned?type=chat', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned?type=chat', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'test.txt',
@@ -345,7 +345,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned?type=chat', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned?type=chat', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'test.txt',
@@ -377,7 +377,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned?type=chat', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned?type=chat', {
         method: 'POST',
         body: JSON.stringify({
           fileName: 'test.txt',
@@ -402,7 +402,7 @@ describe('/api/files/presigned', () => {
 
       const { POST } = await import('@/app/api/files/presigned/route')
 
-      const request = new NextRequest('http://localhost:3000/api/files/presigned', {
+      const request = new NextRequest('http://localhost:5863/api/files/presigned', {
         method: 'POST',
         body: 'invalid json',
       })

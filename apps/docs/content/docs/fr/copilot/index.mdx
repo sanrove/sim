@@ -2,10 +2,17 @@
 title: Copilot
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout'
-import { Card, Cards } from 'fumadocs-ui/components/card'
-import { Image } from '@/components/ui/image'
-import { MessageCircle, Package, Zap, Infinity as InfinityIcon, Brain, BrainCircuit } from 'lucide-react'
+import { Callout } from "fumadocs-ui/components/callout";
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Image } from "@/components/ui/image";
+import {
+  MessageCircle,
+  Package,
+  Zap,
+  Infinity as InfinityIcon,
+  Brain,
+  BrainCircuit,
+} from "lucide-react";
 
 Copilot est votre assistant intégré à l'éditeur qui vous aide à créer et à modifier des flux de travail avec Sim Copilot, ainsi qu'à les comprendre et à les améliorer. Il peut :
 
@@ -14,9 +21,11 @@ Copilot est votre assistant intégré à l'éditeur qui vous aide à créer et �
 - **Modifier** : apporter des changements aux blocs, connexions et paramètres lorsque vous les approuvez
 
 <Callout type="info">
-  Copilot est un service géré par Sim. Pour les déploiements auto-hébergés, générez une clé API Copilot dans l'application hébergée (sim.ai → Paramètres → Copilot)
-  1. Allez sur [sim.ai](https://sim.ai) → Paramètres → Copilot et générez une clé API Copilot
-  2. Définissez `COPILOT_API_KEY` dans votre environnement auto-hébergé avec cette valeur
+  Copilot est un service géré par Sim. Pour les déploiements auto-hébergés,
+  générez une clé API Copilot dans l'application hébergée (ethana.ai →
+  Paramètres → Copilot) 1. Allez sur [ethana.ai](https://ethana.ai) → Paramètres
+  → Copilot et générez une clé API Copilot 2. Définissez `COPILOT_API_KEY` dans
+  votre environnement auto-hébergé avec cette valeur
 </Callout>
 
 ## Menu contextuel (@)
@@ -31,6 +40,7 @@ Utilisez le symbole `@` pour référencer diverses ressources et donner à Copil
 />
 
 Le menu `@` donne accès à :
+
 - **Discussions** : référencer les conversations précédentes avec Copilot
 - **Tous les flux de travail** : référencer n'importe quel flux de travail dans votre espace de travail
 - **Blocs de flux de travail** : référencer des blocs spécifiques des flux de travail
@@ -54,7 +64,8 @@ Ces informations contextuelles aident Copilot à fournir une assistance plus pr�
     }
   >
     <div className="m-0 text-sm">
-      Mode questions-réponses pour des explications, des conseils et des suggestions sans apporter de modifications à votre flux de travail.
+      Mode questions-réponses pour des explications, des conseils et des
+      suggestions sans apporter de modifications à votre flux de travail.
     </div>
   </Card>
   <Card
@@ -66,7 +77,9 @@ Ces informations contextuelles aident Copilot à fournir une assistance plus pr�
     }
   >
     <div className="m-0 text-sm">
-      Mode de création et de modification. Copilot propose des modifications spécifiques (ajouter des blocs, connecter des variables, ajuster des paramètres) et les applique lorsque vous les approuvez.
+      Mode de création et de modification. Copilot propose des modifications
+      spécifiques (ajouter des blocs, connecter des variables, ajuster des
+      paramètres) et les applique lorsque vous les approuvez.
     </div>
   </Card>
 </Cards>
@@ -92,7 +105,10 @@ Ces informations contextuelles aident Copilot à fournir une assistance plus pr�
       </span>
     }
   >
-    <div className="m-0 text-sm">Plus rapide et moins coûteux. Idéal pour les petites modifications, les flux de travail simples et les ajustements mineurs.</div>
+    <div className="m-0 text-sm">
+      Plus rapide et moins coûteux. Idéal pour les petites modifications, les
+      flux de travail simples et les ajustements mineurs.
+    </div>
   </Card>
   <Card
     title={
@@ -102,7 +118,10 @@ Ces informations contextuelles aident Copilot à fournir une assistance plus pr�
       </span>
     }
   >
-    <div className="m-0 text-sm">Équilibre entre vitesse et raisonnement. Option par défaut recommandée pour la plupart des tâches.</div>
+    <div className="m-0 text-sm">
+      Équilibre entre vitesse et raisonnement. Option par défaut recommandée
+      pour la plupart des tâches.
+    </div>
   </Card>
   <Card
     title={
@@ -112,7 +131,10 @@ Ces informations contextuelles aident Copilot à fournir une assistance plus pr�
       </span>
     }
   >
-    <div className="m-0 text-sm">Raisonnement plus poussé pour les flux de travail plus importants et les modifications complexes tout en restant performant.</div>
+    <div className="m-0 text-sm">
+      Raisonnement plus poussé pour les flux de travail plus importants et les
+      modifications complexes tout en restant performant.
+    </div>
   </Card>
   <Card
     title={
@@ -122,7 +144,10 @@ Ces informations contextuelles aident Copilot à fournir une assistance plus pr�
       </span>
     }
   >
-    <div className="m-0 text-sm">Raisonnement maximal pour la planification approfondie, le débogage et les changements architecturaux complexes.</div>
+    <div className="m-0 text-sm">
+      Raisonnement maximal pour la planification approfondie, le débogage et les
+      changements architecturaux complexes.
+    </div>
   </Card>
 </Cards>
 
@@ -138,6 +163,7 @@ Vous pouvez facilement basculer entre différents modes de raisonnement à l'aid
 />
 
 L'interface vous permet de :
+
 - **Sélectionner le niveau de raisonnement** : choisissez entre Rapide, Auto, Avancé ou Behemoth
 - **Activer le mode MAX** : basculez pour des capacités de raisonnement maximales lorsque vous avez besoin de l'analyse la plus approfondie
 - **Voir les descriptions des modes** : comprendre pour quoi chaque mode est optimisé
@@ -157,15 +183,19 @@ L'utilisation de Copilot est facturée par token à partir du LLM sous-jacent :
 copilotCost = (inputTokens × inputPrice + outputTokens × (outputPrice × 1.5)) / 1,000,000
 ```
 
-| Composant | Tarif appliqué        |
-|-----------|----------------------|
-| Entrée    | inputPrice           |
-| Sortie    | outputPrice × 1,5    |
+| Composant | Tarif appliqué    |
+| --------- | ----------------- |
+| Entrée    | inputPrice        |
+| Sortie    | outputPrice × 1,5 |
 
 <Callout type="warning">
-  Les prix indiqués reflètent les tarifs en date du 4 septembre 2025. Consultez la documentation du fournisseur pour les tarifs actuels.
+  Les prix indiqués reflètent les tarifs en date du 4 septembre 2025. Consultez
+  la documentation du fournisseur pour les tarifs actuels.
 </Callout>
 
 <Callout type="info">
-  Les prix des modèles sont par million de tokens. Le calcul divise par 1 000 000 pour obtenir le coût réel. Consultez <a href="/execution/costs">la page de calcul des coûts</a> pour plus d'informations et des exemples.
+  Les prix des modèles sont par million de tokens. Le calcul divise par 1 000
+  000 pour obtenir le coût réel. Consultez{" "}
+  <a href="/execution/costs">la page de calcul des coûts</a> pour plus
+  d'informations et des exemples.
 </Callout>

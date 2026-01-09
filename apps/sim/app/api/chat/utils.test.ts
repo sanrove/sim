@@ -140,7 +140,7 @@ describe('Chat API Utils', () => {
 
       const mockRequest = {
         headers: {
-          get: vi.fn().mockReturnValue('http://localhost:3000'),
+          get: vi.fn().mockReturnValue('http://localhost:5863'),
         },
       } as any
 
@@ -154,7 +154,7 @@ describe('Chat API Utils', () => {
 
       expect(mockResponse.headers.set).toHaveBeenCalledWith(
         'Access-Control-Allow-Origin',
-        'http://localhost:3000'
+        'http://localhost:5863'
       )
       expect(mockResponse.headers.set).toHaveBeenCalledWith(
         'Access-Control-Allow-Credentials',

@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { chat, workflow } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import type { NextRequest, NextResponse } from 'next/server'
@@ -9,6 +9,25 @@ import { createLogger } from '@/lib/logs/console/logger'
 import { hasAdminPermission } from '@/lib/workspaces/permissions/utils'
 
 const logger = createLogger('ChatAuthUtils')
+
+// Helper to get tenant database from organization
+async function getTenantDbFromOrganization(orgId: string | null) {
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  try {
+    return await getTenantDatabase(tenantId)
+  } catch (error) {
+    logger.warn('Failed to get tenant database', { error, tenantId })
+    return null
+  }
+}
 
 function hashPassword(encryptedPassword: string): string {
   return createHash('sha256').update(encryptedPassword).digest('hex').substring(0, 8)
@@ -20,9 +39,11 @@ function hashPassword(encryptedPassword: string): string {
  */
 export async function checkWorkflowAccessForChatCreation(
   workflowId: string,
-  userId: string
+  userId: string,
+  tenantDb: any = null
 ): Promise<{ hasAccess: boolean; workflow?: any }> {
-  const workflowData = await db.select().from(workflow).where(eq(workflow.id, workflowId)).limit(1)
+  const database = tenantDb || db
+  const workflowData = await database.select().from(workflow).where(eq(workflow.id, workflowId)).limit(1)
 
   if (workflowData.length === 0) {
     return { hasAccess: false }
@@ -30,10 +51,12 @@ export async function checkWorkflowAccessForChatCreation(
 
   const workflowRecord = workflowData[0]
 
+  // Check if user owns the workflow
   if (workflowRecord.userId === userId) {
     return { hasAccess: true, workflow: workflowRecord }
   }
 
+  // Check if user has admin permission for the workflow's workspace
   if (workflowRecord.workspaceId) {
     const hasAdmin = await hasAdminPermission(userId, workflowRecord.workspaceId)
     if (hasAdmin) {
@@ -50,9 +73,11 @@ export async function checkWorkflowAccessForChatCreation(
  */
 export async function checkChatAccess(
   chatId: string,
-  userId: string
+  userId: string,
+  tenantDb: any = null
 ): Promise<{ hasAccess: boolean; chat?: any }> {
-  const chatData = await db
+  const database = tenantDb || db
+  const chatData = await database
     .select({
       chat: chat,
       workflowWorkspaceId: workflow.workspaceId,

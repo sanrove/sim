@@ -9,10 +9,10 @@ import {
   useRef,
   useState,
 } from 'react'
-import { useParams } from 'next/navigation'
 import { io, type Socket } from 'socket.io-client'
 import { getEnv } from '@/lib/core/config/env'
 import { createLogger } from '@/lib/logs/console/logger'
+import { useWorkflowRegistry } from '@/stores/workflows/registry/store'
 
 const logger = createLogger('SocketContext')
 
@@ -111,9 +111,8 @@ export function SocketProvider({ children, user }: SocketProviderProps) {
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([])
   const initializedRef = useRef(false)
 
-  // Get current workflow ID from URL params
-  const params = useParams()
-  const urlWorkflowId = params?.workflowId as string | undefined
+  // Get active workflow ID from workflow registry store
+  const { activeWorkflowId } = useWorkflowRegistry()
 
   // Use refs to store event handlers to avoid stale closures
   const eventHandlers = useRef<{
@@ -134,15 +133,32 @@ export function SocketProvider({ children, user }: SocketProviderProps) {
   // Helper function to generate a fresh socket token
   const generateSocketToken = async (): Promise<string> => {
     // Avoid overlapping token requests
+    logger.info('Requesting socket token from /api/auth/socket-token')
     const res = await fetch('/api/auth/socket-token', {
       method: 'POST',
       credentials: 'include',
       headers: { 'cache-control': 'no-store' },
     })
-    if (!res.ok) throw new Error('Failed to generate socket token')
+    
+    if (!res.ok) {
+      const errorBody = await res.text().catch(() => 'Unknown error')
+      logger.error('Failed to generate socket token', {
+        status: res.status,
+        statusText: res.statusText,
+        body: errorBody
+      })
+      throw new Error(`Failed to generate socket token: ${res.status} ${res.statusText}`)
+    }
+    
     const body = await res.json().catch(() => ({}))
     const token = body?.token
-    if (!token || typeof token !== 'string') throw new Error('Invalid socket token')
+    
+    if (!token || typeof token !== 'string') {
+      logger.error('Invalid socket token received', { body })
+      throw new Error('Invalid socket token')
+    }
+    
+    logger.info('Successfully generated socket token')
     return token
   }
 
@@ -162,7 +178,7 @@ export function SocketProvider({ children, user }: SocketProviderProps) {
 
     const initializeSocket = () => {
       try {
-        const socketUrl = getEnv('NEXT_PUBLIC_SOCKET_URL') || 'http://localhost:3002'
+        const socketUrl = getEnv('NEXT_PUBLIC_SOCKET_URL') || 'http://localhost:5865'
 
         logger.info('Attempting to connect to Socket.IO server', {
           url: socketUrl,
@@ -198,15 +214,17 @@ export function SocketProvider({ children, user }: SocketProviderProps) {
             transport: socketInstance.io.engine?.transport?.name,
           })
 
-          // Automatically join the current workflow room based on URL
+          // Automatically join the current workflow room based on active workflow
           // This handles both initial connections and reconnections
-          if (urlWorkflowId) {
-            logger.info(`Joining workflow room after connection: ${urlWorkflowId}`)
+          // Use getState() to get the latest value, not the stale closure value
+          const currentActiveWorkflowId = useWorkflowRegistry.getState().activeWorkflowId
+          if (currentActiveWorkflowId) {
+            logger.info(`Joining workflow room after connection: ${currentActiveWorkflowId}`)
             socketInstance.emit('join-workflow', {
-              workflowId: urlWorkflowId,
+              workflowId: currentActiveWorkflowId,
             })
-            // Update our internal state to match the URL
-            setCurrentWorkflowId(urlWorkflowId)
+            // Update our internal state to match the active workflow
+            setCurrentWorkflowId(currentActiveWorkflowId)
           }
         })
 
@@ -461,11 +479,25 @@ export function SocketProvider({ children, user }: SocketProviderProps) {
         })
 
         socketInstance.on('workflow-state', async (workflowData) => {
-          logger.info('Received workflow state from server')
+          logger.info('Received workflow state from server', {
+            workflowId: workflowData?.id,
+          })
 
           if (workflowData?.state) {
             await rehydrateWorkflowStores(workflowData.id, workflowData.state, 'workflow-state')
+            // Confirm that we've successfully joined this workflow
+            if (workflowData.id && currentWorkflowId !== workflowData.id) {
+              logger.info(`Setting currentWorkflowId to ${workflowData.id} after receiving workflow state`)
+              setCurrentWorkflowId(workflowData.id)
+            }
           }
+        })
+
+        // Handle join-workflow errors
+        socketInstance.on('join-workflow-error', (data) => {
+          logger.error('Failed to join workflow:', data.error)
+          // Reset currentWorkflowId since we failed to join
+          setCurrentWorkflowId(null)
         })
 
         setSocket(socketInstance)
@@ -492,30 +524,30 @@ export function SocketProvider({ children, user }: SocketProviderProps) {
     }
   }, [user?.id])
 
-  // Handle workflow room switching when URL changes (for navigation between workflows)
+  // Handle workflow room switching when active workflow changes (for navigation between workflows)
   useEffect(() => {
-    if (!socket || !isConnected || !urlWorkflowId) return
+    if (!socket || !isConnected || !activeWorkflowId) return
 
     // If we're already in the correct workflow room, no need to switch
-    if (currentWorkflowId === urlWorkflowId) return
+    if (currentWorkflowId === activeWorkflowId) return
 
     logger.info(
-      `URL workflow changed from ${currentWorkflowId} to ${urlWorkflowId}, switching rooms`
+      `Active workflow changed from ${currentWorkflowId} to ${activeWorkflowId}, switching rooms`
     )
 
     // Leave current workflow first if we're in one
     if (currentWorkflowId) {
-      logger.info(`Leaving current workflow ${currentWorkflowId} before joining ${urlWorkflowId}`)
+      logger.info(`Leaving current workflow ${currentWorkflowId} before joining ${activeWorkflowId}`)
       socket.emit('leave-workflow')
     }
 
     // Join the new workflow room
-    logger.info(`Joining workflow room: ${urlWorkflowId}`)
+    logger.info(`Joining workflow room: ${activeWorkflowId}`)
     socket.emit('join-workflow', {
-      workflowId: urlWorkflowId,
+      workflowId: activeWorkflowId,
     })
-    setCurrentWorkflowId(urlWorkflowId)
-  }, [socket, isConnected, urlWorkflowId, currentWorkflowId])
+    setCurrentWorkflowId(activeWorkflowId)
+  }, [socket, isConnected, activeWorkflowId, currentWorkflowId])
 
   // Cleanup socket on component unmount
   useEffect(() => {

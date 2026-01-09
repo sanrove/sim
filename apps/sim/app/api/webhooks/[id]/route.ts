@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { webhook, workflow } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -9,6 +9,21 @@ import { createLogger } from '@/lib/logs/console/logger'
 import { getUserEntityPermissions } from '@/lib/workspaces/permissions/utils'
 
 const logger = createLogger('WebhookAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +41,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const webhooks = await db
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${session.user.id}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
+    const webhooks = await tenantDb
       .select({
         webhook: webhook,
         workflow: {
@@ -61,7 +83,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       const userPermission = await getUserEntityPermissions(
         session.user.id,
         'workspace',
-        webhookData.workflow.workspaceId
+        webhookData.workflow.workspaceId,
+        tenantDb
       )
       if (userPermission !== null) {
         hasAccess = true
@@ -95,6 +118,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${session.user.id}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
     const body = await request.json()
     const { path, provider, providerConfig, isActive, failedCount } = body
 
@@ -109,7 +139,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     let resolvedProviderConfig = providerConfig
     if (providerConfig) {
       const { resolveEnvVarsInObject } = await import('@/lib/webhooks/env-resolver')
-      const webhookDataForResolve = await db
+      const webhookDataForResolve = await tenantDb
         .select({
           workspaceId: workflow.workspaceId,
         })
@@ -122,7 +152,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         resolvedProviderConfig = await resolveEnvVarsInObject(
           providerConfig,
           session.user.id,
-          webhookDataForResolve[0].workspaceId || undefined
+          webhookDataForResolve[0].workspaceId || undefined,
+          tenantDb
         )
       }
     }
@@ -162,7 +193,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       const userPermission = await getUserEntityPermissions(
         session.user.id,
         'workspace',
-        webhookData.workflow.workspaceId
+        webhookData.workflow.workspaceId,
+        tenantDb
       )
       if (userPermission === 'write' || userPermission === 'admin') {
         canModify = true
@@ -185,7 +217,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     })
 
     // Update the webhook
-    const updatedWebhook = await db
+    const updatedWebhook = await tenantDb
       .update(webhook)
       .set({
         path: path !== undefined ? path : webhooks[0].webhook.path,
@@ -226,8 +258,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${session.user.id}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
     // Find the webhook and check permissions
-    const webhooks = await db
+    const webhooks = await tenantDb
       .select({
         webhook: webhook,
         workflow: {
@@ -261,7 +300,8 @@ export async function DELETE(
       const userPermission = await getUserEntityPermissions(
         session.user.id,
         'workspace',
-        webhookData.workflow.workspaceId
+        webhookData.workflow.workspaceId,
+        tenantDb
       )
       if (userPermission === 'write' || userPermission === 'admin') {
         canDelete = true
@@ -280,7 +320,7 @@ export async function DELETE(
     const { cleanupExternalWebhook } = await import('@/lib/webhooks/provider-subscriptions')
     await cleanupExternalWebhook(foundWebhook, webhookData.workflow, requestId)
 
-    await db.delete(webhook).where(eq(webhook.id, id))
+    await tenantDb.delete(webhook).where(eq(webhook.id, id))
 
     logger.info(`[${requestId}] Successfully deleted webhook: ${id}`)
     return NextResponse.json({ success: true }, { status: 200 })

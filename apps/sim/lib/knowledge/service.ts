@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto'
-import { db } from '@sim/db'
-import { document, knowledgeBase, permissions } from '@sim/db/schema'
+import { db, getTenantDatabase } from '@sim/db'
+import { document, knowledgeBase, permissions, organization } from '@sim/db/schema'
 import { and, count, eq, isNotNull, isNull, or } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type {
   ChunkingConfig,
   CreateKnowledgeBaseData,
@@ -17,9 +18,11 @@ const logger = createLogger('KnowledgeBaseService')
  */
 export async function getKnowledgeBases(
   userId: string,
-  workspaceId?: string | null
+  workspaceId?: string | null,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<KnowledgeBaseWithCounts[]> {
-  const knowledgeBasesWithCounts = await db
+  const database = tenantDb || db
+  const knowledgeBasesWithCounts = await database
     .select({
       id: knowledgeBase.id,
       name: knowledgeBase.name,
@@ -81,14 +84,16 @@ export async function getKnowledgeBases(
  */
 export async function createKnowledgeBase(
   data: CreateKnowledgeBaseData,
-  requestId: string
+  requestId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<KnowledgeBaseWithCounts> {
   const kbId = randomUUID()
   const now = new Date()
+  const database = tenantDb || db
 
   if (data.workspaceId) {
-    const hasPermission = await getUserEntityPermissions(data.userId, 'workspace', data.workspaceId)
-    if (hasPermission === null) {
+    const hasPermission = await getUserEntityPermissions(data.userId, 'workspace', data.workspaceId, tenantDb)
+    if (hasPermission === null || hasPermission === 'read') {
       throw new Error('User does not have permission to create knowledge bases in this workspace')
     }
   }
@@ -108,7 +113,7 @@ export async function createKnowledgeBase(
     deletedAt: null,
   }
 
-  await db.insert(knowledgeBase).values(newKnowledgeBase)
+  await database.insert(knowledgeBase).values(newKnowledgeBase)
 
   logger.info(`[${requestId}] Created knowledge base: ${data.name} (${kbId})`)
 
@@ -142,8 +147,10 @@ export async function updateKnowledgeBase(
       overlap: number
     }
   },
-  requestId: string
+  requestId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<KnowledgeBaseWithCounts> {
+  const database = tenantDb || db
   const now = new Date()
   const updateData: {
     updatedAt: Date
@@ -170,9 +177,9 @@ export async function updateKnowledgeBase(
     updateData.embeddingDimension = 1536
   }
 
-  await db.update(knowledgeBase).set(updateData).where(eq(knowledgeBase.id, knowledgeBaseId))
+  await database.update(knowledgeBase).set(updateData).where(eq(knowledgeBase.id, knowledgeBaseId))
 
-  const updatedKb = await db
+  const updatedKb = await database
     .select({
       id: knowledgeBase.id,
       name: knowledgeBase.name,
@@ -212,9 +219,11 @@ export async function updateKnowledgeBase(
  * Get a single knowledge base by ID
  */
 export async function getKnowledgeBaseById(
-  knowledgeBaseId: string
+  knowledgeBaseId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<KnowledgeBaseWithCounts | null> {
-  const result = await db
+  const database = tenantDb || db
+  const result = await database
     .select({
       id: knowledgeBase.id,
       name: knowledgeBase.name,
@@ -253,11 +262,13 @@ export async function getKnowledgeBaseById(
  */
 export async function deleteKnowledgeBase(
   knowledgeBaseId: string,
-  requestId: string
+  requestId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<void> {
+  const database = tenantDb || db
   const now = new Date()
 
-  await db
+  await database
     .update(knowledgeBase)
     .set({
       deletedAt: now,

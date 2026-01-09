@@ -1,7 +1,8 @@
 import * as schema from '@sim/db'
-import { webhook, workflow, workflowBlocks, workflowEdges, workflowSubflows } from '@sim/db'
+import { getTenantDatabase, webhook, workflow, workflowBlocks, workflowEdges, workflowSubflows } from '@sim/db'
 import { and, eq, inArray, or, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { env } from '@/lib/core/config/env'
 import { createLogger } from '@/lib/logs/console/logger'
@@ -107,9 +108,10 @@ export async function updateSubflowNodeList(dbOrTx: any, workflowId: string, par
   }
 }
 
-export async function getWorkflowState(workflowId: string) {
+export async function getWorkflowState(workflowId: string, tenantDb?: PostgresJsDatabase<any>) {
   try {
-    const workflowData = await db
+    const database = tenantDb || db
+    const workflowData = await database
       .select()
       .from(workflow)
       .where(eq(workflow.id, workflowId))
@@ -119,7 +121,7 @@ export async function getWorkflowState(workflowId: string) {
       throw new Error(`Workflow ${workflowId} not found`)
     }
 
-    const normalizedData = await loadWorkflowFromNormalizedTables(workflowId)
+    const normalizedData = await loadWorkflowFromNormalizedTables(workflowId, tenantDb)
 
     if (normalizedData) {
       const finalState = {
@@ -150,10 +152,22 @@ export async function getWorkflowState(workflowId: string) {
   }
 }
 
-export async function persistWorkflowOperation(workflowId: string, operation: any) {
+export async function persistWorkflowOperation(
+  workflowId: string,
+  operation: any,
+  tenantDb?: PostgresJsDatabase<any>
+) {
   const startTime = Date.now()
   try {
+    const database = tenantDb || db
     const { operation: op, target, payload, timestamp, userId } = operation
+
+    logger.info('[Socket] Persisting workflow operation:', {
+      operation: op,
+      target,
+      workflowId: `${workflowId.substring(0, 8)}...`,
+      usingTenantDb: !!tenantDb,
+    })
 
     if (op === 'update-position' && Math.random() < 0.01) {
       logger.debug('Socket DB operation sample:', {
@@ -163,7 +177,7 @@ export async function persistWorkflowOperation(workflowId: string, operation: an
       })
     }
 
-    await db.transaction(async (tx) => {
+    await database.transaction(async (tx) => {
       await tx
         .update(workflow)
         .set({ updatedAt: new Date(timestamp) })

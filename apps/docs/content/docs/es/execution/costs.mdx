@@ -2,9 +2,9 @@
 title: Cálculo de costos
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout'
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Image } from '@/components/ui/image'
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Image } from "@/components/ui/image";
 
 Sim calcula automáticamente los costos de todas las ejecuciones de flujos de trabajo, proporcionando precios transparentes basados en el uso de modelos de IA y cargos de ejecución. Entender estos costos te ayuda a optimizar los flujos de trabajo y gestionar tu presupuesto de manera efectiva.
 
@@ -22,7 +22,9 @@ totalCost = baseExecutionCharge + modelCost
 ```
 
 <Callout type="info">
-  Los precios de los modelos de IA son por millón de tokens. El cálculo divide por 1.000.000 para obtener el costo real. Los flujos de trabajo sin bloques de IA solo incurren en el cargo base de ejecución.
+  Los precios de los modelos de IA son por millón de tokens. El cálculo divide
+  por 1.000.000 para obtener el costo real. Los flujos de trabajo sin bloques de
+  IA solo incurren en el cargo base de ejecución.
 </Callout>
 
 ## Desglose de modelos en los registros
@@ -40,6 +42,7 @@ Para flujos de trabajo que utilizan bloques de IA, puedes ver información detal
 </div>
 
 El desglose del modelo muestra:
+
 - **Uso de tokens**: Recuentos de tokens de entrada y salida para cada modelo
 - **Desglose de costos**: Costos individuales por modelo y operación
 - **Distribución de modelos**: Qué modelos se utilizaron y cuántas veces
@@ -83,6 +86,7 @@ El desglose del modelo muestra:
     | Gemini 2.5 Flash | $0.30 / $2.50 | $0.60 / $5.00 |
 
     *El multiplicador 2x cubre los costos de infraestructura y gestión de API.*
+
   </Tab>
 
   <Tab>
@@ -98,11 +102,14 @@ El desglose del modelo muestra:
     | VLLM | Modelos locales | Gratis |
 
     *Paga directamente a los proveedores sin recargo*
+
   </Tab>
 </Tabs>
 
 <Callout type="warning">
-  Los precios mostrados reflejan las tarifas a partir del 10 de septiembre de 2025. Consulta la documentación del proveedor para conocer los precios actuales.
+  Los precios mostrados reflejan las tarifas a partir del 10 de septiembre de
+  2025. Consulta la documentación del proveedor para conocer los precios
+  actuales.
 </Callout>
 
 ## Estrategias de optimización de costos
@@ -133,12 +140,13 @@ GET /api/users/me/usage-limits
 ```
 
 **Autenticación:**
+
 - Incluye tu clave API en el encabezado `X-API-Key`
 
 **Ejemplo de solicitud:**
 
 ```bash
-curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" https://sim.ai/api/users/me/usage-limits
+curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" https://ethana.ai/api/users/me/usage-limits
 ```
 
 **Ejemplo de respuesta:**
@@ -172,11 +180,13 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" htt
 ```
 
 **Campos de límite de tasa:**
+
 - `requestsPerMinute`: Límite de tasa sostenida (los tokens se recargan a esta velocidad)
 - `maxBurst`: Máximo de tokens que puedes acumular (capacidad de ráfaga)
 - `remaining`: Tokens disponibles actualmente (puede ser hasta `maxBurst`)
 
 **Campos de respuesta:**
+
 - `currentPeriodCost` refleja el uso en el período de facturación actual
 - `limit` se deriva de límites individuales (Gratuito/Pro) o límites agrupados de la organización (Equipo/Empresa)
 - `plan` es el plan activo de mayor prioridad asociado a tu usuario
@@ -185,12 +195,12 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" htt
 
 Los diferentes planes de suscripción tienen diferentes límites de uso:
 
-| Plan | Límite de uso mensual | Límites de tasa (por minuto) |
-|------|-------------------|-------------------------|
-| **Gratis** | $20 | 5 síncronas, 10 asíncronas |
-| **Pro** | $100 | 10 síncronas, 50 asíncronas |
-| **Equipo** | $500 (compartido) | 50 síncronas, 100 asíncronas |
-| **Empresarial** | Personalizado | Personalizado |
+| Plan            | Límite de uso mensual | Límites de tasa (por minuto) |
+| --------------- | --------------------- | ---------------------------- |
+| **Gratis**      | $20                   | 5 síncronas, 10 asíncronas   |
+| **Pro**         | $100                  | 10 síncronas, 50 asíncronas  |
+| **Equipo**      | $500 (compartido)     | 50 síncronas, 100 asíncronas |
+| **Empresarial** | Personalizado         | Personalizado                |
 
 ## Modelo de facturación
 
@@ -199,17 +209,20 @@ Sim utiliza un modelo de facturación de **suscripción base + excedente**:
 ### Cómo funciona
 
 **Plan Pro ($20/mes):**
+
 - La suscripción mensual incluye $20 de uso
 - Uso por debajo de $20 → Sin cargos adicionales
 - Uso por encima de $20 → Pagas el excedente al final del mes
 - Ejemplo: $35 de uso = $20 (suscripción) + $15 (excedente)
 
 **Plan de Equipo ($40/usuario/mes):**
+
 - Uso agrupado entre todos los miembros del equipo
 - Excedente calculado del uso total del equipo
 - El propietario de la organización recibe una sola factura
 
 **Planes Empresariales:**
+
 - Precio mensual fijo, sin excedentes
 - Límites de uso personalizados según el acuerdo
 
@@ -218,6 +231,7 @@ Sim utiliza un modelo de facturación de **suscripción base + excedente**:
 Cuando el excedente no facturado alcanza los $50, Sim factura automáticamente el monto total no facturado.
 
 **Ejemplo:**
+
 - Día 10: $70 de excedente → Factura inmediata de $70
 - Día 15: $35 adicionales de uso ($105 en total) → Ya facturado, sin acción
 - Día 20: Otros $50 de uso ($155 en total, $85 no facturados) → Factura inmediata de $85
@@ -234,7 +248,7 @@ Esto distribuye los cargos por exceso a lo largo del mes en lugar de una gran fa
 
 ## Próximos pasos
 
-- Revisa tu uso actual en [Configuración → Suscripción](https://sim.ai/settings/subscription)
+- Revisa tu uso actual en [Configuración → Suscripción](https://ethana.ai/settings/subscription)
 - Aprende sobre [Registro](/execution/logging) para seguir los detalles de ejecución
 - Explora la [API externa](/execution/api) para el monitoreo programático de costos
 - Consulta las [técnicas de optimización de flujo de trabajo](/blocks) para reducir costos

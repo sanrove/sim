@@ -60,17 +60,23 @@ export class LoggingSession {
   private workflowState?: WorkflowState
   private isResume = false
   private completed = false
+  private tenantId?: string
+  private tenantDb?: any
 
   constructor(
     workflowId: string,
     executionId: string,
     triggerType: ExecutionTrigger['type'],
-    requestId?: string
+    requestId?: string,
+    tenantId?: string,
+    tenantDb?: any
   ) {
     this.workflowId = workflowId
     this.executionId = executionId
     this.triggerType = triggerType
     this.requestId = requestId
+    this.tenantId = tenantId
+    this.tenantDb = tenantDb
   }
 
   async start(params: SessionStartParams): Promise<void> {
@@ -89,8 +95,8 @@ export class LoggingSession {
       // Use deployed state if deploymentVersionId is provided (non-manual execution)
       // Otherwise fall back to loading from normalized tables (manual/draft execution)
       this.workflowState = deploymentVersionId
-        ? await loadDeployedWorkflowStateForLogging(this.workflowId)
-        : await loadWorkflowStateForExecution(this.workflowId)
+        ? await loadDeployedWorkflowStateForLogging(this.workflowId, this.tenantDb)
+        : await loadWorkflowStateForExecution(this.workflowId, this.tenantDb)
 
       // Only create a new log entry if not resuming
       if (!skipLogCreation) {
@@ -102,6 +108,7 @@ export class LoggingSession {
           environment: this.environment,
           workflowState: this.workflowState,
           deploymentVersionId,
+          tenantDb: this.tenantDb,
         })
 
         if (this.requestId) {
@@ -154,6 +161,7 @@ export class LoggingSession {
         traceSpans: traceSpans || [],
         workflowInput,
         isResume: this.isResume,
+        tenantDb: this.tenantDb,
       })
 
       this.completed = true
@@ -257,6 +265,7 @@ export class LoggingSession {
         costSummary,
         finalOutput: { error: message },
         traceSpans: spans,
+        tenantDb: this.tenantDb,
       })
 
       this.completed = true
@@ -329,6 +338,7 @@ export class LoggingSession {
         finalOutput: { cancelled: true },
         traceSpans: traceSpans || [],
         status: 'cancelled',
+        tenantDb: this.tenantDb,
       })
 
       this.completed = true
@@ -521,6 +531,7 @@ export class LoggingSession {
         isResume: this.isResume,
         level: params.isError ? 'error' : 'info',
         status: params.status,
+        tenantDb: this.tenantDb,
       })
 
       this.completed = true

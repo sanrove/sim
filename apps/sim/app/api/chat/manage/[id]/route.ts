@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { chat } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
@@ -15,7 +15,21 @@ import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/
 export const dynamic = 'force-dynamic'
 
 const logger = createLogger('ChatDetailAPI')
-
+// Helper to get tenant database from session
+async function getTenantDbFromSession() {
+  const session = await getSession()
+  const orgId = (session as any)?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 const chatUpdateSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required').optional(),
   identifier: z
@@ -59,7 +73,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return createErrorResponse('Unauthorized', 401)
     }
 
-    const { hasAccess, chat: chatRecord } = await checkChatAccess(chatId, session.user.id)
+    const tenantDb = await getTenantDbFromSession()
+
+    const { hasAccess, chat: chatRecord } = await checkChatAccess(chatId, session.user.id, tenantDb)
 
     if (!hasAccess || !chatRecord) {
       return createErrorResponse('Chat not found or access denied', 404)
@@ -103,7 +119,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     try {
       const validatedData = chatUpdateSchema.parse(body)
 
-      const { hasAccess, chat: existingChatRecord } = await checkChatAccess(chatId, session.user.id)
+      const tenantDb = await getTenantDbFromSession()
+      const database = tenantDb || db
+
+      const { hasAccess, chat: existingChatRecord } = await checkChatAccess(chatId, session.user.id, tenantDb)
 
       if (!hasAccess || !existingChatRecord) {
         return createErrorResponse('Chat not found or access denied', 404)
@@ -124,7 +143,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       } = validatedData
 
       if (identifier && identifier !== existingChat[0].identifier) {
-        const existingIdentifier = await db
+        const existingIdentifier = await database
           .select()
           .from(chat)
           .where(eq(chat.identifier, identifier))
@@ -139,6 +158,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       const deployResult = await deployWorkflow({
         workflowId: existingChat[0].workflowId,
         deployedBy: session.user.id,
+        tenantDb,
       })
 
       if (!deployResult.success) {
@@ -207,7 +227,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         outputConfigsCount: updateData.outputConfigs ? updateData.outputConfigs.length : undefined,
       })
 
-      await db.update(chat).set(updateData).where(eq(chat.id, chatId))
+      await database.update(chat).set(updateData).where(eq(chat.id, chatId))
 
       const updatedIdentifier = identifier || existingChat[0].identifier
 
@@ -252,13 +272,16 @@ export async function DELETE(
       return createErrorResponse('Unauthorized', 401)
     }
 
-    const { hasAccess } = await checkChatAccess(chatId, session.user.id)
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
+    const { hasAccess } = await checkChatAccess(chatId, session.user.id, tenantDb)
 
     if (!hasAccess) {
       return createErrorResponse('Chat not found or access denied', 404)
     }
 
-    await db.delete(chat).where(eq(chat.id, chatId))
+    await database.delete(chat).where(eq(chat.id, chatId))
 
     logger.info(`Chat "${chatId}" deleted successfully`)
 

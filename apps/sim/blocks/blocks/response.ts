@@ -1,51 +1,52 @@
-import { ResponseIcon } from '@/components/icons'
-import type { BlockConfig } from '@/blocks/types'
-import type { ResponseBlockOutput } from '@/tools/response/types'
+import { ResponseIcon } from "@/components/icons";
+import type { BlockConfig } from "@/blocks/types";
+import type { ResponseBlockOutput } from "@/tools/response/types";
 
 export const ResponseBlock: BlockConfig<ResponseBlockOutput> = {
-  type: 'response',
-  name: 'Response',
-  description: 'Send structured API response',
+  type: "response",
+  name: "Response",
+  description: "Send structured API response",
   longDescription:
-    'Integrate Response into the workflow. Can send build or edit structured responses into a final workflow response.',
-  docsLink: 'https://docs.sim.ai/blocks/response',
+    "Integrate Response into the workflow. Can send build or edit structured responses into a final workflow response.",
+  docsLink: "https://docs.ethana.ai/blocks/response",
   bestPractices: `
   - Only use this if the trigger block is the API Trigger.
   - Prefer the builder mode over the editor mode.
   - This is usually used as the last block in the workflow.
   `,
-  category: 'blocks',
-  bgColor: '#2F55FF',
+  category: "blocks",
+  bgColor: "#2F55FF",
   icon: ResponseIcon,
   subBlocks: [
     {
-      id: 'dataMode',
-      title: 'Response Data Mode',
-      type: 'dropdown',
+      id: "dataMode",
+      title: "Response Data Mode",
+      type: "dropdown",
       options: [
-        { label: 'Builder', id: 'structured' },
-        { label: 'Editor', id: 'json' },
+        { label: "Builder", id: "structured" },
+        { label: "Editor", id: "json" },
       ],
-      value: () => 'structured',
-      description: 'Choose how to define your response data structure',
+      value: () => "structured",
+      description: "Choose how to define your response data structure",
     },
     {
-      id: 'builderData',
-      title: 'Response Structure',
-      type: 'response-format',
-      condition: { field: 'dataMode', value: 'structured' },
+      id: "builderData",
+      title: "Response Structure",
+      type: "response-format",
+      condition: { field: "dataMode", value: "structured" },
       description:
-        'Define the structure of your response data. Use <variable.name> in field names to reference workflow variables.',
+        "Define the structure of your response data. Use <variable.name> in field names to reference workflow variables.",
     },
     {
-      id: 'data',
-      title: 'Response Data',
-      type: 'code',
-      placeholder: '{\n  "message": "Hello world",\n  "userId": "<variable.userId>"\n}',
-      language: 'json',
-      condition: { field: 'dataMode', value: 'json' },
+      id: "data",
+      title: "Response Data",
+      type: "code",
+      placeholder:
+        '{\n  "message": "Hello world",\n  "userId": "<variable.userId>"\n}',
+      language: "json",
+      condition: { field: "dataMode", value: "json" },
       description:
-        'Data that will be sent as the response body on API calls. Use <variable.name> to reference workflow variables.',
+        "Data that will be sent as the response body on API calls. Use <variable.name> to reference workflow variables.",
       wandConfig: {
         enabled: true,
         maintainHistory: true,
@@ -67,51 +68,51 @@ Example:
   "age": <block.function.output.age>,
   "success": true
 }`,
-        placeholder: 'Describe the API response structure you need...',
-        generationType: 'json-object',
+        placeholder: "Describe the API response structure you need...",
+        generationType: "json-object",
       },
     },
     {
-      id: 'status',
-      title: 'Status Code',
-      type: 'short-input',
-      placeholder: '200',
-      description: 'HTTP status code (default: 200)',
+      id: "status",
+      title: "Status Code",
+      type: "short-input",
+      placeholder: "200",
+      description: "HTTP status code (default: 200)",
     },
     {
-      id: 'headers',
-      title: 'Response Headers',
-      type: 'table',
-      columns: ['Key', 'Value'],
-      description: 'Additional HTTP headers to include in the response',
+      id: "headers",
+      title: "Response Headers",
+      type: "table",
+      columns: ["Key", "Value"],
+      description: "Additional HTTP headers to include in the response",
     },
   ],
   tools: { access: [] },
   inputs: {
     dataMode: {
-      type: 'string',
-      description: 'Response data definition mode',
+      type: "string",
+      description: "Response data definition mode",
     },
     builderData: {
-      type: 'json',
-      description: 'Structured response data',
+      type: "json",
+      description: "Structured response data",
     },
     data: {
-      type: 'json',
-      description: 'JSON response body',
+      type: "json",
+      description: "JSON response body",
     },
     status: {
-      type: 'number',
-      description: 'HTTP status code',
+      type: "number",
+      description: "HTTP status code",
     },
     headers: {
-      type: 'json',
-      description: 'Response headers',
+      type: "json",
+      description: "Response headers",
     },
   },
   outputs: {
-    data: { type: 'json', description: 'Response data' },
-    status: { type: 'number', description: 'HTTP status code' },
-    headers: { type: 'json', description: 'Response headers' },
+    data: { type: "json", description: "Response data" },
+    status: { type: "number", description: "HTTP status code" },
+    headers: { type: "json", description: "Response headers" },
   },
-}
+};

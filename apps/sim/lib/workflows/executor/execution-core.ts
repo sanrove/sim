@@ -131,7 +131,7 @@ export async function executeWorkflowCore(
         edgesCount: edges.length,
       })
     } else if (useDraftState) {
-      const draftData = await loadWorkflowFromNormalizedTables(workflowId)
+      const draftData = await loadWorkflowFromNormalizedTables(workflowId, metadata.tenantDb)
 
       if (!draftData) {
         throw new Error('Workflow not found or not yet saved')
@@ -146,7 +146,7 @@ export async function executeWorkflowCore(
         `[${requestId}] Using draft workflow state from normalized tables (client execution)`
       )
     } else {
-      const deployedData = await loadDeployedWorkflowState(workflowId)
+      const deployedData = await loadDeployedWorkflowState(workflowId, metadata.tenantDb)
       blocks = deployedData.blocks
       edges = deployedData.edges
       loops = deployedData.loops
@@ -169,7 +169,7 @@ export async function executeWorkflowCore(
     }
 
     const { personalEncrypted, workspaceEncrypted, personalDecrypted, workspaceDecrypted } =
-      await getPersonalAndWorkspaceEnv(personalEnvUserId, providedWorkspaceId)
+      await getPersonalAndWorkspaceEnv(personalEnvUserId, providedWorkspaceId, metadata.tenantDb)
 
     // Use encrypted values for logging (don't log decrypted secrets)
     const variables = EnvVarsSchema.parse({ ...personalEncrypted, ...workspaceEncrypted })
@@ -316,6 +316,7 @@ export async function executeWorkflowCore(
       executionId,
       workspaceId: providedWorkspaceId,
       userId,
+      tenantId: metadata.tenantId,
       isDeployedContext: triggerType !== 'manual',
       onBlockStart,
       onBlockComplete,
@@ -363,7 +364,7 @@ export async function executeWorkflowCore(
 
     // Update workflow run counts
     if (result.success && result.status !== 'paused') {
-      await updateWorkflowRunCounts(workflowId)
+      await updateWorkflowRunCounts(workflowId, 1, metadata.tenantDb)
     }
 
     if (result.status === 'cancelled') {

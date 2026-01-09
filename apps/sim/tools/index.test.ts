@@ -174,9 +174,9 @@ describe('executeTool Function', () => {
       { preconnect: vi.fn() }
     ) as typeof fetch
 
-    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
+    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:5863'
     cleanupEnvVars = mockEnvironmentVariables({
-      NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+      NEXT_PUBLIC_APP_URL: 'http://localhost:5863',
     })
   })
 
@@ -290,9 +290,9 @@ describe('Automatic Internal Route Detection', () => {
   let cleanupEnvVars: () => void
 
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
+    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:5863'
     cleanupEnvVars = mockEnvironmentVariables({
-      NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+      NEXT_PUBLIC_APP_URL: 'http://localhost:5863',
     })
   })
 
@@ -324,7 +324,7 @@ describe('Automatic Internal Route Detection', () => {
 
     global.fetch = Object.assign(
       vi.fn().mockImplementation(async (url) => {
-        expect(url).toBe('http://localhost:3000/api/test/endpoint')
+        expect(url).toBe('http://localhost:5863/api/test/endpoint')
         const responseData = { success: true, data: 'test' }
         return {
           ok: true,
@@ -368,7 +368,7 @@ describe('Automatic Internal Route Detection', () => {
     global.fetch = Object.assign(
       vi.fn().mockImplementation(async (url) => {
         // Should call the proxy, not the external API directly
-        expect(url).toBe('http://localhost:3000/api/proxy')
+        expect(url).toBe('http://localhost:5863/api/proxy')
         const responseData = {
           success: true,
           output: { result: 'External route via proxy' },
@@ -422,7 +422,7 @@ describe('Automatic Internal Route Detection', () => {
     global.fetch = Object.assign(
       vi.fn().mockImplementation(async (url) => {
         // Should call the internal API directly with the resolved dynamic URL
-        expect(url).toBe('http://localhost:3000/api/resources/123')
+        expect(url).toBe('http://localhost:5863/api/resources/123')
         const responseData = { success: true, data: 'test' }
         return {
           ok: true,
@@ -467,7 +467,7 @@ describe('Automatic Internal Route Detection', () => {
 
     global.fetch = Object.assign(
       vi.fn().mockImplementation(async (url) => {
-        expect(url).toBe('http://localhost:3000/api/proxy')
+        expect(url).toBe('http://localhost:5863/api/proxy')
         const responseData = {
           success: true,
           output: { result: 'Dynamic external route via proxy' },
@@ -540,9 +540,9 @@ describe('Centralized Error Handling', () => {
   let cleanupEnvVars: () => void
 
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
+    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:5863'
     cleanupEnvVars = mockEnvironmentVariables({
-      NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+      NEXT_PUBLIC_APP_URL: 'http://localhost:5863',
     })
   })
 
@@ -771,9 +771,9 @@ describe('MCP Tool Execution', () => {
   let cleanupEnvVars: () => void
 
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
+    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:5863'
     cleanupEnvVars = mockEnvironmentVariables({
-      NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+      NEXT_PUBLIC_APP_URL: 'http://localhost:5863',
     })
   })
 
@@ -785,7 +785,7 @@ describe('MCP Tool Execution', () => {
   it('should execute MCP tool with valid tool ID', async () => {
     global.fetch = Object.assign(
       vi.fn().mockImplementation(async (url, options) => {
-        expect(url).toBe('http://localhost:3000/api/mcp/tools/execute')
+        expect(url).toBe('http://localhost:5863/api/mcp/tools/execute')
         expect(options?.method).toBe('POST')
 
         const body = JSON.parse(options?.body as string)

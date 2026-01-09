@@ -9,16 +9,16 @@ from simstudio import SimStudioClient, SimStudioError, WorkflowExecutionResult, 
 
 def test_simstudio_client_initialization():
     """Test SimStudioClient initialization."""
-    client = SimStudioClient(api_key="test-api-key", base_url="https://test.sim.ai")
+    client = SimStudioClient(api_key="test-api-key", base_url="https://test.ethana.ai")
     assert client.api_key == "test-api-key"
-    assert client.base_url == "https://test.sim.ai"
+    assert client.base_url == "https://test.ethana.ai"
 
 
 def test_simstudio_client_default_base_url():
     """Test SimStudioClient with default base URL."""
     client = SimStudioClient(api_key="test-api-key")
     assert client.api_key == "test-api-key"
-    assert client.base_url == "https://sim.ai"
+    assert client.base_url == "https://ethana.ai"
 
 
 def test_set_api_key():
@@ -31,15 +31,15 @@ def test_set_api_key():
 def test_set_base_url():
     """Test setting a new base URL."""
     client = SimStudioClient(api_key="test-api-key")
-    client.set_base_url("https://new.sim.ai/")
-    assert client.base_url == "https://new.sim.ai"
+    client.set_base_url("https://new.ethana.ai/")
+    assert client.base_url == "https://new.ethana.ai"
 
 
 def test_set_base_url_strips_trailing_slash():
     """Test that base URL strips trailing slash."""
     client = SimStudioClient(api_key="test-api-key")
-    client.set_base_url("https://test.sim.ai/")
-    assert client.base_url == "https://test.sim.ai"
+    client.set_base_url("https://test.ethana.ai/")
+    assert client.base_url == "https://test.ethana.ai"
 
 
 @patch('simstudio.requests.Session.get')
@@ -51,7 +51,7 @@ def test_validate_workflow_returns_false_on_error(mock_get):
     result = client.validate_workflow("test-workflow-id")
     
     assert result is False
-    mock_get.assert_called_once_with("https://sim.ai/api/workflows/test-workflow-id/status")
+    mock_get.assert_called_once_with("https://ethana.ai/api/workflows/test-workflow-id/status")
 
 
 def test_simstudio_error():
@@ -192,13 +192,13 @@ def test_get_job_status_success(mock_get):
     mock_response.headers.get.return_value = None
     mock_get.return_value = mock_response
 
-    client = SimStudioClient(api_key="test-api-key", base_url="https://test.sim.ai")
+    client = SimStudioClient(api_key="test-api-key", base_url="https://test.ethana.ai")
     result = client.get_job_status("task-123")
 
     assert result["taskId"] == "task-123"
     assert result["status"] == "completed"
     assert result["output"]["result"] == "done"
-    mock_get.assert_called_once_with("https://test.sim.ai/api/jobs/task-123")
+    mock_get.assert_called_once_with("https://test.ethana.ai/api/jobs/task-123")
 
 
 @patch('simstudio.requests.Session.get')
@@ -403,7 +403,7 @@ def test_get_usage_limits_success(mock_get):
     mock_response.headers.get.return_value = None
     mock_get.return_value = mock_response
 
-    client = SimStudioClient(api_key="test-api-key", base_url="https://test.sim.ai")
+    client = SimStudioClient(api_key="test-api-key", base_url="https://test.ethana.ai")
     result = client.get_usage_limits()
 
     assert result.success is True
@@ -411,7 +411,7 @@ def test_get_usage_limits_success(mock_get):
     assert result.rate_limit["async"]["limit"] == 50
     assert result.usage["currentPeriodCost"] == 1.23
     assert result.usage["plan"] == "pro"
-    mock_get.assert_called_once_with("https://test.sim.ai/api/users/me/usage-limits")
+    mock_get.assert_called_once_with("https://test.ethana.ai/api/users/me/usage-limits")
 
 
 @patch('simstudio.requests.Session.get')

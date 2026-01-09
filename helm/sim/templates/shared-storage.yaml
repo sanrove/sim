@@ -9,8 +9,8 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "sim.labels" $ | nindent 4 }}
-    sim.ai/volume-type: shared-storage
-    sim.ai/volume-name: {{ .name }}
+    ethana.ai/volume-type: shared-storage
+    ethana.ai/volume-name: {{ .name }}
   {{- with .annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

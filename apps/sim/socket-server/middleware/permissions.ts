@@ -1,4 +1,5 @@
 import { db } from '@sim/db'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { workflow } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import { createLogger } from '@/lib/logs/console/logger'
@@ -73,10 +74,14 @@ export async function verifyWorkspaceMembership(
 
 export async function verifyWorkflowAccess(
   userId: string,
-  workflowId: string
+  workflowId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<{ hasAccess: boolean; role?: string; workspaceId?: string }> {
   try {
-    const workflowData = await db
+    // Use tenant database if provided, otherwise fall back to master
+    const database = tenantDb || db
+    
+    const workflowData = await database
       .select({
         userId: workflow.userId,
         workspaceId: workflow.workspaceId,
@@ -87,7 +92,7 @@ export async function verifyWorkflowAccess(
       .limit(1)
 
     if (!workflowData.length) {
-      logger.warn(`Workflow ${workflowId} not found`)
+      logger.warn(`Workflow ${workflowId} not found ${tenantDb ? 'in tenant database' : 'in master database'}`)
       return { hasAccess: false }
     }
 

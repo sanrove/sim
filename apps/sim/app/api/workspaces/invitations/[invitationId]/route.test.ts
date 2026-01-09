@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { NextRequest } from "next/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Tests for workspace invitation by ID API route
@@ -8,34 +8,34 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * @vitest-environment node
  */
 
-const mockGetSession = vi.fn()
-const mockHasWorkspaceAdminAccess = vi.fn()
+const mockGetSession = vi.fn();
+const mockHasWorkspaceAdminAccess = vi.fn();
 
-let dbSelectResults: any[] = []
-let dbSelectCallIndex = 0
+let dbSelectResults: any[] = [];
+let dbSelectCallIndex = 0;
 
 const mockDbSelect = vi.fn().mockImplementation(() => ({
   from: vi.fn().mockReturnThis(),
   where: vi.fn().mockReturnThis(),
   then: vi.fn().mockImplementation((callback: (rows: any[]) => any) => {
-    const result = dbSelectResults[dbSelectCallIndex] || []
-    dbSelectCallIndex++
-    return Promise.resolve(callback ? callback(result) : result)
+    const result = dbSelectResults[dbSelectCallIndex] || [];
+    dbSelectCallIndex++;
+    return Promise.resolve(callback ? callback(result) : result);
   }),
-}))
+}));
 
 const mockDbInsert = vi.fn().mockImplementation(() => ({
   values: vi.fn().mockResolvedValue(undefined),
-}))
+}));
 
 const mockDbUpdate = vi.fn().mockImplementation(() => ({
   set: vi.fn().mockReturnThis(),
   where: vi.fn().mockResolvedValue(undefined),
-}))
+}));
 
 const mockDbDelete = vi.fn().mockImplementation(() => ({
   where: vi.fn().mockResolvedValue(undefined),
-}))
+}));
 
 const mockDbTransaction = vi.fn().mockImplementation(async (callback: any) => {
   await callback({
@@ -47,32 +47,32 @@ const mockDbTransaction = vi.fn().mockImplementation(async (callback: any) => {
         where: vi.fn().mockResolvedValue(undefined),
       }),
     }),
-  })
-})
+  });
+});
 
-vi.mock('@/lib/auth', () => ({
+vi.mock("@/lib/auth", () => ({
   getSession: () => mockGetSession(),
-}))
+}));
 
-vi.mock('@/lib/workspaces/permissions/utils', () => ({
+vi.mock("@/lib/workspaces/permissions/utils", () => ({
   hasWorkspaceAdminAccess: (userId: string, workspaceId: string) =>
     mockHasWorkspaceAdminAccess(userId, workspaceId),
-}))
+}));
 
-vi.mock('@/lib/logs/console/logger', () => ({
+vi.mock("@/lib/logs/console/logger", () => ({
   createLogger: vi.fn().mockReturnValue({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
   }),
-}))
+}));
 
-vi.mock('@/lib/core/utils/urls', () => ({
-  getBaseUrl: vi.fn().mockReturnValue('https://test.sim.ai'),
-}))
+vi.mock("@/lib/core/utils/urls", () => ({
+  getBaseUrl: vi.fn().mockReturnValue("https://test.ethana.ai"),
+}));
 
-vi.mock('@sim/db', () => ({
+vi.mock("@sim/db", () => ({
   db: {
     select: () => mockDbSelect(),
     insert: (table: any) => mockDbInsert(table),
@@ -80,302 +80,316 @@ vi.mock('@sim/db', () => ({
     delete: (table: any) => mockDbDelete(table),
     transaction: (callback: any) => mockDbTransaction(callback),
   },
-}))
+}));
 
-vi.mock('@sim/db/schema', () => ({
+vi.mock("@sim/db/schema", () => ({
   workspaceInvitation: {
-    id: 'id',
-    workspaceId: 'workspaceId',
-    email: 'email',
-    inviterId: 'inviterId',
-    status: 'status',
-    token: 'token',
-    permissions: 'permissions',
-    expiresAt: 'expiresAt',
+    id: "id",
+    workspaceId: "workspaceId",
+    email: "email",
+    inviterId: "inviterId",
+    status: "status",
+    token: "token",
+    permissions: "permissions",
+    expiresAt: "expiresAt",
   },
   workspace: {
-    id: 'id',
-    name: 'name',
+    id: "id",
+    name: "name",
   },
   user: {
-    id: 'id',
-    email: 'email',
+    id: "id",
+    email: "email",
   },
   permissions: {
-    id: 'id',
-    entityType: 'entityType',
-    entityId: 'entityId',
-    userId: 'userId',
-    permissionType: 'permissionType',
+    id: "id",
+    entityType: "entityType",
+    entityId: "entityId",
+    userId: "userId",
+    permissionType: "permissionType",
   },
-}))
+}));
 
-vi.mock('drizzle-orm', () => ({
-  eq: vi.fn((a, b) => ({ type: 'eq', a, b })),
-  and: vi.fn((...args) => ({ type: 'and', args })),
-}))
+vi.mock("drizzle-orm", () => ({
+  eq: vi.fn((a, b) => ({ type: "eq", a, b })),
+  and: vi.fn((...args) => ({ type: "and", args })),
+}));
 
-vi.mock('crypto', () => ({
-  randomUUID: vi.fn().mockReturnValue('mock-uuid-1234'),
-}))
+vi.mock("crypto", () => ({
+  randomUUID: vi.fn().mockReturnValue("mock-uuid-1234"),
+}));
 
-import { DELETE, GET } from './route'
+import { DELETE, GET } from "./route";
 
 const mockUser = {
-  id: 'user-123',
-  email: 'test@example.com',
-  name: 'Test User',
-}
+  id: "user-123",
+  email: "test@example.com",
+  name: "Test User",
+};
 
 const mockWorkspace = {
-  id: 'workspace-456',
-  name: 'Test Workspace',
-}
+  id: "workspace-456",
+  name: "Test Workspace",
+};
 
 const mockInvitation = {
-  id: 'invitation-789',
-  workspaceId: 'workspace-456',
-  email: 'invited@example.com',
-  inviterId: 'inviter-321',
-  status: 'pending',
-  token: 'token-abc123',
-  permissions: 'read',
+  id: "invitation-789",
+  workspaceId: "workspace-456",
+  email: "invited@example.com",
+  inviterId: "inviter-321",
+  status: "pending",
+  token: "token-abc123",
+  permissions: "read",
   expiresAt: new Date(Date.now() + 86400000), // 1 day from now
   createdAt: new Date(),
   updatedAt: new Date(),
-}
+};
 
-describe('Workspace Invitation [invitationId] API Route', () => {
+describe("Workspace Invitation [invitationId] API Route", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    dbSelectResults = []
-    dbSelectCallIndex = 0
-  })
+    vi.clearAllMocks();
+    dbSelectResults = [];
+    dbSelectCallIndex = 0;
+  });
 
-  describe('GET /api/workspaces/invitations/[invitationId]', () => {
-    it('should return invitation details when called without token', async () => {
-      mockGetSession.mockResolvedValue({ user: mockUser })
-      dbSelectResults = [[mockInvitation], [mockWorkspace]]
-
-      const request = new NextRequest('http://localhost/api/workspaces/invitations/invitation-789')
-      const params = Promise.resolve({ invitationId: 'invitation-789' })
-
-      const response = await GET(request, { params })
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data).toMatchObject({
-        id: 'invitation-789',
-        email: 'invited@example.com',
-        status: 'pending',
-        workspaceName: 'Test Workspace',
-      })
-    })
-
-    it('should redirect to login when unauthenticated with token', async () => {
-      mockGetSession.mockResolvedValue(null)
+  describe("GET /api/workspaces/invitations/[invitationId]", () => {
+    it("should return invitation details when called without token", async () => {
+      mockGetSession.mockResolvedValue({ user: mockUser });
+      dbSelectResults = [[mockInvitation], [mockWorkspace]];
 
       const request = new NextRequest(
-        'http://localhost/api/workspaces/invitations/token-abc123?token=token-abc123'
-      )
-      const params = Promise.resolve({ invitationId: 'token-abc123' })
+        "http://localhost/api/workspaces/invitations/invitation-789"
+      );
+      const params = Promise.resolve({ invitationId: "invitation-789" });
 
-      const response = await GET(request, { params })
+      const response = await GET(request, { params });
+      const data = await response.json();
 
-      expect(response.status).toBe(307)
-      expect(response.headers.get('location')).toBe(
-        'https://test.sim.ai/invite/token-abc123?token=token-abc123'
-      )
-    })
+      expect(response.status).toBe(200);
+      expect(data).toMatchObject({
+        id: "invitation-789",
+        email: "invited@example.com",
+        status: "pending",
+        workspaceName: "Test Workspace",
+      });
+    });
 
-    it('should return 401 when unauthenticated without token', async () => {
-      mockGetSession.mockResolvedValue(null)
+    it("should redirect to login when unauthenticated with token", async () => {
+      mockGetSession.mockResolvedValue(null);
 
-      const request = new NextRequest('http://localhost/api/workspaces/invitations/invitation-789')
-      const params = Promise.resolve({ invitationId: 'invitation-789' })
+      const request = new NextRequest(
+        "http://localhost/api/workspaces/invitations/token-abc123?token=token-abc123"
+      );
+      const params = Promise.resolve({ invitationId: "token-abc123" });
 
-      const response = await GET(request, { params })
-      const data = await response.json()
+      const response = await GET(request, { params });
 
-      expect(response.status).toBe(401)
-      expect(data).toEqual({ error: 'Unauthorized' })
-    })
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe(
+        "https://test.ethana.ai/invite/token-abc123?token=token-abc123"
+      );
+    });
 
-    it('should accept invitation when called with valid token', async () => {
+    it("should return 401 when unauthenticated without token", async () => {
+      mockGetSession.mockResolvedValue(null);
+
+      const request = new NextRequest(
+        "http://localhost/api/workspaces/invitations/invitation-789"
+      );
+      const params = Promise.resolve({ invitationId: "invitation-789" });
+
+      const response = await GET(request, { params });
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data).toEqual({ error: "Unauthorized" });
+    });
+
+    it("should accept invitation when called with valid token", async () => {
       mockGetSession.mockResolvedValue({
-        user: { ...mockUser, email: 'invited@example.com' },
-      })
+        user: { ...mockUser, email: "invited@example.com" },
+      });
 
       dbSelectResults = [
         [mockInvitation], // invitation lookup
         [mockWorkspace], // workspace lookup
-        [{ ...mockUser, email: 'invited@example.com' }], // user lookup
+        [{ ...mockUser, email: "invited@example.com" }], // user lookup
         [], // existing permission check (empty = no existing)
-      ]
+      ];
 
       const request = new NextRequest(
-        'http://localhost/api/workspaces/invitations/token-abc123?token=token-abc123'
-      )
-      const params = Promise.resolve({ invitationId: 'token-abc123' })
+        "http://localhost/api/workspaces/invitations/token-abc123?token=token-abc123"
+      );
+      const params = Promise.resolve({ invitationId: "token-abc123" });
 
-      const response = await GET(request, { params })
+      const response = await GET(request, { params });
 
-      expect(response.status).toBe(307)
-      expect(response.headers.get('location')).toBe('https://test.sim.ai/workspace/workspace-456/w')
-    })
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe(
+        "https://test.ethana.ai/workspace/workspace-456/w"
+      );
+    });
 
-    it('should redirect to error page when invitation expired', async () => {
+    it("should redirect to error page when invitation expired", async () => {
       mockGetSession.mockResolvedValue({
-        user: { ...mockUser, email: 'invited@example.com' },
-      })
+        user: { ...mockUser, email: "invited@example.com" },
+      });
 
       const expiredInvitation = {
         ...mockInvitation,
         expiresAt: new Date(Date.now() - 86400000), // 1 day ago
-      }
+      };
 
-      dbSelectResults = [[expiredInvitation], [mockWorkspace]]
+      dbSelectResults = [[expiredInvitation], [mockWorkspace]];
 
       const request = new NextRequest(
-        'http://localhost/api/workspaces/invitations/token-abc123?token=token-abc123'
-      )
-      const params = Promise.resolve({ invitationId: 'token-abc123' })
+        "http://localhost/api/workspaces/invitations/token-abc123?token=token-abc123"
+      );
+      const params = Promise.resolve({ invitationId: "token-abc123" });
 
-      const response = await GET(request, { params })
+      const response = await GET(request, { params });
 
-      expect(response.status).toBe(307)
-      expect(response.headers.get('location')).toBe(
-        'https://test.sim.ai/invite/invitation-789?error=expired'
-      )
-    })
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe(
+        "https://test.ethana.ai/invite/invitation-789?error=expired"
+      );
+    });
 
-    it('should redirect to error page when email mismatch', async () => {
+    it("should redirect to error page when email mismatch", async () => {
       mockGetSession.mockResolvedValue({
-        user: { ...mockUser, email: 'wrong@example.com' },
-      })
+        user: { ...mockUser, email: "wrong@example.com" },
+      });
 
       dbSelectResults = [
         [mockInvitation],
         [mockWorkspace],
-        [{ ...mockUser, email: 'wrong@example.com' }],
-      ]
+        [{ ...mockUser, email: "wrong@example.com" }],
+      ];
 
       const request = new NextRequest(
-        'http://localhost/api/workspaces/invitations/token-abc123?token=token-abc123'
-      )
-      const params = Promise.resolve({ invitationId: 'token-abc123' })
+        "http://localhost/api/workspaces/invitations/token-abc123?token=token-abc123"
+      );
+      const params = Promise.resolve({ invitationId: "token-abc123" });
 
-      const response = await GET(request, { params })
+      const response = await GET(request, { params });
 
-      expect(response.status).toBe(307)
-      expect(response.headers.get('location')).toBe(
-        'https://test.sim.ai/invite/invitation-789?error=email-mismatch'
-      )
-    })
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe(
+        "https://test.ethana.ai/invite/invitation-789?error=email-mismatch"
+      );
+    });
 
-    it('should return 404 when invitation not found', async () => {
-      mockGetSession.mockResolvedValue({ user: mockUser })
-      dbSelectResults = [[]] // Empty result
-
-      const request = new NextRequest('http://localhost/api/workspaces/invitations/non-existent')
-      const params = Promise.resolve({ invitationId: 'non-existent' })
-
-      const response = await GET(request, { params })
-      const data = await response.json()
-
-      expect(response.status).toBe(404)
-      expect(data).toEqual({ error: 'Invitation not found or has expired' })
-    })
-  })
-
-  describe('DELETE /api/workspaces/invitations/[invitationId]', () => {
-    it('should return 401 when user is not authenticated', async () => {
-      mockGetSession.mockResolvedValue(null)
+    it("should return 404 when invitation not found", async () => {
+      mockGetSession.mockResolvedValue({ user: mockUser });
+      dbSelectResults = [[]]; // Empty result
 
       const request = new NextRequest(
-        'http://localhost/api/workspaces/invitations/invitation-789',
-        { method: 'DELETE' }
-      )
-      const params = Promise.resolve({ invitationId: 'invitation-789' })
+        "http://localhost/api/workspaces/invitations/non-existent"
+      );
+      const params = Promise.resolve({ invitationId: "non-existent" });
 
-      const response = await DELETE(request, { params })
-      const data = await response.json()
+      const response = await GET(request, { params });
+      const data = await response.json();
 
-      expect(response.status).toBe(401)
-      expect(data).toEqual({ error: 'Unauthorized' })
-    })
+      expect(response.status).toBe(404);
+      expect(data).toEqual({ error: "Invitation not found or has expired" });
+    });
+  });
 
-    it('should return 404 when invitation does not exist', async () => {
-      mockGetSession.mockResolvedValue({ user: mockUser })
-      dbSelectResults = [[]]
-
-      const request = new NextRequest('http://localhost/api/workspaces/invitations/non-existent', {
-        method: 'DELETE',
-      })
-      const params = Promise.resolve({ invitationId: 'non-existent' })
-
-      const response = await DELETE(request, { params })
-      const data = await response.json()
-
-      expect(response.status).toBe(404)
-      expect(data).toEqual({ error: 'Invitation not found' })
-    })
-
-    it('should return 403 when user lacks admin access', async () => {
-      mockGetSession.mockResolvedValue({ user: mockUser })
-      mockHasWorkspaceAdminAccess.mockResolvedValue(false)
-      dbSelectResults = [[mockInvitation]]
+  describe("DELETE /api/workspaces/invitations/[invitationId]", () => {
+    it("should return 401 when user is not authenticated", async () => {
+      mockGetSession.mockResolvedValue(null);
 
       const request = new NextRequest(
-        'http://localhost/api/workspaces/invitations/invitation-789',
-        { method: 'DELETE' }
-      )
-      const params = Promise.resolve({ invitationId: 'invitation-789' })
+        "http://localhost/api/workspaces/invitations/invitation-789",
+        { method: "DELETE" }
+      );
+      const params = Promise.resolve({ invitationId: "invitation-789" });
 
-      const response = await DELETE(request, { params })
-      const data = await response.json()
+      const response = await DELETE(request, { params });
+      const data = await response.json();
 
-      expect(response.status).toBe(403)
-      expect(data).toEqual({ error: 'Insufficient permissions' })
-      expect(mockHasWorkspaceAdminAccess).toHaveBeenCalledWith('user-123', 'workspace-456')
-    })
+      expect(response.status).toBe(401);
+      expect(data).toEqual({ error: "Unauthorized" });
+    });
 
-    it('should return 400 when trying to delete non-pending invitation', async () => {
-      mockGetSession.mockResolvedValue({ user: mockUser })
-      mockHasWorkspaceAdminAccess.mockResolvedValue(true)
-
-      const acceptedInvitation = { ...mockInvitation, status: 'accepted' }
-      dbSelectResults = [[acceptedInvitation]]
+    it("should return 404 when invitation does not exist", async () => {
+      mockGetSession.mockResolvedValue({ user: mockUser });
+      dbSelectResults = [[]];
 
       const request = new NextRequest(
-        'http://localhost/api/workspaces/invitations/invitation-789',
-        { method: 'DELETE' }
-      )
-      const params = Promise.resolve({ invitationId: 'invitation-789' })
+        "http://localhost/api/workspaces/invitations/non-existent",
+        {
+          method: "DELETE",
+        }
+      );
+      const params = Promise.resolve({ invitationId: "non-existent" });
 
-      const response = await DELETE(request, { params })
-      const data = await response.json()
+      const response = await DELETE(request, { params });
+      const data = await response.json();
 
-      expect(response.status).toBe(400)
-      expect(data).toEqual({ error: 'Can only delete pending invitations' })
-    })
+      expect(response.status).toBe(404);
+      expect(data).toEqual({ error: "Invitation not found" });
+    });
 
-    it('should successfully delete pending invitation when user has admin access', async () => {
-      mockGetSession.mockResolvedValue({ user: mockUser })
-      mockHasWorkspaceAdminAccess.mockResolvedValue(true)
-      dbSelectResults = [[mockInvitation]]
+    it("should return 403 when user lacks admin access", async () => {
+      mockGetSession.mockResolvedValue({ user: mockUser });
+      mockHasWorkspaceAdminAccess.mockResolvedValue(false);
+      dbSelectResults = [[mockInvitation]];
 
       const request = new NextRequest(
-        'http://localhost/api/workspaces/invitations/invitation-789',
-        { method: 'DELETE' }
-      )
-      const params = Promise.resolve({ invitationId: 'invitation-789' })
+        "http://localhost/api/workspaces/invitations/invitation-789",
+        { method: "DELETE" }
+      );
+      const params = Promise.resolve({ invitationId: "invitation-789" });
 
-      const response = await DELETE(request, { params })
-      const data = await response.json()
+      const response = await DELETE(request, { params });
+      const data = await response.json();
 
-      expect(response.status).toBe(200)
-      expect(data).toEqual({ success: true })
-    })
-  })
-})
+      expect(response.status).toBe(403);
+      expect(data).toEqual({ error: "Insufficient permissions" });
+      expect(mockHasWorkspaceAdminAccess).toHaveBeenCalledWith(
+        "user-123",
+        "workspace-456"
+      );
+    });
+
+    it("should return 400 when trying to delete non-pending invitation", async () => {
+      mockGetSession.mockResolvedValue({ user: mockUser });
+      mockHasWorkspaceAdminAccess.mockResolvedValue(true);
+
+      const acceptedInvitation = { ...mockInvitation, status: "accepted" };
+      dbSelectResults = [[acceptedInvitation]];
+
+      const request = new NextRequest(
+        "http://localhost/api/workspaces/invitations/invitation-789",
+        { method: "DELETE" }
+      );
+      const params = Promise.resolve({ invitationId: "invitation-789" });
+
+      const response = await DELETE(request, { params });
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data).toEqual({ error: "Can only delete pending invitations" });
+    });
+
+    it("should successfully delete pending invitation when user has admin access", async () => {
+      mockGetSession.mockResolvedValue({ user: mockUser });
+      mockHasWorkspaceAdminAccess.mockResolvedValue(true);
+      dbSelectResults = [[mockInvitation]];
+
+      const request = new NextRequest(
+        "http://localhost/api/workspaces/invitations/invitation-789",
+        { method: "DELETE" }
+      );
+      const params = Promise.resolve({ invitationId: "invitation-789" });
+
+      const response = await DELETE(request, { params });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({ success: true });
+    });
+  });
+});

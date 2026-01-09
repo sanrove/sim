@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { webhook, workflow } from '@sim/db/schema'
 import { and, desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
@@ -11,6 +11,21 @@ import { getUserEntityPermissions } from '@/lib/workspaces/permissions/utils'
 import { getOAuthToken } from '@/app/api/auth/oauth/utils'
 
 const logger = createLogger('WebhooksAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +40,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${session.user.id}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
     const { searchParams } = new URL(request.url)
     const workflowId = searchParams.get('workflowId')
     const blockId = searchParams.get('blockId')
@@ -32,7 +54,7 @@ export async function GET(request: NextRequest) {
     if (workflowId && blockId) {
       // Collaborative-aware path: allow collaborators with read access to view webhooks
       // Fetch workflow to verify access
-      const wf = await db
+      const wf = await tenantDb
         .select({ id: workflow.id, userId: workflow.userId, workspaceId: workflow.workspaceId })
         .from(workflow)
         .where(eq(workflow.id, workflowId))
@@ -49,7 +71,8 @@ export async function GET(request: NextRequest) {
         const permission = await getUserEntityPermissions(
           session.user.id,
           'workspace',
-          wfRecord.workspaceId
+          wfRecord.workspaceId,
+          tenantDb
         )
         canRead = permission === 'read' || permission === 'write' || permission === 'admin'
       }
@@ -61,7 +84,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ webhooks: [] }, { status: 200 })
       }
 
-      const webhooks = await db
+      const webhooks = await tenantDb
         .select({
           webhook: webhook,
           workflow: {
@@ -87,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     // Default: list webhooks owned by the session user
     logger.debug(`[${requestId}] Fetching user-owned webhooks for ${session.user.id}`)
-    const webhooks = await db
+    const webhooks = await tenantDb
       .select({
         webhook: webhook,
         workflow: {
@@ -110,11 +133,19 @@ export async function GET(request: NextRequest) {
 // Create or Update a webhook
 export async function POST(request: NextRequest) {
   const requestId = generateRequestId()
-  const userId = (await getSession())?.user?.id
+  const session = await getSession()
+  const userId = session?.user?.id
 
   if (!userId) {
     logger.warn(`[${requestId}] Unauthorized webhook creation attempt`)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Get tenant database
+  const tenantDb = await getTenantDbFromSession(session)
+  if (!tenantDb) {
+    logger.error(`[${requestId}] Tenant database not found for user ${userId}`)
+    return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
   }
 
   try {
@@ -146,7 +177,7 @@ export async function POST(request: NextRequest) {
       if (isCredentialBased || isMicrosoftTeamsChatSubscription) {
         // Try to reuse existing path for this workflow+block if one exists
         if (blockId) {
-          const existingForBlock = await db
+          const existingForBlock = await tenantDb
             .select({ id: webhook.id, path: webhook.path })
             .from(webhook)
             .where(and(eq(webhook.workflowId, workflowId), eq(webhook.blockId, blockId)))
@@ -175,7 +206,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if the workflow exists and user has permission to modify it
-    const workflowData = await db
+    const workflowData = await tenantDb
       .select({
         id: workflow.id,
         userId: workflow.userId,
@@ -205,7 +236,8 @@ export async function POST(request: NextRequest) {
       const userPermission = await getUserEntityPermissions(
         userId,
         'workspace',
-        workflowRecord.workspaceId
+        workflowRecord.workspaceId,
+        tenantDb
       )
       if (userPermission === 'write' || userPermission === 'admin') {
         canModify = true
@@ -222,7 +254,7 @@ export async function POST(request: NextRequest) {
     // Determine existing webhook to update (prefer by workflow+block for credential-based providers)
     let targetWebhookId: string | null = null
     if (isCredentialBased && blockId) {
-      const existingForBlock = await db
+      const existingForBlock = await tenantDb
         .select({ id: webhook.id })
         .from(webhook)
         .where(and(eq(webhook.workflowId, workflowId), eq(webhook.blockId, blockId)))
@@ -232,7 +264,7 @@ export async function POST(request: NextRequest) {
       }
     }
     if (!targetWebhookId) {
-      const existingByPath = await db
+      const existingByPath = await tenantDb
         .select({ id: webhook.id, workflowId: webhook.workflowId })
         .from(webhook)
         .where(eq(webhook.path, finalPath))
@@ -259,7 +291,8 @@ export async function POST(request: NextRequest) {
     const resolvedProviderConfig = await resolveEnvVarsInObject(
       finalProviderConfig,
       userId,
-      workflowRecord.workspaceId || undefined
+      workflowRecord.workspaceId || undefined,
+      tenantDb
     )
 
     // Create external subscriptions before saving to DB to prevent orphaned records
@@ -416,7 +449,7 @@ export async function POST(request: NextRequest) {
           hasCredentialId: !!(resolvedProviderConfig as any)?.credentialId,
           credentialId: (resolvedProviderConfig as any)?.credentialId,
         })
-        const updatedResult = await db
+        const updatedResult = await tenantDb
           .update(webhook)
           .set({
             blockId,
@@ -436,7 +469,7 @@ export async function POST(request: NextRequest) {
         // Create a new webhook
         const webhookId = nanoid()
         logger.info(`[${requestId}] Creating new webhook with ID: ${webhookId}`)
-        const newResult = await db
+        const newResult = await tenantDb
           .insert(webhook)
           .values({
             id: webhookId,
@@ -477,7 +510,7 @@ export async function POST(request: NextRequest) {
 
         if (!success) {
           logger.error(`[${requestId}] Failed to configure Gmail polling, rolling back webhook`)
-          await db.delete(webhook).where(eq(webhook.id, savedWebhook.id))
+          await tenantDb.delete(webhook).where(eq(webhook.id, savedWebhook.id))
           return NextResponse.json(
             {
               error: 'Failed to configure Gmail polling',
@@ -493,7 +526,7 @@ export async function POST(request: NextRequest) {
           `[${requestId}] Error setting up Gmail webhook configuration, rolling back webhook`,
           err
         )
-        await db.delete(webhook).where(eq(webhook.id, savedWebhook.id))
+        await tenantDb.delete(webhook).where(eq(webhook.id, savedWebhook.id))
         return NextResponse.json(
           {
             error: 'Failed to configure Gmail webhook',
@@ -516,7 +549,7 @@ export async function POST(request: NextRequest) {
 
         if (!success) {
           logger.error(`[${requestId}] Failed to configure Outlook polling, rolling back webhook`)
-          await db.delete(webhook).where(eq(webhook.id, savedWebhook.id))
+          await tenantDb.delete(webhook).where(eq(webhook.id, savedWebhook.id))
           return NextResponse.json(
             {
               error: 'Failed to configure Outlook polling',
@@ -532,7 +565,7 @@ export async function POST(request: NextRequest) {
           `[${requestId}] Error setting up Outlook webhook configuration, rolling back webhook`,
           err
         )
-        await db.delete(webhook).where(eq(webhook.id, savedWebhook.id))
+        await tenantDb.delete(webhook).where(eq(webhook.id, savedWebhook.id))
         return NextResponse.json(
           {
             error: 'Failed to configure Outlook webhook',
@@ -553,7 +586,7 @@ export async function POST(request: NextRequest) {
 
         if (!success) {
           logger.error(`[${requestId}] Failed to configure RSS polling, rolling back webhook`)
-          await db.delete(webhook).where(eq(webhook.id, savedWebhook.id))
+          await tenantDb.delete(webhook).where(eq(webhook.id, savedWebhook.id))
           return NextResponse.json(
             {
               error: 'Failed to configure RSS polling',
@@ -569,7 +602,7 @@ export async function POST(request: NextRequest) {
           `[${requestId}] Error setting up RSS webhook configuration, rolling back webhook`,
           err
         )
-        await db.delete(webhook).where(eq(webhook.id, savedWebhook.id))
+        await tenantDb.delete(webhook).where(eq(webhook.id, savedWebhook.id))
         return NextResponse.json(
           {
             error: 'Failed to configure RSS webhook',

@@ -1,6 +1,7 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { document, embedding, knowledgeBase } from '@sim/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { getUserEntityPermissions } from '@/lib/workspaces/permissions/utils'
 
 export interface KnowledgeBaseData {
@@ -144,9 +145,11 @@ export type ChunkAccessCheck = ChunkAccessResult | ChunkAccessDenied
  */
 export async function checkKnowledgeBaseAccess(
   knowledgeBaseId: string,
-  userId: string
+  userId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<KnowledgeBaseAccessCheck> {
-  const kb = await db
+  const database = tenantDb || db
+  const kb = await database
     .select({
       id: knowledgeBase.id,
       userId: knowledgeBase.userId,
@@ -169,7 +172,7 @@ export async function checkKnowledgeBaseAccess(
 
   // Case 2: Knowledge base belongs to a workspace the user has permissions for
   if (kbData.workspaceId) {
-    const userPermission = await getUserEntityPermissions(userId, 'workspace', kbData.workspaceId)
+    const userPermission = await getUserEntityPermissions(userId, 'workspace', kbData.workspaceId, tenantDb)
     if (userPermission !== null) {
       return { hasAccess: true, knowledgeBase: kbData }
     }
@@ -186,9 +189,11 @@ export async function checkKnowledgeBaseAccess(
  */
 export async function checkKnowledgeBaseWriteAccess(
   knowledgeBaseId: string,
-  userId: string
+  userId: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<KnowledgeBaseAccessCheck> {
-  const kb = await db
+  const database = tenantDb || db
+  const kb = await database
     .select({
       id: knowledgeBase.id,
       userId: knowledgeBase.userId,
@@ -211,7 +216,7 @@ export async function checkKnowledgeBaseWriteAccess(
 
   // Case 2: Knowledge base belongs to a workspace and user has write/admin permissions
   if (kbData.workspaceId) {
-    const userPermission = await getUserEntityPermissions(userId, 'workspace', kbData.workspaceId)
+    const userPermission = await getUserEntityPermissions(userId, 'workspace', kbData.workspaceId, tenantDb)
     if (userPermission === 'write' || userPermission === 'admin') {
       return { hasAccess: true, knowledgeBase: kbData }
     }

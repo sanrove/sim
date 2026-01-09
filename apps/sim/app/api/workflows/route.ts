@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { workflow, workspace } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -7,9 +7,24 @@ import { getSession } from '@/lib/auth'
 import { generateRequestId } from '@/lib/core/utils/request'
 import { createLogger } from '@/lib/logs/console/logger'
 import { getUserEntityPermissions } from '@/lib/workspaces/permissions/utils'
-import { verifyWorkspaceMembership } from '@/app/api/workflows/utils'
+import { verifyWorkspaceMembershipWithDb } from '@/app/api/workflows/utils'
 
 const logger = createLogger('WorkflowAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const CreateWorkflowSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -35,12 +50,18 @@ export async function GET(request: Request) {
 
     const userId = session.user.id
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
     if (workspaceId) {
-      const workspaceExists = await db
+      const workspaceExists = await tenantDb
         .select({ id: workspace.id })
         .from(workspace)
         .where(eq(workspace.id, workspaceId))
-        .then((rows) => rows.length > 0)
+        .then((rows: any[]) => rows.length > 0)
 
       if (!workspaceExists) {
         logger.warn(
@@ -52,7 +73,7 @@ export async function GET(request: Request) {
         )
       }
 
-      const userRole = await verifyWorkspaceMembership(userId, workspaceId)
+      const userRole = await verifyWorkspaceMembershipWithDb(userId, workspaceId, tenantDb)
 
       if (!userRole) {
         logger.warn(
@@ -68,9 +89,9 @@ export async function GET(request: Request) {
     let workflows
 
     if (workspaceId) {
-      workflows = await db.select().from(workflow).where(eq(workflow.workspaceId, workspaceId))
+      workflows = await tenantDb.select().from(workflow).where(eq(workflow.workspaceId, workspaceId))
     } else {
-      workflows = await db.select().from(workflow).where(eq(workflow.userId, userId))
+      workflows = await tenantDb.select().from(workflow).where(eq(workflow.userId, userId))
     }
 
     return NextResponse.json({ data: workflows }, { status: 200 })
@@ -92,6 +113,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${session.user.id}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
     const body = await req.json()
     const { name, description, color, workspaceId, folderId } = CreateWorkflowSchema.parse(body)
 
@@ -99,7 +127,8 @@ export async function POST(req: NextRequest) {
       const workspacePermission = await getUserEntityPermissions(
         session.user.id,
         'workspace',
-        workspaceId
+        workspaceId,
+        tenantDb
       )
 
       if (!workspacePermission || workspacePermission === 'read') {
@@ -131,7 +160,8 @@ export async function POST(req: NextRequest) {
         // Silently fail
       })
 
-    await db.insert(workflow).values({
+    // Use tenant database instead of master db
+    await tenantDb.insert(workflow).values({
       id: workflowId,
       userId: session.user.id,
       workspaceId: workspaceId || null,

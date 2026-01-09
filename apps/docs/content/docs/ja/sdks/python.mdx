@@ -32,7 +32,7 @@ from simstudio import SimStudioClient
 # Initialize the client
 client = SimStudioClient(
     api_key="your-api-key-here",
-    base_url="https://sim.ai"  # optional, defaults to https://sim.ai
+    base_url="https://ethana.ai"  # optional, defaults to https://ethana.ai
 )
 
 # Execute a workflow
@@ -50,7 +50,7 @@ except Exception as error:
 #### コンストラクタ
 
 ```python
-SimStudioClient(api_key: str, base_url: str = "https://sim.ai")
+SimStudioClient(api_key: str, base_url: str = "https://ethana.ai")
 ```
 
 **パラメータ：**
@@ -661,7 +661,7 @@ def stream_workflow():
 
     def generate():
         response = requests.post(
-            'https://sim.ai/api/workflows/WORKFLOW_ID/execute',
+            'https://ethana.ai/api/workflows/WORKFLOW_ID/execute',
             headers={
                 'Content-Type': 'application/json',
                 'X-API-Key': os.getenv('ETHANA_AGENT_BUILDER_KEY')
@@ -716,7 +716,7 @@ if __name__ == '__main__':
     # Development configuration
     client = SimStudioClient(
         api_key=os.getenv("ETHANA_AGENT_BUILDER_KEY")
-        base_url=os.getenv("SIM_BASE_URL", "https://sim.ai")
+        base_url=os.getenv("SIM_BASE_URL", "https://ethana.ai")
     )
     ```
 
@@ -734,7 +734,7 @@ if __name__ == '__main__':
 
     client = SimStudioClient(
         api_key=api_key,
-        base_url=os.getenv("SIM_BASE_URL", "https://sim.ai")
+        base_url=os.getenv("SIM_BASE_URL", "https://ethana.ai")
     )
     ```
 
@@ -745,7 +745,7 @@ if __name__ == '__main__':
 
 <Steps>
   <Step title="Simにログイン">
-    [Sim](https://sim.ai)に移動してアカウントにログインします。
+    [Sim](https://ethana.ai)に移動してアカウントにログインします。
   </Step>
   <Step title="ワークフローを開く">
     プログラムで実行したいワークフローに移動します。

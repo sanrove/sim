@@ -3,28 +3,28 @@ title: Self-Hosting
 description: Deploy Sim Studio on your own infrastructure
 ---
 
-import { Card, Cards } from 'fumadocs-ui/components/card'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Callout } from "fumadocs-ui/components/callout";
 
 Deploy Sim Studio on your own infrastructure with Docker or Kubernetes.
 
 ## Requirements
 
-| Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| CPU | 2 cores | 4+ cores |
-| RAM | 12 GB | 16+ GB |
-| Storage | 20 GB SSD | 50+ GB SSD |
-| Docker | 20.10+ | Latest |
+| Resource | Minimum   | Recommended |
+| -------- | --------- | ----------- |
+| CPU      | 2 cores   | 4+ cores    |
+| RAM      | 12 GB     | 16+ GB      |
+| Storage  | 20 GB SSD | 50+ GB SSD  |
+| Docker   | 20.10+    | Latest      |
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:5863](http://localhost:5863)
 
 ## Deployment Options
 
@@ -42,9 +42,9 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Architecture
 
-| Component | Port | Description |
-|-----------|------|-------------|
-| simstudio | 3000 | Main application |
-| realtime | 3002 | WebSocket server |
-| db | 5432 | PostgreSQL with pgvector |
-| migrations | - | Database migrations (runs once) |
+| Component  | Port | Description                     |
+| ---------- | ---- | ------------------------------- |
+| simstudio  | 5863 | Main application                |
+| realtime   | 5865 | WebSocket server                |
+| db         | 5432 | PostgreSQL with pgvector        |
+| migrations | -    | Database migrations (runs once) |

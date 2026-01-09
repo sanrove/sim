@@ -1,3 +1,5 @@
+import { getTenantDatabase, organization } from '@sim/db'
+import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
@@ -6,6 +8,22 @@ import { createLogger } from '@/lib/logs/console/logger'
 import { duplicateWorkflow } from '@/lib/workflows/persistence/duplicate'
 
 const logger = createLogger('WorkflowDuplicateAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const { db } = await import('@sim/db')
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 const DuplicateRequestSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -27,6 +45,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Get tenant database
+  const tenantDb = await getTenantDbFromSession(session)
+
   try {
     const body = await req.json()
     const { name, description, color, workspaceId, folderId } = DuplicateRequestSchema.parse(body)
@@ -44,6 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       workspaceId,
       folderId,
       requestId,
+      tenantDb: tenantDb || undefined,
     })
 
     const elapsed = Date.now() - startTime

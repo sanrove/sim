@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
-import { db } from '@sim/db'
-import { chat, workflow } from '@sim/db/schema'
-import { eq } from 'drizzle-orm'
+import { db, getTenantDatabase, organization, member, workspace } from '@sim/db'
+import { chat, workflow, workflowDeploymentVersion } from '@sim/db/schema'
+import { and, desc, eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { generateRequestId } from '@/lib/core/utils/request'
@@ -18,6 +18,107 @@ import {
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
 
 const logger = createLogger('ChatIdentifierAPI')
+
+// Helper to find chat deployment across all tenant databases
+async function findChatByIdentifier(identifier: string) {
+  try {
+    // First, get all organizations with ModelFlow prefix
+    const orgs = await db.query.organization.findMany({
+      where: (org, { like }) => like(org.name, 'ModelFlow-%'),
+    })
+
+    logger.debug('findChatByIdentifier: searching across tenants', { 
+      identifier, 
+      tenantCount: orgs.length 
+    })
+
+    // Search each tenant database
+    for (const org of orgs) {
+      const tenantId = org.name.replace('ModelFlow-', '')
+      try {
+        const tenantDb = await getTenantDatabase(tenantId)
+        const [chatRecord] = await tenantDb
+          .select({
+            id: chat.id,
+            workflowId: chat.workflowId,
+            userId: chat.userId,
+            isActive: chat.isActive,
+            authType: chat.authType,
+            password: chat.password,
+            allowedEmails: chat.allowedEmails,
+            outputConfigs: chat.outputConfigs,
+            title: chat.title,
+            description: chat.description,
+            customizations: chat.customizations,
+          })
+          .from(chat)
+          .where(eq(chat.identifier, identifier))
+          .limit(1)
+
+        if (chatRecord) {
+          logger.info('findChatByIdentifier: chat found', { 
+            identifier, 
+            tenantId, 
+            chatId: chatRecord.id 
+          })
+          return { chatRecord, tenantDb, tenantId, organizationId: org.id }
+        }
+      } catch (error) {
+        logger.warn('findChatByIdentifier: error searching tenant', { 
+          tenantId, 
+          error 
+        })
+        continue
+      }
+    }
+
+    logger.warn('findChatByIdentifier: chat not found in any tenant', { identifier })
+    return null
+  } catch (error) {
+    logger.error('findChatByIdentifier: search failed', { error, identifier })
+    return null
+  }
+}
+
+// Helper to get tenant database from user's organization
+async function getTenantDbFromUser(userId: string) {
+  try {
+    // Get user's organization membership
+    const [memberRecord] = await db
+      .select({ organizationId: member.organizationId })
+      .from(member)
+      .where(eq(member.userId, userId))
+      .limit(1)
+    
+    logger.debug('getTenantDbFromUser: member query result', { userId, memberRecord })
+    
+    if (!memberRecord?.organizationId) {
+      logger.warn('getTenantDbFromUser: No member record found', { userId })
+      return null
+    }
+    
+    const orgRecord = await db.query.organization.findFirst({
+      where: eq(organization.id, memberRecord.organizationId),
+    })
+    
+    logger.debug('getTenantDbFromUser: org query result', { organizationId: memberRecord.organizationId, orgRecord })
+    
+    if (!orgRecord?.name?.startsWith('ModelFlow-')) {
+      logger.warn('getTenantDbFromUser: Organization name does not match ModelFlow pattern', { 
+        organizationId: memberRecord.organizationId,
+        orgName: orgRecord?.name 
+      })
+      return null
+    }
+    
+    const tenantId = orgRecord.name.replace('ModelFlow-', '')
+    logger.info('getTenantDbFromUser: Successfully resolved tenant', { userId, tenantId, organizationId: memberRecord.organizationId })
+    return { tenantDb: await getTenantDatabase(tenantId), tenantId, organizationId: memberRecord.organizationId }
+  } catch (error) {
+    logger.warn('Failed to get tenant database from user', { error, userId })
+    return null
+  }
+}
 
 const chatFileSchema = z.object({
   name: z.string().min(1, 'File name is required'),
@@ -69,36 +170,33 @@ export async function POST(
       return addCorsHeaders(createErrorResponse('Invalid request body', 400), request)
     }
 
-    const deploymentResult = await db
-      .select({
-        id: chat.id,
-        workflowId: chat.workflowId,
-        userId: chat.userId,
-        isActive: chat.isActive,
-        authType: chat.authType,
-        password: chat.password,
-        allowedEmails: chat.allowedEmails,
-        outputConfigs: chat.outputConfigs,
-      })
-      .from(chat)
-      .where(eq(chat.identifier, identifier))
-      .limit(1)
-
-    if (deploymentResult.length === 0) {
+    // Find chat deployment across tenant databases
+    const chatResult = await findChatByIdentifier(identifier)
+    
+    if (!chatResult) {
       logger.warn(`[${requestId}] Chat not found for identifier: ${identifier}`)
       return addCorsHeaders(createErrorResponse('Chat not found', 404), request)
     }
 
-    const deployment = deploymentResult[0]
+    const { chatRecord: deployment, tenantDb, tenantId, organizationId } = chatResult
+
+    logger.info(`[${requestId}] Chat deployment found in tenant database`, { 
+      chatId: deployment.id, 
+      workflowId: deployment.workflowId, 
+      userId: deployment.userId,
+      tenantId,
+      organizationId
+    })
+
+    // Get workflow to determine workspace
+    const [workflowRecord] = await tenantDb
+      .select({ workspaceId: workflow.workspaceId })
+      .from(workflow)
+      .where(eq(workflow.id, deployment.workflowId))
+      .limit(1)
 
     if (!deployment.isActive) {
       logger.warn(`[${requestId}] Chat is not active: ${identifier}`)
-
-      const [workflowRecord] = await db
-        .select({ workspaceId: workflow.workspaceId })
-        .from(workflow)
-        .where(eq(workflow.id, deployment.workflowId))
-        .limit(1)
 
       const workspaceId = workflowRecord?.workspaceId
       if (!workspaceId) {
@@ -156,6 +254,55 @@ export async function POST(
       return addCorsHeaders(createErrorResponse('No input provided', 400), request)
     }
 
+    // Check if workflow has active deployment in tenant database
+    // Auto-deploy if needed to handle multi-tenant scenarios
+    try {
+      const [activeDeployment] = await tenantDb
+        .select({ id: workflowDeploymentVersion.id })
+        .from(workflowDeploymentVersion)
+        .where(
+          and(
+            eq(workflowDeploymentVersion.workflowId, deployment.workflowId),
+            eq(workflowDeploymentVersion.isActive, true)
+          )
+        )
+        .limit(1)
+
+      if (!activeDeployment) {
+        logger.warn(
+          `[${requestId}] No active deployment found for workflow ${deployment.workflowId}, auto-deploying`
+        )
+
+        const { deployWorkflow } = await import('@/lib/workflows/persistence/utils')
+        const deployResult = await deployWorkflow({
+          workflowId: deployment.workflowId,
+          deployedBy: deployment.userId,
+          tenantDb,
+        })
+
+        if (!deployResult.success) {
+          logger.error(`[${requestId}] Failed to auto-deploy workflow: ${deployResult.error}`)
+          return addCorsHeaders(
+            createErrorResponse(
+              'Workflow is not deployed. Please deploy the workflow first.',
+              403
+            ),
+            request
+          )
+        }
+
+        logger.info(
+          `[${requestId}] Auto-deployed workflow ${deployment.workflowId} successfully (v${deployResult.version})`
+        )
+      }
+    } catch (deployError: any) {
+      logger.error(`[${requestId}] Error checking/deploying workflow:`, deployError)
+      return addCorsHeaders(
+        createErrorResponse('Failed to verify workflow deployment status', 500),
+        request
+      )
+    }
+
     const executionId = randomUUID()
 
     const loggingSession = new LoggingSession(deployment.workflowId, executionId, 'chat', requestId)
@@ -169,6 +316,8 @@ export async function POST(
       checkRateLimit: true,
       checkDeployment: true,
       loggingSession,
+      tenantId,
+      organizationId,
     })
 
     if (!preprocessResult.success) {
@@ -182,9 +331,9 @@ export async function POST(
       )
     }
 
-    const { actorUserId, workflowRecord } = preprocessResult
+    const { actorUserId, workflowRecord: preprocessWorkflow } = preprocessResult
     const workspaceOwnerId = actorUserId!
-    const workspaceId = workflowRecord?.workspaceId
+    const workspaceId = preprocessWorkflow?.workspaceId || workflowRecord?.workspaceId
     if (!workspaceId) {
       logger.error(`[${requestId}] Workflow ${deployment.workflowId} has no workspaceId`)
       return addCorsHeaders(
@@ -252,8 +401,8 @@ export async function POST(
         id: deployment.workflowId,
         userId: deployment.userId,
         workspaceId,
-        isDeployed: workflowRecord?.isDeployed ?? false,
-        variables: workflowRecord?.variables || {},
+        isDeployed: preprocessWorkflow?.isDeployed ?? false,
+        variables: preprocessWorkflow?.variables || {},
       }
 
       const stream = await createStreamingResponse({
@@ -267,6 +416,7 @@ export async function POST(
           workflowTriggerType: 'chat',
         },
         executionId,
+        tenantDb,
       })
 
       const streamResponse = new NextResponse(stream, {
@@ -300,29 +450,15 @@ export async function GET(
   try {
     logger.debug(`[${requestId}] Fetching chat info for identifier: ${identifier}`)
 
-    const deploymentResult = await db
-      .select({
-        id: chat.id,
-        title: chat.title,
-        description: chat.description,
-        customizations: chat.customizations,
-        isActive: chat.isActive,
-        workflowId: chat.workflowId,
-        authType: chat.authType,
-        password: chat.password,
-        allowedEmails: chat.allowedEmails,
-        outputConfigs: chat.outputConfigs,
-      })
-      .from(chat)
-      .where(eq(chat.identifier, identifier))
-      .limit(1)
-
-    if (deploymentResult.length === 0) {
+    // Find chat deployment across tenant databases
+    const chatResult = await findChatByIdentifier(identifier)
+    
+    if (!chatResult) {
       logger.warn(`[${requestId}] Chat not found for identifier: ${identifier}`)
       return addCorsHeaders(createErrorResponse('Chat not found', 404), request)
     }
 
-    const deployment = deploymentResult[0]
+    const { chatRecord: deployment } = chatResult
 
     if (!deployment.isActive) {
       logger.warn(`[${requestId}] Chat is not active: ${identifier}`)

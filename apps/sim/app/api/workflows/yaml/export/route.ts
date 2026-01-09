@@ -1,4 +1,4 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase, organization } from '@sim/db'
 import { workflow } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -14,6 +14,21 @@ import { resolveOutputType } from '@/blocks/utils'
 import { generateLoopBlocks, generateParallelBlocks } from '@/stores/workflows/workflow/utils'
 
 const logger = createLogger('WorkflowYamlExportAPI')
+
+// Helper to get tenant database from session
+async function getTenantDbFromSession(session: any) {
+  const orgId = session?.session?.activeOrganizationId
+  if (!orgId) return null
+  
+  const orgRecord = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+  })
+  
+  if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+  
+  const tenantId = orgRecord.name.replace('ModelFlow-', '')
+  return getTenantDatabase(tenantId)
+}
 
 export async function GET(request: NextRequest) {
   const requestId = generateRequestId()
@@ -36,8 +51,15 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession(session)
+    if (!tenantDb) {
+      logger.error(`[${requestId}] Tenant database not found for user ${userId}`)
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 400 })
+    }
+
     // Fetch the workflow from database
-    const workflowData = await db
+    const workflowData = await tenantDb
       .select()
       .from(workflow)
       .where(eq(workflow.id, workflowId))
@@ -61,7 +83,8 @@ export async function GET(request: NextRequest) {
       const userPermission = await getUserEntityPermissions(
         userId,
         'workspace',
-        workflowData.workspaceId
+        workflowData.workspaceId,
+        tenantDb
       )
       if (userPermission !== null) {
         hasAccess = true
@@ -75,7 +98,7 @@ export async function GET(request: NextRequest) {
 
     // Try to load from normalized tables first
     logger.debug(`[${requestId}] Attempting to load workflow ${workflowId} from normalized tables`)
-    const normalizedData = await loadWorkflowFromNormalizedTables(workflowId)
+    const normalizedData = await loadWorkflowFromNormalizedTables(workflowId, tenantDb)
 
     let workflowState: any
     const subBlockValues: Record<string, Record<string, any>> = {}

@@ -1,5 +1,5 @@
 /**
- * Sim OpenTelemetry - Server-side Instrumentation
+ * AgentBuilder OpenTelemetry - Server-side Instrumentation
  */
 
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api'

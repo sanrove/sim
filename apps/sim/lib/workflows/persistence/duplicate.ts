@@ -1,6 +1,7 @@
 import { db } from '@sim/db'
 import { workflow, workflowBlocks, workflowEdges, workflowSubflows } from '@sim/db/schema'
 import { eq } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { createLogger } from '@/lib/logs/console/logger'
 import { getUserEntityPermissions } from '@/lib/workspaces/permissions/utils'
 import type { Variable } from '@/stores/panel/variables/types'
@@ -17,6 +18,7 @@ interface DuplicateWorkflowOptions {
   workspaceId?: string
   folderId?: string | null
   requestId?: string
+  tenantDb?: PostgresJsDatabase<any>
 }
 
 interface DuplicateWorkflowResult {
@@ -47,14 +49,18 @@ export async function duplicateWorkflow(
     workspaceId,
     folderId,
     requestId = 'unknown',
+    tenantDb,
   } = options
 
   // Generate new workflow ID
   const newWorkflowId = crypto.randomUUID()
   const now = new Date()
 
+  // Use tenant database if available, otherwise fall back to master
+  const database = tenantDb || db
+
   // Duplicate workflow and all related data in a transaction
-  const result = await db.transaction(async (tx) => {
+  const result = await database.transaction(async (tx) => {
     // First verify the source workflow exists
     const sourceWorkflowRow = await tx
       .select()

@@ -21,14 +21,14 @@
     "workflow",
     "ui",
     "cli",
-    "sim",
+    "Ethana",
     "sim-studio",
     "agent",
     "agents",
     "automation",
     "docker"
   ],
-  "author": "Sim",
+  "author": "Ethana",
   "license": "Apache-2.0",
   "dependencies": {
     "chalk": "^4.1.2",

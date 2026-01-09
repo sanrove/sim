@@ -2,9 +2,9 @@
 title: API externe
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout'
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Video } from '@/components/ui/video'
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Video } from "@/components/ui/video";
 
 Sim fournit une API externe complète pour interroger les journaux d'exécution des workflows et configurer des webhooks pour des notifications en temps réel lorsque les workflows sont terminés.
 
@@ -14,7 +14,7 @@ Toutes les requêtes API nécessitent une clé API transmise dans l'en-tête `x-
 
 ```bash
 curl -H "x-api-key: YOUR_API_KEY" \
-  https://sim.ai/api/v1/logs?workspaceId=YOUR_WORKSPACE_ID
+  https://ethana.ai/api/v1/logs?workspaceId=YOUR_WORKSPACE_ID
 ```
 
 Vous pouvez générer des clés API depuis vos paramètres utilisateur dans le tableau de bord Sim.
@@ -87,6 +87,7 @@ Interrogez les journaux d'exécution des workflows avec de nombreuses options de
     - `details` - Niveau de détail de la réponse : `basic`, `full` (par défaut : basic)
     - `includeTraceSpans` - Inclure les intervalles de trace (par défaut : false)
     - `includeFinalOutput` - Inclure la sortie finale (par défaut : false)
+
   </Tab>
   <Tab value="Response">
 
@@ -266,19 +267,23 @@ Recevez des notifications en temps réel lorsque les exécutions de flux de trav
 Configurez les notifications depuis la page Logs en cliquant sur le bouton menu et en sélectionnant "Configurer les notifications".
 
 **Canaux de notification :**
+
 - **Webhook** : envoi de requêtes HTTP POST à votre point de terminaison
 - **E-mail** : réception de notifications par e-mail avec les détails d'exécution
 - **Slack** : publication de messages dans un canal Slack
 
 **Sélection de flux de travail :**
+
 - Sélectionnez des flux de travail spécifiques à surveiller
 - Ou choisissez "Tous les flux de travail" pour inclure les flux actuels et futurs
 
 **Options de filtrage :**
+
 - `levelFilter` : niveaux de journalisation à recevoir (`info`, `error`)
 - `triggerFilter` : types de déclencheurs à recevoir (`api`, `webhook`, `schedule`, `manual`, `chat`)
 
 **Données optionnelles :**
+
 - `includeFinalOutput` : inclure le résultat final du flux de travail
 - `includeTraceSpans` : inclure les traces détaillées d'exécution
 - `includeRateLimits` : inclure les informations de limite de débit (limites synchrones/asynchrones et restantes)
@@ -289,32 +294,39 @@ Configurez les notifications depuis la page Logs en cliquant sur le bouton menu 
 Au lieu de recevoir des notifications pour chaque exécution, configurez des règles d'alerte pour être notifié uniquement lorsque des problèmes sont détectés :
 
 **Échecs consécutifs**
+
 - Alerte après X exécutions échouées consécutives (par exemple, 3 échecs d'affilée)
 - Réinitialisation lorsqu'une exécution réussit
 
 **Taux d'échec**
+
 - Alerte lorsque le taux d'échec dépasse X % au cours des Y dernières heures
 - Nécessite un minimum de 5 exécutions dans la fenêtre
 - Ne se déclenche qu'après l'écoulement complet de la fenêtre temporelle
 
 **Seuil de latence**
+
 - Alerte lorsqu'une exécution prend plus de X secondes
 - Utile pour détecter les flux de travail lents ou bloqués
 
 **Pic de latence**
+
 - Alerte lorsque l'exécution est X % plus lente que la moyenne
 - Compare à la durée moyenne sur la fenêtre temporelle configurée
 - Nécessite un minimum de 5 exécutions pour établir une référence
 
 **Seuil de coût**
+
 - Alerte lorsqu'une seule exécution coûte plus de X €
 - Utile pour détecter les appels LLM coûteux
 
 **Aucune activité**
+
 - Alerte lorsqu'aucune exécution ne se produit pendant X heures
 - Utile pour surveiller les workflows programmés qui devraient s'exécuter régulièrement
 
 **Nombre d'erreurs**
+
 - Alerte lorsque le nombre d'erreurs dépasse X dans une fenêtre temporelle
 - Suit le total des erreurs, pas les erreurs consécutives
 
@@ -323,6 +335,7 @@ Tous les types d'alertes incluent un temps de récupération d'une heure pour é
 ### Configuration du webhook
 
 Pour les webhooks, des options supplémentaires sont disponibles :
+
 - `url` : l'URL de votre point de terminaison webhook
 - `secret` : secret optionnel pour la vérification de signature HMAC
 
@@ -401,12 +414,12 @@ Si vous configurez un secret webhook, vérifiez la signature pour vous assurer q
       const [timestampPart, signaturePart] = signature.split(',');
       const timestamp = timestampPart.replace('t=', '');
       const expectedSignature = signaturePart.replace('v1=', '');
-      
+
       const signatureBase = `${timestamp}.${body}`;
       const hmac = crypto.createHmac('sha256', secret);
       hmac.update(signatureBase);
       const computedSignature = hmac.digest('hex');
-      
+
       return computedSignature === expectedSignature;
     }
 
@@ -414,11 +427,11 @@ Si vous configurez un secret webhook, vérifiez la signature pour vous assurer q
     app.post('/webhook', (req, res) => {
       const signature = req.headers['sim-signature'];
       const body = JSON.stringify(req.body);
-      
+
       if (!verifyWebhookSignature(body, signature, process.env.WEBHOOK_SECRET)) {
         return res.status(401).send('Invalid signature');
       }
-      
+
       // Process the webhook...
     });
     ```
@@ -435,14 +448,14 @@ Si vous configurez un secret webhook, vérifiez la signature pour vous assurer q
         timestamp_part, signature_part = signature.split(',')
         timestamp = timestamp_part.replace('t=', '')
         expected_signature = signature_part.replace('v1=', '')
-        
+
         signature_base = f"{timestamp}.{body}"
         computed_signature = hmac.new(
             secret.encode(),
             signature_base.encode(),
             hashlib.sha256
         ).hexdigest()
-        
+
         return hmac.compare_digest(computed_signature, expected_signature)
 
     # In your webhook handler
@@ -450,10 +463,10 @@ Si vous configurez un secret webhook, vérifiez la signature pour vous assurer q
     def webhook():
         signature = request.headers.get('sim-signature')
         body = json.dumps(request.json)
-        
+
         if not verify_webhook_signature(body, signature, os.environ['WEBHOOK_SECRET']):
             return 'Invalid signature', 401
-        
+
         # Process the webhook...
     ```
 
@@ -471,7 +484,8 @@ Les livraisons de webhook échouées sont réessayées avec un backoff exponenti
 - Les livraisons expirent après 30 secondes
 
 <Callout type="info">
-  Les livraisons de webhook sont traitées de manière asynchrone et n'affectent pas les performances d'exécution du workflow.
+  Les livraisons de webhook sont traitées de manière asynchrone et n'affectent
+  pas les performances d'exécution du workflow.
 </Callout>
 
 ## Bonnes pratiques
@@ -490,20 +504,22 @@ Les livraisons de webhook échouées sont réessayées avec un backoff exponenti
 
 L'API utilise un **algorithme de seau à jetons** pour limiter le débit, offrant une utilisation équitable tout en permettant des pics de trafic :
 
-| Forfait | Requêtes/minute | Capacité de rafale |
-|------|-----------------|----------------|
-| Gratuit | 10 | 20 |
-| Pro | 30 | 60 |
-| Équipe | 60 | 120 |
-| Entreprise | 120 | 240 |
+| Forfait    | Requêtes/minute | Capacité de rafale |
+| ---------- | --------------- | ------------------ |
+| Gratuit    | 10              | 20                 |
+| Pro        | 30              | 60                 |
+| Équipe     | 60              | 120                |
+| Entreprise | 120             | 240                |
 
 **Comment ça fonctionne :**
+
 - Les jetons se rechargent au rythme de `requestsPerMinute`
 - Vous pouvez accumuler jusqu'à `maxBurst` jetons en période d'inactivité
 - Chaque requête consomme 1 jeton
 - La capacité de rafale permet de gérer les pics de trafic
 
 Les informations sur les limites de débit sont incluses dans les en-têtes de réponse :
+
 - `X-RateLimit-Limit` : requêtes par minute (taux de recharge)
 - `X-RateLimit-Remaining` : jetons actuellement disponibles
 - `X-RateLimit-Reset` : horodatage ISO indiquant quand les jetons seront rechargés
@@ -512,38 +528,35 @@ Les informations sur les limites de débit sont incluses dans les en-têtes de r
 
 ```javascript
 let cursor = null;
-const workspaceId = 'YOUR_WORKSPACE_ID';
+const workspaceId = "YOUR_WORKSPACE_ID";
 const startDate = new Date().toISOString();
 
 async function pollLogs() {
   const params = new URLSearchParams({
     workspaceId,
     startDate,
-    order: 'asc',
-    limit: '100'
+    order: "asc",
+    limit: "100",
   });
-  
+
   if (cursor) {
-    params.append('cursor', cursor);
+    params.append("cursor", cursor);
   }
-  
-  const response = await fetch(
-    `https://sim.ai/api/v1/logs?${params}`,
-    {
-      headers: {
-        'x-api-key': 'YOUR_API_KEY'
-      }
-    }
-  );
-  
+
+  const response = await fetch(`https://ethana.ai/api/v1/logs?${params}`, {
+    headers: {
+      "x-api-key": "YOUR_API_KEY",
+    },
+  });
+
   if (response.ok) {
     const data = await response.json();
-    
+
     // Process new logs
     for (const log of data.data) {
       console.log(`New execution: ${log.executionId}`);
     }
-    
+
     // Update cursor for next poll
     if (data.nextCursor) {
       cursor = data.nextCursor;
@@ -558,37 +571,37 @@ setInterval(pollLogs, 30000);
 ## Exemple : traitement des webhooks
 
 ```javascript
-import express from 'express';
-import crypto from 'crypto';
+import express from "express";
+import crypto from "crypto";
 
 const app = express();
 app.use(express.json());
 
-app.post('/sim-webhook', (req, res) => {
+app.post("/sim-webhook", (req, res) => {
   // Verify signature
-  const signature = req.headers['sim-signature'];
+  const signature = req.headers["sim-signature"];
   const body = JSON.stringify(req.body);
-  
+
   if (!verifyWebhookSignature(body, signature, process.env.WEBHOOK_SECRET)) {
-    return res.status(401).send('Invalid signature');
+    return res.status(401).send("Invalid signature");
   }
-  
+
   // Check timestamp to prevent replay attacks
-  const timestamp = parseInt(req.headers['sim-timestamp']);
-  const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-  
+  const timestamp = parseInt(req.headers["sim-timestamp"]);
+  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+
   if (timestamp < fiveMinutesAgo) {
-    return res.status(401).send('Timestamp too old');
+    return res.status(401).send("Timestamp too old");
   }
-  
+
   // Process the webhook
   const event = req.body;
-  
+
   switch (event.type) {
-    case 'workflow.execution.completed':
+    case "workflow.execution.completed":
       const { workflowId, executionId, status, cost } = event.data;
-      
-      if (status === 'error') {
+
+      if (status === "error") {
         console.error(`Workflow ${workflowId} failed: ${executionId}`);
         // Handle error...
       } else {
@@ -598,12 +611,12 @@ app.post('/sim-webhook', (req, res) => {
       }
       break;
   }
-  
+
   // Return 200 to acknowledge receipt
-  res.status(200).send('OK');
+  res.status(200).send("OK");
 });
 
-app.listen(3000, () => {
-  console.log('Webhook server listening on port 3000');
+app.listen(5863, () => {
+  console.log("Webhook server listening on port 5863");
 });
 ```

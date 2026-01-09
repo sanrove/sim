@@ -326,7 +326,7 @@ async function deliverEmail(
           <div style="max-width: 580px; margin: 30px auto; background-color: #ffffff; border-radius: 5px; overflow: hidden;">
             <!-- Header with Logo -->
             <div style="padding: 30px 0; text-align: center;">
-              <img src="${baseUrl}/logo/reverse/text/medium.png" width="114" alt="Sim Studio" style="margin: 0 auto;" />
+              <img src="${baseUrl}/logo/reverse/text/medium.png" width="114" alt="AgentBuilder Studio" style="margin: 0 auto;" />
             </div>
             
             <!-- Section Border -->
@@ -374,7 +374,7 @@ async function deliverEmail(
               
               <p style="font-size: 16px; line-height: 1.5; color: #333333; margin-top: 30px;">
                 Best regards,<br />
-                The Sim Team
+                The AgentBuilder Team
               </p>
             </div>
           </div>
@@ -382,7 +382,7 @@ async function deliverEmail(
           <!-- Footer -->
           <div style="max-width: 580px; margin: 0 auto; padding: 20px 0; text-align: center;">
             <p style="font-size: 12px; color: #706a7b; margin: 8px 0 0 0;">
-              © ${new Date().getFullYear()} Sim Studio, All Rights Reserved
+              © ${new Date().getFullYear()} AgentBuilder Studio, All Rights Reserved
             </p>
             <p style="font-size: 12px; color: #706a7b; margin: 8px 0 0 0;">
               <a href="${baseUrl}/privacy" style="color: #706a7b; text-decoration: underline;">Privacy Policy</a> • 

@@ -98,7 +98,7 @@ describe('Folders API Route', () => {
 
       const mockRequest = createMockRequest('GET')
       Object.defineProperty(mockRequest, 'url', {
-        value: 'http://localhost:3000/api/folders?workspaceId=workspace-123',
+        value: 'http://localhost:5863/api/folders?workspaceId=workspace-123',
       })
 
       const { GET } = await import('@/app/api/folders/route')
@@ -121,7 +121,7 @@ describe('Folders API Route', () => {
 
       const mockRequest = createMockRequest('GET')
       Object.defineProperty(mockRequest, 'url', {
-        value: 'http://localhost:3000/api/folders?workspaceId=workspace-123',
+        value: 'http://localhost:5863/api/folders?workspaceId=workspace-123',
       })
 
       const { GET } = await import('@/app/api/folders/route')
@@ -138,7 +138,7 @@ describe('Folders API Route', () => {
 
       const mockRequest = createMockRequest('GET')
       Object.defineProperty(mockRequest, 'url', {
-        value: 'http://localhost:3000/api/folders',
+        value: 'http://localhost:5863/api/folders',
       })
 
       const { GET } = await import('@/app/api/folders/route')
@@ -156,7 +156,7 @@ describe('Folders API Route', () => {
 
       const mockRequest = createMockRequest('GET')
       Object.defineProperty(mockRequest, 'url', {
-        value: 'http://localhost:3000/api/folders?workspaceId=workspace-123',
+        value: 'http://localhost:5863/api/folders?workspaceId=workspace-123',
       })
 
       const { GET } = await import('@/app/api/folders/route')
@@ -174,7 +174,7 @@ describe('Folders API Route', () => {
 
       const mockRequest = createMockRequest('GET')
       Object.defineProperty(mockRequest, 'url', {
-        value: 'http://localhost:3000/api/folders?workspaceId=workspace-123',
+        value: 'http://localhost:5863/api/folders?workspaceId=workspace-123',
       })
 
       const { GET } = await import('@/app/api/folders/route')
@@ -195,7 +195,7 @@ describe('Folders API Route', () => {
 
       const mockRequest = createMockRequest('GET')
       Object.defineProperty(mockRequest, 'url', {
-        value: 'http://localhost:3000/api/folders?workspaceId=workspace-123',
+        value: 'http://localhost:5863/api/folders?workspaceId=workspace-123',
       })
 
       const { GET } = await import('@/app/api/folders/route')

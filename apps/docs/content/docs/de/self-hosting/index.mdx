@@ -3,28 +3,28 @@ title: Self-Hosting
 description: Stellen Sie Sim Studio auf Ihrer eigenen Infrastruktur bereit
 ---
 
-import { Card, Cards } from 'fumadocs-ui/components/card'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Callout } from "fumadocs-ui/components/callout";
 
 Stellen Sie Sim Studio auf Ihrer eigenen Infrastruktur mit Docker oder Kubernetes bereit.
 
 ## Anforderungen
 
-| Ressource | Minimum | Empfohlen |
-|----------|---------|-------------|
-| CPU | 2 Kerne | 4+ Kerne |
-| RAM | 12 GB | 16+ GB |
-| Speicher | 20 GB SSD | 50+ GB SSD |
-| Docker | 20.10+ | Neueste Version |
+| Ressource | Minimum   | Empfohlen       |
+| --------- | --------- | --------------- |
+| CPU       | 2 Kerne   | 4+ Kerne        |
+| RAM       | 12 GB     | 16+ GB          |
+| Speicher  | 20 GB SSD | 50+ GB SSD      |
+| Docker    | 20.10+    | Neueste Version |
 
 ## Schnellstart
 
 ```bash
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Öffnen Sie [http://localhost:3000](http://localhost:3000)
+Öffnen Sie [http://localhost:5863](http://localhost:5863)
 
 ## Bereitstellungsoptionen
 
@@ -42,9 +42,9 @@ docker compose -f docker-compose.prod.yml up -d
 
 ## Architektur
 
-| Komponente | Port | Beschreibung |
-|-----------|------|-------------|
-| simstudio | 3000 | Hauptanwendung |
-| realtime | 3002 | WebSocket-Server |
-| db | 5432 | PostgreSQL mit pgvector |
-| migrations | - | Datenbank-Migrationen (werden einmal ausgeführt) |
+| Komponente | Port | Beschreibung                                     |
+| ---------- | ---- | ------------------------------------------------ |
+| simstudio  | 5863 | Hauptanwendung                                   |
+| realtime   | 5865 | WebSocket-Server                                 |
+| db         | 5432 | PostgreSQL mit pgvector                          |
+| migrations | -    | Datenbank-Migrationen (werden einmal ausgeführt) |

@@ -2,6 +2,7 @@ import * as schema from '@sim/db/schema'
 import { workflowBlocks, workflowEdges } from '@sim/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import type { Server } from 'socket.io'
 import { env } from '@/lib/core/config/env'
@@ -39,6 +40,7 @@ export interface WorkflowRoom {
   users: Map<string, UserPresence> // socketId -> UserPresence
   lastModified: number
   activeConnections: number
+  tenantDb?: PostgresJsDatabase<any>
 }
 
 export class RoomManager {
@@ -54,12 +56,13 @@ export class RoomManager {
     this.io = io
   }
 
-  createWorkflowRoom(workflowId: string): WorkflowRoom {
+  createWorkflowRoom(workflowId: string, tenantDb?: PostgresJsDatabase<any>): WorkflowRoom {
     return {
       workflowId,
       users: new Map(),
       lastModified: Date.now(),
       activeConnections: 0,
+      tenantDb,
     }
   }
 

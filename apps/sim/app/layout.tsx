@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
                 // Sidebar width
                 try {
-                  var stored = localStorage.getItem('sidebar-state');
+                  var stored = localStorage.getItem('agentbuilder-sidebar-state');
                   if (stored) {
                     var parsed = JSON.parse(stored);
                     var state = parsed && parsed.state;
@@ -78,7 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
                 // Panel width and active tab
                 try {
-                  var panelStored = localStorage.getItem('panel-state');
+                  var panelStored = localStorage.getItem('agentbuilder-panel-state');
                   if (panelStored) {
                     var panelParsed = JSON.parse(panelStored);
                     var panelState = panelParsed && panelParsed.state;

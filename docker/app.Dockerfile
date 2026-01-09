@@ -73,7 +73,7 @@ ENV DATABASE_URL=${DATABASE_URL}
 
 # Provide dummy NEXT_PUBLIC_APP_URL for build-time evaluation
 # Runtime environments should override this with the actual URL
-ARG NEXT_PUBLIC_APP_URL="http://localhost:3000"
+ARG NEXT_PUBLIC_APP_URL="http://localhost:5863"
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
 RUN bun run build
@@ -127,8 +127,8 @@ RUN mkdir -p apps/sim/.next/cache && \
 # Switch to non-root user
 USER nextjs
 
-EXPOSE 3000
-ENV PORT=3000 \
+EXPOSE 5863
+ENV PORT=5863 \
     HOSTNAME="0.0.0.0"
 
 CMD ["bun", "apps/sim/server.js"]

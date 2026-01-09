@@ -27,7 +27,7 @@ describe('OAuth Credentials API Route', () => {
   const mockUUID = 'mock-uuid-12345678-90ab-cdef-1234-567890abcdef'
 
   function createMockRequestWithQuery(method = 'GET', queryParams = ''): NextRequest {
-    const url = `http://localhost:3000/api/auth/oauth/credentials${queryParams}`
+    const url = `http://localhost:5863/api/auth/oauth/credentials${queryParams}`
     return new NextRequest(new URL(url), { method })
   }
 

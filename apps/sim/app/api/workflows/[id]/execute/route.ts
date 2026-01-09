@@ -37,6 +37,7 @@ const ExecuteWorkflowSchema = z.object({
   useDraftState: z.boolean().optional(),
   input: z.any().optional(),
   isClientSession: z.boolean().optional(),
+  workspaceId: z.string().optional(),
   workflowStateOverride: z
     .object({
       blocks: z.record(z.any()),
@@ -211,6 +212,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       useDraftState,
       input: validatedInput,
       isClientSession = false,
+      workspaceId: providedWorkspaceId,
       workflowStateOverride,
     } = validation.data
 
@@ -262,11 +264,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     ) {
       loggingTriggerType = triggerType as LoggingTriggerType
     }
+    
+    // Get tenant database early so it can be passed to logging session
+    let tenantDb: any = undefined
+    if (auth.tenantId) {
+      try {
+        const { getTenantDatabase } = await import('@sim/db')
+        tenantDb = await getTenantDatabase(auth.tenantId)
+        logger.info(`[${requestId}] Using tenant database for workflow execution`, {
+          tenantId: auth.tenantId,
+        })
+      } catch (error) {
+        logger.warn(`[${requestId}] Failed to get tenant database, using default`, {
+          error,
+          tenantId: auth.tenantId,
+        })
+      }
+    }
+    
     const loggingSession = new LoggingSession(
       workflowId,
       executionId,
       loggingTriggerType,
-      requestId
+      requestId,
+      auth.tenantId,
+      tenantDb
     )
 
     const preprocessResult = await preprocessExecution({
@@ -277,6 +299,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       requestId,
       checkDeployment: !shouldUseDraftState,
       loggingSession,
+      organizationId: auth.organizationId,
+      tenantId: auth.tenantId,
+      providedWorkspaceId,
     })
 
     if (!preprocessResult.success) {
@@ -289,11 +314,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const actorUserId = preprocessResult.actorUserId!
     const workflow = preprocessResult.workflowRecord!
 
-    if (!workflow.workspaceId) {
+    // Use provided workspaceId as fallback if workflow doesn't have one
+    const workspaceId = workflow.workspaceId || providedWorkspaceId
+    
+    if (!workspaceId) {
       logger.error(`[${requestId}] Workflow ${workflowId} has no workspaceId`)
       return NextResponse.json({ error: 'Workflow has no associated workspace' }, { status: 500 })
     }
-    const workspaceId = workflow.workspaceId
 
     logger.info(`[${requestId}] Preprocessing passed`, {
       workflowId,
@@ -322,8 +349,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let processedInput = input
     try {
       const workflowData = shouldUseDraftState
-        ? await loadWorkflowFromNormalizedTables(workflowId)
-        : await loadDeployedWorkflowState(workflowId)
+        ? await loadWorkflowFromNormalizedTables(workflowId, tenantDb)
+        : await loadDeployedWorkflowState(workflowId, tenantDb)
 
       if (workflowData) {
         cachedWorkflowData = {
@@ -402,6 +429,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           startTime: new Date().toISOString(),
           isClientSession,
           workflowStateOverride: effectiveWorkflowStateOverride,
+          tenantId: auth.tenantId,
+          tenantDb,
         }
 
         const snapshot = new ExecutionSnapshot(
@@ -672,6 +701,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             startTime: new Date().toISOString(),
             isClientSession,
             workflowStateOverride: effectiveWorkflowStateOverride,
+            tenantId: auth.tenantId,
+            tenantDb,
           }
 
           const snapshot = new ExecutionSnapshot(

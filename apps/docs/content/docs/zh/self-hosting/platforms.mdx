@@ -3,8 +3,8 @@ title: 云平台
 description: 在云平台上部署 Sim Studio
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## Railway
 
@@ -17,6 +17,7 @@ import { Callout } from 'fumadocs-ui/components/callout'
 ](https://railway.com/new/template/sim-studio)
 
 部署后，在 Railway 仪表板中添加环境变量：
+
 - `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `INTERNAL_API_SECRET`（自动生成）
 - `OPENAI_API_KEY` 或其他 AI 提供商密钥
 - 自定义域名：设置 → 网络
@@ -67,7 +68,7 @@ docker --version
 ### 部署 Sim Studio
 
 ```bash
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 
 # Create .env with secrets
 cat > .env << EOF
@@ -95,9 +96,9 @@ sudo apt update && sudo apt install caddy
 
 # Configure (replace domain)
 echo 'sim.yourdomain.com {
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:5863
     handle /socket.io/* {
-        reverse_proxy localhost:3002
+        reverse_proxy localhost:5865
     }
 }' | sudo tee /etc/caddy/Caddyfile
 

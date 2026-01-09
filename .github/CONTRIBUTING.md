@@ -136,11 +136,11 @@ The easiest way to run Sim locally is using our NPM package:
 npx simstudio
 ```
 
-After running this command, open [http://localhost:3000/](http://localhost:3000/) in your browser.
+After running this command, open [http://localhost:5863/](http://localhost:5863/) in your browser.
 
 #### Options
 
-- `-p, --port <port>`: Specify the port to run Sim on (default: 3000)
+- `-p, --port <port>`: Specify the port to run Sim on (default: 5863)
 - `--no-pull`: Skip pulling the latest Docker images
 
 #### Requirements
@@ -158,7 +158,7 @@ cd sim
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Access the application at [http://localhost:3000/](http://localhost:3000/)
+Access the application at [http://localhost:5863/](http://localhost:5863/)
 
 #### Using Local Models
 
@@ -268,7 +268,7 @@ When working on email templates, you can preview them using a local email previe
 
 2. **Access the Preview:**
 
-   - Open `http://localhost:3000` in your browser
+   - Open `http://localhost:5863` in your browser
    - You'll see a list of all email templates
    - Click on any template to view and test it with various parameters
 

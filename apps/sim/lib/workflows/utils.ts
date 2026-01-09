@@ -1,7 +1,8 @@
-import { db } from '@sim/db'
+import { db, getTenantDatabase } from '@sim/db'
 import { permissions, userStats, workflow as workflowTable, workspace } from '@sim/db/schema'
 import type { InferSelectModel } from 'drizzle-orm'
 import { and, eq } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { createLogger } from '@/lib/logs/console/logger'
@@ -13,8 +14,9 @@ const logger = createLogger('WorkflowUtils')
 
 type WorkflowSelection = InferSelectModel<typeof workflowTable>
 
-export async function getWorkflowById(id: string) {
-  const rows = await db.select().from(workflowTable).where(eq(workflowTable.id, id)).limit(1)
+export async function getWorkflowById(id: string, tenantDb?: PostgresJsDatabase<any>) {
+  const database = tenantDb || db
+  const rows = await database.select().from(workflowTable).where(eq(workflowTable.id, id)).limit(1)
 
   return rows[0]
 }
@@ -33,9 +35,11 @@ export interface WorkflowAccessContext {
 
 export async function getWorkflowAccessContext(
   workflowId: string,
-  userId?: string
+  userId?: string,
+  tenantDb?: PostgresJsDatabase<any>
 ): Promise<WorkflowAccessContext | null> {
-  const workflow = await getWorkflowById(workflowId)
+  const database = tenantDb || db
+  const workflow = await getWorkflowById(workflowId, tenantDb)
 
   if (!workflow) {
     return null
@@ -45,7 +49,7 @@ export async function getWorkflowAccessContext(
   let workspacePermission: PermissionType | null = null
 
   if (workflow.workspaceId) {
-    const [workspaceRow] = await db
+    const [workspaceRow] = await database
       .select({ ownerId: workspace.ownerId })
       .from(workspace)
       .where(eq(workspace.id, workflow.workspaceId))
@@ -54,7 +58,7 @@ export async function getWorkflowAccessContext(
     workspaceOwnerId = workspaceRow?.ownerId ?? null
 
     if (userId) {
-      const [permissionRow] = await db
+      const [permissionRow] = await database
         .select({ permissionType: permissions.permissionType })
         .from(permissions)
         .where(
@@ -84,15 +88,16 @@ export async function getWorkflowAccessContext(
   }
 }
 
-export async function updateWorkflowRunCounts(workflowId: string, runs = 1) {
+export async function updateWorkflowRunCounts(workflowId: string, runs = 1, tenantDb?: PostgresJsDatabase<any>) {
   try {
-    const workflow = await getWorkflowById(workflowId)
+    const database = tenantDb || db
+    const workflow = await getWorkflowById(workflowId, tenantDb)
     if (!workflow) {
       logger.error(`Workflow ${workflowId} not found`)
       throw new Error(`Workflow ${workflowId} not found`)
     }
 
-    await db
+    await database
       .update(workflowTable)
       .set({
         runCount: workflow.runCount + runs,
@@ -101,7 +106,7 @@ export async function updateWorkflowRunCounts(workflowId: string, runs = 1) {
       .where(eq(workflowTable.id, workflowId))
 
     try {
-      const existing = await db
+      const existing = await database
         .select()
         .from(userStats)
         .where(eq(userStats.userId, workflow.userId))
@@ -113,7 +118,7 @@ export async function updateWorkflowRunCounts(workflowId: string, runs = 1) {
           workflowId,
         })
       } else {
-        await db
+        await database
           .update(userStats)
           .set({
             lastActive: new Date(),
@@ -498,7 +503,8 @@ export const createHttpResponseFromBlock = (executionResult: ExecutionResult): N
 export async function validateWorkflowPermissions(
   workflowId: string,
   requestId: string,
-  action: 'read' | 'write' | 'admin' = 'read'
+  action: 'read' | 'write' | 'admin' = 'read',
+  tenantDb?: PostgresJsDatabase<any>
 ) {
   const session = await getSession()
   if (!session?.user?.id) {
@@ -510,7 +516,7 @@ export async function validateWorkflowPermissions(
     }
   }
 
-  const accessContext = await getWorkflowAccessContext(workflowId, session.user.id)
+  const accessContext = await getWorkflowAccessContext(workflowId, session.user.id, tenantDb)
   if (!accessContext) {
     logger.warn(`[${requestId}] Workflow ${workflowId} not found`)
     return {

@@ -121,6 +121,7 @@ export class DAGExecutor {
       workspaceId: this.contextExtensions.workspaceId,
       executionId: this.contextExtensions.executionId,
       userId: this.contextExtensions.userId,
+      tenantId: this.contextExtensions.tenantId,
       isDeployedContext: this.contextExtensions.isDeployedContext,
       blockStates: state.getBlockStates(),
       blockLogs: snapshotState?.blockLogs ?? [],

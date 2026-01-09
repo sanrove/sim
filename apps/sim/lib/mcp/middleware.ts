@@ -1,5 +1,8 @@
 import type { NextRequest, NextResponse } from 'next/server'
+import { db, getTenantDatabase, organization } from '@sim/db'
+import { eq } from 'drizzle-orm'
 import { checkHybridAuth } from '@/lib/auth/hybrid'
+import { getSession } from '@/lib/auth'
 import { generateRequestId } from '@/lib/core/utils/request'
 import { createLogger } from '@/lib/logs/console/logger'
 import { createMcpErrorResponse } from '@/lib/mcp/utils'
@@ -32,6 +35,29 @@ interface AuthFailure {
 }
 
 type AuthValidationResult = AuthResult | AuthFailure
+
+/**
+ * Helper to get tenant database from session
+ */
+async function getTenantDbFromSession() {
+  try {
+    const session = await getSession() as any
+    const orgId = session?.session?.activeOrganizationId
+    if (!orgId) return null
+    
+    const orgRecord = await db.query.organization.findFirst({
+      where: eq(organization.id, orgId),
+    })
+    
+    if (!orgRecord?.name?.startsWith('ModelFlow-')) return null
+    
+    const tenantId = orgRecord.name.replace('ModelFlow-', '')
+    return getTenantDatabase(tenantId)
+  } catch (error) {
+    logger.error('Error getting tenant database from session:', error)
+    return null
+  }
+}
 
 /**
  * Validates MCP authentication and authorization
@@ -85,7 +111,10 @@ async function validateMcpAuth(
       }
     }
 
-    const userPermissions = await getUserEntityPermissions(auth.userId, 'workspace', workspaceId)
+    // Get tenant database for permission check (multitenant support)
+    const tenantDb = await getTenantDbFromSession()
+    
+    const userPermissions = await getUserEntityPermissions(auth.userId, 'workspace', workspaceId, tenantDb || undefined)
     if (!userPermissions) {
       return {
         success: false,

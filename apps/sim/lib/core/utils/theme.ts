@@ -14,13 +14,13 @@ export function syncThemeToNextThemes(_theme: 'system' | 'light' | 'dark') {
   // Force dark mode - light mode is temporarily disabled
   const forcedTheme = 'dark'
 
-  localStorage.setItem('sim-theme', forcedTheme)
+  localStorage.setItem('agentbuilder-theme', forcedTheme)
 
   window.dispatchEvent(
     new StorageEvent('storage', {
-      key: 'sim-theme',
+      key: 'agentbuilder-theme',
       newValue: forcedTheme,
-      oldValue: localStorage.getItem('sim-theme'),
+      oldValue: localStorage.getItem('agentbuilder-theme'),
       storageArea: localStorage,
       url: window.location.href,
     })
@@ -36,5 +36,5 @@ export function syncThemeToNextThemes(_theme: 'system' | 'light' | 'dark') {
  */
 export function getThemeFromNextThemes(): 'system' | 'light' | 'dark' {
   if (typeof window === 'undefined') return 'system'
-  return (localStorage.getItem('sim-theme') as 'system' | 'light' | 'dark') || 'system'
+  return (localStorage.getItem('agentbuilder-theme') as 'system' | 'light' | 'dark') || 'system'
 }

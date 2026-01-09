@@ -3,12 +3,12 @@ title: クラウドプラットフォーム
 description: クラウドプラットフォームにSim Studioをデプロイする
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## Railway
 
-ワンクリックデプロイメントで自動的にPostgreSQLをプロビジョニングします。
+ワンクリックデプロイメントで自動的に PostgreSQL をプロビジョニングします。
 
 [
 
@@ -16,14 +16,15 @@ import { Callout } from 'fumadocs-ui/components/callout'
 
 ](https://railway.com/new/template/sim-studio)
 
-デプロイ後、Railwayダッシュボードで環境変数を追加してください：
+デプロイ後、Railway ダッシュボードで環境変数を追加してください：
+
 - `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `INTERNAL_API_SECRET` (自動生成)
-- `OPENAI_API_KEY` または他のAIプロバイダーキー
+- `OPENAI_API_KEY` または他の AI プロバイダーキー
 - 設定 → ネットワーキングでカスタムドメイン
 
-## VPSデプロイメント
+## VPS デプロイメント
 
-DigitalOcean、AWS EC2、Azure VMsまたは任意のLinuxサーバー向け：
+DigitalOcean、AWS EC2、Azure VMs または任意の Linux サーバー向け：
 
 <Tabs items={['DigitalOcean', 'AWS EC2', 'Azure VM']}>
   <Tab value="DigitalOcean">
@@ -53,7 +54,7 @@ ssh azureuser@your-vm-ip
   </Tab>
 </Tabs>
 
-### Dockerのインストール
+### Docker のインストール
 
 ```bash
 # Install Docker (official method)
@@ -64,10 +65,10 @@ sudo usermod -aG docker $USER
 docker --version
 ```
 
-### Sim Studioのデプロイ
+### Sim Studio のデプロイ
 
 ```bash
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 
 # Create .env with secrets
 cat > .env << EOF
@@ -84,7 +85,7 @@ EOF
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-### CaddyによるSSL
+### Caddy による SSL
 
 ```bash
 # Install Caddy
@@ -95,27 +96,27 @@ sudo apt update && sudo apt install caddy
 
 # Configure (replace domain)
 echo 'sim.yourdomain.com {
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:5863
     handle /socket.io/* {
-        reverse_proxy localhost:3002
+        reverse_proxy localhost:5865
     }
 }' | sudo tee /etc/caddy/Caddyfile
 
 sudo systemctl restart caddy
 ```
 
-ドメインのDNS AレコードをサーバーのIPアドレスに向けてください。
+ドメインの DNS A レコードをサーバーの IP アドレスに向けてください。
 
 ## Kubernetes (EKS, AKS, GKE)
 
-[Kubernetesガイド](/self-hosting/kubernetes)でマネージドKubernetesへのHelmデプロイメントについて確認してください。
+[Kubernetes ガイド](/self-hosting/kubernetes)でマネージド Kubernetes への Helm デプロイメントについて確認してください。
 
 ## マネージドデータベース（オプション）
 
-本番環境では、マネージドPostgreSQLサービスを使用してください：
+本番環境では、マネージド PostgreSQL サービスを使用してください：
 
-- **AWS RDS** / **Azure Database** / **Cloud SQL** - pgvector拡張機能を有効化
-- **Supabase** / **Neon** - pgvector搭載済み
+- **AWS RDS** / **Azure Database** / **Cloud SQL** - pgvector 拡張機能を有効化
+- **Supabase** / **Neon** - pgvector 搭載済み
 
 環境に`DATABASE_URL`を設定してください：
 

@@ -16,7 +16,7 @@ function createMockRequest(): NextRequest {
     headers: {
       get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
     },
-    url: 'http://localhost:3000/api/schedules/execute',
+    url: 'http://localhost:5863/api/schedules/execute',
   } as NextRequest
 }
 

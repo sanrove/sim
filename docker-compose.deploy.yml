@@ -1,0 +1,44 @@
+services:
+  simstudio:
+    build:
+      context: .
+      dockerfile: docker/app.Dockerfile
+    ports:
+      - "5863:5863"
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+    env_file:
+      - ./apps/sim/.env
+    depends_on:
+      realtime:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:5863"]
+      interval: 90s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  realtime:
+    build:
+      context: .
+      dockerfile: docker/realtime.Dockerfile
+    env_file:
+      - ./apps/sim/.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-your_password}@host.docker.internal:5432/${POSTGRES_DB:-simstudio}
+    restart: unless-stopped
+    ports:
+      - "5865:5865"
+    healthcheck:
+      test:
+        ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:5865/health"]
+      interval: 90s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

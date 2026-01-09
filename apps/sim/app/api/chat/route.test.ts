@@ -97,7 +97,7 @@ describe('Chat API Route', () => {
         getSession: vi.fn().mockResolvedValue(null),
       }))
 
-      const req = new NextRequest('http://localhost:3000/api/chat')
+      const req = new NextRequest('http://localhost:5863/api/chat')
       const { GET } = await import('@/app/api/chat/route')
       const response = await GET(req)
 
@@ -115,7 +115,7 @@ describe('Chat API Route', () => {
       const mockDeployments = [{ id: 'deployment-1' }, { id: 'deployment-2' }]
       mockWhere.mockResolvedValue(mockDeployments)
 
-      const req = new NextRequest('http://localhost:3000/api/chat')
+      const req = new NextRequest('http://localhost:5863/api/chat')
       const { GET } = await import('@/app/api/chat/route')
       const response = await GET(req)
 
@@ -133,7 +133,7 @@ describe('Chat API Route', () => {
 
       mockWhere.mockRejectedValue(new Error('Database error'))
 
-      const req = new NextRequest('http://localhost:3000/api/chat')
+      const req = new NextRequest('http://localhost:5863/api/chat')
       const { GET } = await import('@/app/api/chat/route')
       const response = await GET(req)
 
@@ -148,7 +148,7 @@ describe('Chat API Route', () => {
         getSession: vi.fn().mockResolvedValue(null),
       }))
 
-      const req = new NextRequest('http://localhost:3000/api/chat', {
+      const req = new NextRequest('http://localhost:5863/api/chat', {
         method: 'POST',
         body: JSON.stringify({}),
       })
@@ -168,7 +168,7 @@ describe('Chat API Route', () => {
 
       const invalidData = { title: 'Test Chat' } // Missing required fields
 
-      const req = new NextRequest('http://localhost:3000/api/chat', {
+      const req = new NextRequest('http://localhost:5863/api/chat', {
         method: 'POST',
         body: JSON.stringify(invalidData),
       })
@@ -197,7 +197,7 @@ describe('Chat API Route', () => {
 
       mockLimit.mockResolvedValueOnce([{ id: 'existing-chat' }]) // Identifier exists
 
-      const req = new NextRequest('http://localhost:3000/api/chat', {
+      const req = new NextRequest('http://localhost:5863/api/chat', {
         method: 'POST',
         body: JSON.stringify(validData),
       })
@@ -228,7 +228,7 @@ describe('Chat API Route', () => {
       mockLimit.mockResolvedValueOnce([]) // Identifier is available
       mockCheckWorkflowAccessForChatCreation.mockResolvedValue({ hasAccess: false })
 
-      const req = new NextRequest('http://localhost:3000/api/chat', {
+      const req = new NextRequest('http://localhost:5863/api/chat', {
         method: 'POST',
         body: JSON.stringify(validData),
       })
@@ -252,7 +252,7 @@ describe('Chat API Route', () => {
       vi.doMock('@/lib/core/config/env', () => ({
         env: {
           NODE_ENV: 'development',
-          NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+          NEXT_PUBLIC_APP_URL: 'http://localhost:5863',
         },
         isTruthy: (value: string | boolean | number | undefined) =>
           typeof value === 'string'
@@ -278,7 +278,7 @@ describe('Chat API Route', () => {
       })
       mockReturning.mockResolvedValue([{ id: 'test-uuid' }])
 
-      const req = new NextRequest('http://localhost:3000/api/chat', {
+      const req = new NextRequest('http://localhost:5863/api/chat', {
         method: 'POST',
         body: JSON.stringify(validData),
       })
@@ -299,7 +299,7 @@ describe('Chat API Route', () => {
       vi.doMock('@/lib/core/config/env', () => ({
         env: {
           NODE_ENV: 'development',
-          NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+          NEXT_PUBLIC_APP_URL: 'http://localhost:5863',
         },
         isTruthy: (value: string | boolean | number | undefined) =>
           typeof value === 'string' ? value === 'true' || value === '1' : Boolean(value),
@@ -323,7 +323,7 @@ describe('Chat API Route', () => {
       })
       mockReturning.mockResolvedValue([{ id: 'test-uuid' }])
 
-      const req = new NextRequest('http://localhost:3000/api/chat', {
+      const req = new NextRequest('http://localhost:5863/api/chat', {
         method: 'POST',
         body: JSON.stringify(validData),
       })
@@ -356,7 +356,7 @@ describe('Chat API Route', () => {
         hasAccess: false,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/chat', {
+      const req = new NextRequest('http://localhost:5863/api/chat', {
         method: 'POST',
         body: JSON.stringify(validData),
       })
@@ -391,7 +391,7 @@ describe('Chat API Route', () => {
       mockLimit.mockResolvedValueOnce([]) // Identifier is available
       mockCheckWorkflowAccessForChatCreation.mockRejectedValue(new Error('Permission check failed'))
 
-      const req = new NextRequest('http://localhost:3000/api/chat', {
+      const req = new NextRequest('http://localhost:5863/api/chat', {
         method: 'POST',
         body: JSON.stringify(validData),
       })
@@ -426,7 +426,7 @@ describe('Chat API Route', () => {
       })
       mockReturning.mockResolvedValue([{ id: 'test-uuid' }])
 
-      const req = new NextRequest('http://localhost:3000/api/chat', {
+      const req = new NextRequest('http://localhost:5863/api/chat', {
         method: 'POST',
         body: JSON.stringify(validData),
       })

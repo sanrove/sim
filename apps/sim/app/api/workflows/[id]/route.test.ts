@@ -76,7 +76,7 @@ describe('Workflow By ID API Route', () => {
     it('should return 401 when user is not authenticated', async () => {
       mockGetSession.mockResolvedValue(null)
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const response = await GET(req, { params })
@@ -100,7 +100,7 @@ describe('Workflow By ID API Route', () => {
         isWorkspaceOwner: false,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/nonexistent')
+      const req = new NextRequest('http://localhost:5863/api/workflows/nonexistent')
       const params = Promise.resolve({ id: 'nonexistent' })
 
       const response = await GET(req, { params })
@@ -141,7 +141,7 @@ describe('Workflow By ID API Route', () => {
 
       mockLoadWorkflowFromNormalizedTables.mockResolvedValue(mockNormalizedData)
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const response = await GET(req, { params })
@@ -182,7 +182,7 @@ describe('Workflow By ID API Route', () => {
 
       mockLoadWorkflowFromNormalizedTables.mockResolvedValue(mockNormalizedData)
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const response = await GET(req, { params })
@@ -213,7 +213,7 @@ describe('Workflow By ID API Route', () => {
         isWorkspaceOwner: false,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const response = await GET(req, { params })
@@ -254,7 +254,7 @@ describe('Workflow By ID API Route', () => {
 
       mockLoadWorkflowFromNormalizedTables.mockResolvedValue(mockNormalizedData)
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const response = await GET(req, { params })
@@ -296,7 +296,7 @@ describe('Workflow By ID API Route', () => {
         ok: true,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123', {
         method: 'DELETE',
       })
       const params = Promise.resolve({ id: 'workflow-123' })
@@ -344,7 +344,7 @@ describe('Workflow By ID API Route', () => {
         ok: true,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123', {
         method: 'DELETE',
       })
       const params = Promise.resolve({ id: 'workflow-123' })
@@ -384,7 +384,7 @@ describe('Workflow By ID API Route', () => {
         }),
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123', {
         method: 'DELETE',
       })
       const params = Promise.resolve({ id: 'workflow-123' })
@@ -417,7 +417,7 @@ describe('Workflow By ID API Route', () => {
         isWorkspaceOwner: false,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123', {
         method: 'DELETE',
       })
       const params = Promise.resolve({ id: 'workflow-123' })
@@ -463,7 +463,7 @@ describe('Workflow By ID API Route', () => {
         }),
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123', {
         method: 'PUT',
         body: JSON.stringify(updateData),
       })
@@ -508,7 +508,7 @@ describe('Workflow By ID API Route', () => {
         }),
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123', {
         method: 'PUT',
         body: JSON.stringify(updateData),
       })
@@ -544,7 +544,7 @@ describe('Workflow By ID API Route', () => {
         isWorkspaceOwner: false,
       })
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123', {
         method: 'PUT',
         body: JSON.stringify(updateData),
       })
@@ -580,7 +580,7 @@ describe('Workflow By ID API Route', () => {
 
       const invalidData = { name: '' }
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123', {
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123', {
         method: 'PUT',
         body: JSON.stringify(invalidData),
       })
@@ -602,7 +602,7 @@ describe('Workflow By ID API Route', () => {
 
       mockGetWorkflowById.mockRejectedValue(new Error('Database connection timeout'))
 
-      const req = new NextRequest('http://localhost:3000/api/workflows/workflow-123')
+      const req = new NextRequest('http://localhost:5863/api/workflows/workflow-123')
       const params = Promise.resolve({ id: 'workflow-123' })
 
       const response = await GET(req, { params })

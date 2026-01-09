@@ -3,8 +3,8 @@ title: Cloud Platforms
 description: Deploy Sim Studio on cloud platforms
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
-import { Callout } from 'fumadocs-ui/components/callout'
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 ## Railway
 
@@ -13,6 +13,7 @@ One-click deployment with automatic PostgreSQL provisioning.
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.com/new/template/sim-studio)
 
 After deployment, add environment variables in Railway dashboard:
+
 - `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `INTERNAL_API_SECRET` (auto-generated)
 - `OPENAI_API_KEY` or other AI provider keys
 - Custom domain in Settings → Networking
@@ -29,6 +30,7 @@ For DigitalOcean, AWS EC2, Azure VMs, or any Linux server:
 # Create Droplet via console, then SSH in
 ssh root@your-droplet-ip
 ```
+
   </Tab>
   <Tab value="AWS EC2">
 **Recommended:** t3.xlarge (16 GB RAM), Ubuntu 24.04
@@ -36,6 +38,7 @@ ssh root@your-droplet-ip
 ```bash
 ssh -i your-key.pem ubuntu@your-ec2-ip
 ```
+
   </Tab>
   <Tab value="Azure VM">
 **Recommended:** Standard_D4s_v3 (16 GB RAM), Ubuntu 24.04
@@ -43,6 +46,7 @@ ssh -i your-key.pem ubuntu@your-ec2-ip
 ```bash
 ssh azureuser@your-vm-ip
 ```
+
   </Tab>
 </Tabs>
 
@@ -60,7 +64,7 @@ docker --version
 ### Deploy Sim Studio
 
 ```bash
-git clone https://github.com/simstudioai/sim.git && cd sim
+git clone https://github.com/.git && cd sim
 
 # Create .env with secrets
 cat > .env << EOF
@@ -88,9 +92,9 @@ sudo apt update && sudo apt install caddy
 
 # Configure (replace domain)
 echo 'sim.yourdomain.com {
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:5863
     handle /socket.io/* {
-        reverse_proxy localhost:3002
+        reverse_proxy localhost:5865
     }
 }' | sudo tee /etc/caddy/Caddyfile
 
@@ -111,6 +115,7 @@ For production, use a managed PostgreSQL service:
 - **Supabase** / **Neon** - pgvector included
 
 Set `DATABASE_URL` in your environment:
+
 ```bash
 DATABASE_URL="postgresql://user:pass@host:5432/db?sslmode=require"
 ```

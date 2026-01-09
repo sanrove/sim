@@ -17,20 +17,23 @@ const logger = createLogger('SnapshotService')
 export class SnapshotService implements ISnapshotService {
   async createSnapshot(
     workflowId: string,
-    state: WorkflowState
+    state: WorkflowState,
+    tenantDb?: any
   ): Promise<WorkflowExecutionSnapshot> {
-    const result = await this.createSnapshotWithDeduplication(workflowId, state)
+    const result = await this.createSnapshotWithDeduplication(workflowId, state, tenantDb)
     return result.snapshot
   }
 
   async createSnapshotWithDeduplication(
     workflowId: string,
-    state: WorkflowState
+    state: WorkflowState,
+    tenantDb?: any
   ): Promise<SnapshotCreationResult> {
+    const dbToUse = tenantDb || db
     // Hash the position-less state for deduplication (functional equivalence)
     const stateHash = this.computeStateHash(state)
 
-    const existingSnapshot = await this.getSnapshotByHash(workflowId, stateHash)
+    const existingSnapshot = await this.getSnapshotByHash(workflowId, stateHash, tenantDb)
     if (existingSnapshot) {
       logger.debug(`Reusing existing snapshot for workflow ${workflowId} with hash ${stateHash}`)
       return {
@@ -48,7 +51,7 @@ export class SnapshotService implements ISnapshotService {
       stateData: state, // Full state with positions, subblock values, etc.
     }
 
-    const [newSnapshot] = await db
+    const [newSnapshot] = await dbToUse
       .insert(workflowExecutionSnapshots)
       .values(snapshotData)
       .returning()
@@ -65,8 +68,9 @@ export class SnapshotService implements ISnapshotService {
     }
   }
 
-  async getSnapshot(id: string): Promise<WorkflowExecutionSnapshot | null> {
-    const [snapshot] = await db
+  async getSnapshot(id: string, tenantDb?: any): Promise<WorkflowExecutionSnapshot | null> {
+    const dbToUse = tenantDb || db
+    const [snapshot] = await dbToUse
       .select()
       .from(workflowExecutionSnapshots)
       .where(eq(workflowExecutionSnapshots.id, id))
@@ -83,9 +87,11 @@ export class SnapshotService implements ISnapshotService {
 
   async getSnapshotByHash(
     workflowId: string,
-    hash: string
+    hash: string,
+    tenantDb?: any
   ): Promise<WorkflowExecutionSnapshot | null> {
-    const [snapshot] = await db
+    const dbToUse = tenantDb || db
+    const [snapshot] = await dbToUse
       .select()
       .from(workflowExecutionSnapshots)
       .where(

@@ -33,6 +33,7 @@ export interface StreamingResponseOptions {
   executingUserId: string
   streamConfig: StreamingConfig
   executionId?: string
+  tenantDb?: any
 }
 
 interface StreamingState {
@@ -156,7 +157,7 @@ async function completeLoggingSession(result: ExecutionResult): Promise<void> {
 export async function createStreamingResponse(
   options: StreamingResponseOptions
 ): Promise<ReadableStream> {
-  const { requestId, workflow, input, executingUserId, streamConfig, executionId } = options
+  const { requestId, workflow, input, executingUserId, streamConfig, executionId, tenantDb } = options
 
   return new ReadableStream({
     async start(controller) {
@@ -258,6 +259,7 @@ export async function createStreamingResponse(
             onStream: onStreamCallback,
             onBlockComplete: onBlockCompleteCallback,
             skipLoggingComplete: true,
+            tenantDb,
           },
           executionId
         )

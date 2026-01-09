@@ -6,12 +6,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="simstudio-sdk",
     version="0.1.1",
-    author="Sim",
-    author_email="support@sim.ai",
+    author="Ethana",
+    author_email="support@ethana.ai",
     description="Sim SDK - Execute workflows programmatically",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/simstudioai/sim",
+    url="https://github.com/",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -44,8 +44,8 @@ setup(
     },
     keywords=["simstudio", "ai", "workflow", "sdk", "api", "automation"],
     project_urls={
-        "Bug Reports": "https://github.com/simstudioai/sim/issues",
-        "Source": "https://github.com/simstudioai/sim",
-        "Documentation": "https://docs.sim.ai",
+        "Bug Reports": "https://github.com//issues",
+        "Source": "https://github.com/",
+        "Documentation": "https://docs.ethana.ai",
     },
 ) 

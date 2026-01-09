@@ -46,7 +46,7 @@ For the full documentation with all pages, examples, and interactive features, v
 - MCP protocol documentation for custom integrations
 - Self-hosting guides and Docker deployment
 
-For the complete documentation with interactive examples and visual workflow builder guides, visit https://docs.sim.ai
+For the complete documentation with interactive examples and visual workflow builder guides, visit https://docs.ethana.ai
 
 ---
 

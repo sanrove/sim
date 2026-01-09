@@ -326,7 +326,7 @@ export const useTerminalConsoleStore = create<ConsoleStore>()(
         },
       }),
       {
-        name: 'terminal-console-store',
+        name: 'agentbuilder-terminal-console-store',
       }
     )
   )

@@ -518,7 +518,7 @@ export function Panel() {
 
           {/* Tab Content - Keep all tabs mounted but hidden to preserve state */}
           <div className="flex-1 overflow-hidden pt-[12px]">
-            <div
+            {/* <div
               className={
                 _hasHydrated && activeTab === "copilot"
                   ? "h-full"
@@ -529,7 +529,7 @@ export function Panel() {
               data-tab-content="copilot"
             >
               <Copilot ref={copilotRef} panelWidth={panelWidth} />
-            </div>
+            </div> */}
             <div
               className={
                 _hasHydrated && activeTab === "editor"

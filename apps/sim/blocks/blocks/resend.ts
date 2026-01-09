@@ -1,71 +1,72 @@
-import { ResendIcon } from '@/components/icons'
-import type { BlockConfig } from '@/blocks/types'
-import type { MailSendResult } from '@/tools/resend/types'
+import { ResendIcon } from "@/components/icons";
+import type { BlockConfig } from "@/blocks/types";
+import type { MailSendResult } from "@/tools/resend/types";
 
 export const ResendBlock: BlockConfig<MailSendResult> = {
-  type: 'resend',
-  name: 'Resend',
-  description: 'Send emails with Resend.',
-  longDescription: 'Integrate Resend into the workflow. Can send emails. Requires API Key.',
-  docsLink: 'https://docs.sim.ai/tools/resend',
-  category: 'tools',
-  bgColor: '#181C1E',
+  type: "resend",
+  name: "Resend",
+  description: "Send emails with Resend.",
+  longDescription:
+    "Integrate Resend into the workflow. Can send emails. Requires API Key.",
+  docsLink: "https://docs.ethana.ai/tools/resend",
+  category: "tools",
+  bgColor: "#181C1E",
   icon: ResendIcon,
 
   subBlocks: [
     {
-      id: 'fromAddress',
-      title: 'From Address',
-      type: 'short-input',
-      placeholder: 'sender@yourdomain.com',
+      id: "fromAddress",
+      title: "From Address",
+      type: "short-input",
+      placeholder: "sender@yourdomain.com",
       required: true,
     },
     {
-      id: 'to',
-      title: 'To',
-      type: 'short-input',
-      placeholder: 'recipient@example.com',
+      id: "to",
+      title: "To",
+      type: "short-input",
+      placeholder: "recipient@example.com",
       required: true,
     },
     {
-      id: 'subject',
-      title: 'Subject',
-      type: 'short-input',
-      placeholder: 'Email subject',
+      id: "subject",
+      title: "Subject",
+      type: "short-input",
+      placeholder: "Email subject",
       required: true,
     },
     {
-      id: 'body',
-      title: 'Body',
-      type: 'long-input',
-      placeholder: 'Email body content',
+      id: "body",
+      title: "Body",
+      type: "long-input",
+      placeholder: "Email body content",
       required: true,
     },
     {
-      id: 'contentType',
-      title: 'Content Type',
-      type: 'dropdown',
+      id: "contentType",
+      title: "Content Type",
+      type: "dropdown",
       options: [
-        { label: 'Plain Text', id: 'text' },
-        { label: 'HTML', id: 'html' },
+        { label: "Plain Text", id: "text" },
+        { label: "HTML", id: "html" },
       ],
-      value: () => 'text',
+      value: () => "text",
       required: false,
     },
     {
-      id: 'resendApiKey',
-      title: 'Resend API Key',
-      type: 'short-input',
-      placeholder: 'Your Resend API key',
+      id: "resendApiKey",
+      title: "Resend API Key",
+      type: "short-input",
+      placeholder: "Your Resend API key",
       required: true,
       password: true,
     },
   ],
 
   tools: {
-    access: ['resend_send'],
+    access: ["resend_send"],
     config: {
-      tool: () => 'resend_send',
+      tool: () => "resend_send",
       params: (params) => ({
         resendApiKey: params.resendApiKey,
         fromAddress: params.fromAddress,
@@ -77,18 +78,24 @@ export const ResendBlock: BlockConfig<MailSendResult> = {
   },
 
   inputs: {
-    fromAddress: { type: 'string', description: 'Email address to send from' },
-    to: { type: 'string', description: 'Recipient email address' },
-    subject: { type: 'string', description: 'Email subject' },
-    body: { type: 'string', description: 'Email body content' },
-    contentType: { type: 'string', description: 'Content type (text or html)' },
-    resendApiKey: { type: 'string', description: 'Resend API key for sending emails' },
+    fromAddress: { type: "string", description: "Email address to send from" },
+    to: { type: "string", description: "Recipient email address" },
+    subject: { type: "string", description: "Email subject" },
+    body: { type: "string", description: "Email body content" },
+    contentType: { type: "string", description: "Content type (text or html)" },
+    resendApiKey: {
+      type: "string",
+      description: "Resend API key for sending emails",
+    },
   },
 
   outputs: {
-    success: { type: 'boolean', description: 'Whether the email was sent successfully' },
-    to: { type: 'string', description: 'Recipient email address' },
-    subject: { type: 'string', description: 'Email subject' },
-    body: { type: 'string', description: 'Email body content' },
+    success: {
+      type: "boolean",
+      description: "Whether the email was sent successfully",
+    },
+    to: { type: "string", description: "Recipient email address" },
+    subject: { type: "string", description: "Email subject" },
+    body: { type: "string", description: "Email body content" },
   },
-}
+};

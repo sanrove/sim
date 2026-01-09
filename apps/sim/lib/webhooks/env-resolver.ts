@@ -36,14 +36,16 @@ function resolveEnvVarInString(value: string, envVars: Record<string, string>): 
  * @param config - Configuration object that may contain env var references
  * @param userId - User ID to fetch environment variables for
  * @param workspaceId - Optional workspace ID for workspace-specific env vars
+ * @param tenantDb - Optional tenant database connection
  * @returns A new object with all env var references resolved
  */
 export async function resolveEnvVarsInObject(
   config: Record<string, any>,
   userId: string,
-  workspaceId?: string
+  workspaceId?: string,
+  tenantDb?: any
 ): Promise<Record<string, any>> {
-  const envVars = await getEffectiveDecryptedEnv(userId, workspaceId)
+  const envVars = await getEffectiveDecryptedEnv(userId, workspaceId, tenantDb)
 
   const resolved = { ...config }
 

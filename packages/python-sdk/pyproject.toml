@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "simstudio-sdk"
 version = "0.1.1"
 authors = [
-    {name = "Sim", email = "support@sim.ai"},
+    {name = "Ethana", email = "support@ethana.ai"},
 ]
 description = "Sim SDK - Execute workflows programmatically"
 readme = "README.md"
@@ -45,10 +45,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://sim.ai"
-Documentation = "https://docs.sim.ai"
-Repository = "https://github.com/simstudioai/sim"
-"Bug Reports" = "https://github.com/simstudioai/sim/issues"
+Homepage = "https://ethana.ai"
+Documentation = "https://docs.ethana.ai"
+Repository = "https://github.com/"
+"Bug Reports" = "https://github.com//issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

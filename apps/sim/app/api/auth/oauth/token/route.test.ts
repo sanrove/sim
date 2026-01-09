@@ -257,7 +257,7 @@ describe('OAuth Token API Routes', () => {
       })
 
       const req = new Request(
-        'http://localhost:3000/api/auth/oauth/token?credentialId=credential-id'
+        'http://localhost:5863/api/auth/oauth/token?credentialId=credential-id'
       )
 
       const { GET } = await import('@/app/api/auth/oauth/token/route')
@@ -274,7 +274,7 @@ describe('OAuth Token API Routes', () => {
     })
 
     it('should handle missing credentialId', async () => {
-      const req = new Request('http://localhost:3000/api/auth/oauth/token')
+      const req = new Request('http://localhost:5863/api/auth/oauth/token')
 
       const { GET } = await import('@/app/api/auth/oauth/token/route')
 
@@ -293,7 +293,7 @@ describe('OAuth Token API Routes', () => {
       })
 
       const req = new Request(
-        'http://localhost:3000/api/auth/oauth/token?credentialId=credential-id'
+        'http://localhost:5863/api/auth/oauth/token?credentialId=credential-id'
       )
 
       const { GET } = await import('@/app/api/auth/oauth/token/route')
@@ -314,7 +314,7 @@ describe('OAuth Token API Routes', () => {
       mockGetCredential.mockResolvedValueOnce(undefined)
 
       const req = new Request(
-        'http://localhost:3000/api/auth/oauth/token?credentialId=nonexistent-credential-id'
+        'http://localhost:5863/api/auth/oauth/token?credentialId=nonexistent-credential-id'
       )
 
       const { GET } = await import('@/app/api/auth/oauth/token/route')
@@ -340,7 +340,7 @@ describe('OAuth Token API Routes', () => {
       })
 
       const req = new Request(
-        'http://localhost:3000/api/auth/oauth/token?credentialId=credential-id'
+        'http://localhost:5863/api/auth/oauth/token?credentialId=credential-id'
       )
 
       const { GET } = await import('@/app/api/auth/oauth/token/route')
@@ -368,7 +368,7 @@ describe('OAuth Token API Routes', () => {
       mockRefreshTokenIfNeeded.mockRejectedValueOnce(new Error('Refresh failure'))
 
       const req = new Request(
-        'http://localhost:3000/api/auth/oauth/token?credentialId=credential-id'
+        'http://localhost:5863/api/auth/oauth/token?credentialId=credential-id'
       )
 
       const { GET } = await import('@/app/api/auth/oauth/token/route')

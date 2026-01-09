@@ -68,7 +68,7 @@ describe('File Serve API Route', () => {
 
   it('should serve local file successfully', async () => {
     const req = new NextRequest(
-      'http://localhost:3000/api/files/serve/workspace/test-workspace-id/test-file.txt'
+      'http://localhost:5863/api/files/serve/workspace/test-workspace-id/test-file.txt'
     )
     const params = { path: ['workspace', 'test-workspace-id', 'test-file.txt'] }
     const { GET } = await import('@/app/api/files/serve/[...path]/route')
@@ -127,7 +127,7 @@ describe('File Serve API Route', () => {
     }))
 
     const req = new NextRequest(
-      'http://localhost:3000/api/files/serve/workspace/test-workspace-id/nested-path-file.txt'
+      'http://localhost:5863/api/files/serve/workspace/test-workspace-id/nested-path-file.txt'
     )
     const params = { path: ['workspace', 'test-workspace-id', 'nested-path-file.txt'] }
     const { GET } = await import('@/app/api/files/serve/[...path]/route')
@@ -205,7 +205,7 @@ describe('File Serve API Route', () => {
     }))
 
     const req = new NextRequest(
-      'http://localhost:3000/api/files/serve/workspace/test-workspace-id/1234567890-image.png'
+      'http://localhost:5863/api/files/serve/workspace/test-workspace-id/1234567890-image.png'
     )
     const params = { path: ['workspace', 'test-workspace-id', '1234567890-image.png'] }
     const { GET } = await import('@/app/api/files/serve/[...path]/route')
@@ -262,7 +262,7 @@ describe('File Serve API Route', () => {
     }))
 
     const req = new NextRequest(
-      'http://localhost:3000/api/files/serve/workspace/test-workspace-id/nonexistent.txt'
+      'http://localhost:5863/api/files/serve/workspace/test-workspace-id/nonexistent.txt'
     )
     const params = { path: ['workspace', 'test-workspace-id', 'nonexistent.txt'] }
     const { GET } = await import('@/app/api/files/serve/[...path]/route')
@@ -322,7 +322,7 @@ describe('File Serve API Route', () => {
         }))
 
         const req = new NextRequest(
-          `http://localhost:3000/api/files/serve/workspace/test-workspace-id/file.${test.ext}`
+          `http://localhost:5863/api/files/serve/workspace/test-workspace-id/file.${test.ext}`
         )
         const params = { path: ['workspace', 'test-workspace-id', `file.${test.ext}`] }
         const { GET } = await import('@/app/api/files/serve/[...path]/route')

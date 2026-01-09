@@ -22,6 +22,7 @@ function handleRootPathRedirects(
   hasActiveSession: boolean
 ): NextResponse | null {
   const url = request.nextUrl
+  const ethanaUrl = process.env.NEXT_PUBLIC_ETHANA_URL || 'http://localhost:3000'
 
   if (url.pathname !== '/') {
     return null
@@ -32,7 +33,8 @@ function handleRootPathRedirects(
     if (hasActiveSession) {
       return NextResponse.redirect(new URL('/workspace', request.url))
     }
-    return NextResponse.redirect(new URL('/login', request.url))
+    // Redirect to Ethana login instead of local login
+    return NextResponse.redirect(new URL('/login', ethanaUrl))
   }
 
   // For root path, redirect authenticated users to workspace
@@ -135,7 +137,8 @@ export async function proxy(request: NextRequest) {
   const url = request.nextUrl
 
   const sessionCookie = getSessionCookie(request)
-  const hasActiveSession = isAuthDisabled || !!sessionCookie
+  // Check if session cookie exists and has a valid value (not empty)
+  const hasActiveSession = isAuthDisabled || (!!sessionCookie && sessionCookie.length > 0)
 
   const redirect = handleRootPathRedirects(request, hasActiveSession)
   if (redirect) return redirect
@@ -165,7 +168,9 @@ export async function proxy(request: NextRequest) {
     }
 
     if (!hasActiveSession) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      // Redirect to Ethana login instead of local login
+      const ethanaUrl = process.env.NEXT_PUBLIC_ETHANA_URL || 'http://localhost:3000'
+      return NextResponse.redirect(new URL('/login', ethanaUrl))
     }
     return NextResponse.next()
   }

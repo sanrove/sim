@@ -121,7 +121,7 @@ export function setupOperationsHandlers(
             payload,
             timestamp: operationTimestamp,
             userId: session.userId,
-          })
+          }, room.tenantDb)
           room.lastModified = Date.now()
 
           if (operationId) {
@@ -147,13 +147,17 @@ export function setupOperationsHandlers(
 
       if (target === 'variable' && ['add', 'remove', 'duplicate'].includes(operation)) {
         // Persist first, then broadcast
-        await persistWorkflowOperation(workflowId, {
-          operation,
-          target,
-          payload,
-          timestamp: operationTimestamp,
-          userId: session.userId,
-        })
+        await persistWorkflowOperation(
+          workflowId,
+          {
+            operation,
+            target,
+            payload,
+            timestamp: operationTimestamp,
+            userId: session.userId,
+          },
+          room.tenantDb
+        )
 
         room.lastModified = Date.now()
 
@@ -185,13 +189,17 @@ export function setupOperationsHandlers(
 
       if (target === 'workflow' && operation === 'replace-state') {
         // Persist the workflow state replacement to database first
-        await persistWorkflowOperation(workflowId, {
-          operation,
-          target,
-          payload,
-          timestamp: operationTimestamp,
-          userId: session.userId,
-        })
+        await persistWorkflowOperation(
+          workflowId,
+          {
+            operation,
+            target,
+            payload,
+            timestamp: operationTimestamp,
+            userId: session.userId,
+          },
+          room.tenantDb
+        )
 
         room.lastModified = Date.now()
 
@@ -222,13 +230,17 @@ export function setupOperationsHandlers(
       }
 
       // For non-position operations, persist first then broadcast
-      await persistWorkflowOperation(workflowId, {
-        operation,
-        target,
-        payload,
-        timestamp: operationTimestamp,
-        userId: session.userId,
-      })
+      await persistWorkflowOperation(
+        workflowId,
+        {
+          operation,
+          target,
+          payload,
+          timestamp: operationTimestamp,
+          userId: session.userId,
+        },
+        room.tenantDb
+      )
 
       room.lastModified = Date.now()
 

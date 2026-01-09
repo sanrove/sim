@@ -46,7 +46,7 @@ describe('File Upload API Route', () => {
     const mockFile = createMockFile()
     const formData = createMockFormData([mockFile])
 
-    const req = new NextRequest('http://localhost:3000/api/files/upload', {
+    const req = new NextRequest('http://localhost:5863/api/files/upload', {
       method: 'POST',
       body: formData,
     })
@@ -77,7 +77,7 @@ describe('File Upload API Route', () => {
     const mockFile = createMockFile()
     const formData = createMockFormData([mockFile])
 
-    const req = new NextRequest('http://localhost:3000/api/files/upload', {
+    const req = new NextRequest('http://localhost:5863/api/files/upload', {
       method: 'POST',
       body: formData,
     })
@@ -109,7 +109,7 @@ describe('File Upload API Route', () => {
     const mockFile2 = createMockFile('file2.txt', 'text/plain')
     const formData = createMockFormData([mockFile1, mockFile2])
 
-    const req = new NextRequest('http://localhost:3000/api/files/upload', {
+    const req = new NextRequest('http://localhost:5863/api/files/upload', {
       method: 'POST',
       body: formData,
     })
@@ -129,7 +129,7 @@ describe('File Upload API Route', () => {
 
     const formData = new FormData()
 
-    const req = new NextRequest('http://localhost:3000/api/files/upload', {
+    const req = new NextRequest('http://localhost:5863/api/files/upload', {
       method: 'POST',
       body: formData,
     })
@@ -159,7 +159,7 @@ describe('File Upload API Route', () => {
     const mockFile = createMockFile()
     const formData = createMockFormData([mockFile])
 
-    const req = new NextRequest('http://localhost:3000/api/files/upload', {
+    const req = new NextRequest('http://localhost:5863/api/files/upload', {
       method: 'POST',
       body: formData,
     })

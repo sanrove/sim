@@ -11,6 +11,7 @@ import {
 } from '@/lib/workflows/schedules'
 import { validateWorkflowPermissions } from '@/lib/workflows/utils'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
+import { getTenantDbFromSession } from '@/app/api/workflows/tenant-utils'
 
 const logger = createLogger('WorkflowDeployAPI')
 
@@ -24,10 +25,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     logger.debug(`[${requestId}] Fetching deployment info for workflow: ${id}`)
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
     const { error, workflow: workflowData } = await validateWorkflowPermissions(
       id,
       requestId,
-      'read'
+      'read',
+      tenantDb
     )
     if (error) {
       return createErrorResponse(error.message, error.status)
@@ -44,7 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     let needsRedeployment = false
-    const [active] = await db
+    const [active] = await database
       .select({ state: workflowDeploymentVersion.state })
       .from(workflowDeploymentVersion)
       .where(
@@ -58,7 +64,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (active?.state) {
       const { loadWorkflowFromNormalizedTables } = await import('@/lib/workflows/persistence/utils')
-      const normalizedData = await loadWorkflowFromNormalizedTables(id)
+      const normalizedData = await loadWorkflowFromNormalizedTables(id, tenantDb)
       if (normalizedData) {
         const currentState = {
           blocks: normalizedData.blocks,
@@ -94,11 +100,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     logger.debug(`[${requestId}] Deploying workflow: ${id}`)
 
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
     const {
       error,
       session,
       workflow: workflowData,
-    } = await validateWorkflowPermissions(id, requestId, 'admin')
+    } = await validateWorkflowPermissions(id, requestId, 'admin', tenantDb)
     if (error) {
       return createErrorResponse(error.message, error.status)
     }
@@ -109,7 +119,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return createErrorResponse('Unable to determine deploying user', 400)
     }
 
-    const normalizedData = await loadWorkflowFromNormalizedTables(id)
+    const normalizedData = await loadWorkflowFromNormalizedTables(id, tenantDb)
     if (!normalizedData) {
       return createErrorResponse('Failed to load workflow state', 500)
     }
@@ -126,6 +136,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       workflowId: id,
       deployedBy: actorUserId,
       workflowName: workflowData!.name,
+      tenantDb,
     })
 
     if (!deployResult.success) {
@@ -135,7 +146,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const deployedAt = deployResult.deployedAt!
 
     let scheduleInfo: { scheduleId?: string; cronExpression?: string; nextRunAt?: Date } = {}
-    const scheduleResult = await createSchedulesForDeploy(id, normalizedData.blocks, db)
+    const scheduleResult = await createSchedulesForDeploy(id, normalizedData.blocks, database)
     if (!scheduleResult.success) {
       logger.error(
         `[${requestId}] Failed to create schedule for workflow ${id}: ${scheduleResult.error}`
@@ -191,12 +202,16 @@ export async function DELETE(
   try {
     logger.debug(`[${requestId}] Undeploying workflow: ${id}`)
 
-    const { error } = await validateWorkflowPermissions(id, requestId, 'admin')
+    // Get tenant database
+    const tenantDb = await getTenantDbFromSession()
+    const database = tenantDb || db
+
+    const { error } = await validateWorkflowPermissions(id, requestId, 'admin', tenantDb)
     if (error) {
       return createErrorResponse(error.message, error.status)
     }
 
-    await db.transaction(async (tx) => {
+    await database.transaction(async (tx) => {
       await deleteSchedulesForWorkflow(id, tx)
 
       await tx
